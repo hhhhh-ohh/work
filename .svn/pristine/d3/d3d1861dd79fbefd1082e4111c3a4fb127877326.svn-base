@@ -1,0 +1,21 @@
+@startuml
+start
+:BOSS新增;
+:根据店铺ID查询是否已存在;
+if(是否存在) then(Y)
+     :返回失败;
+     stop;
+endif;
+:根据店铺ID生成AppKey;
+:根据AppKey生成AppSecret;
+:设为审核通过并开启状态;
+:将数据同步缓存;
+:返回AppSecret（AppSecret只有这一次对外展示机会）;
+stop
+
+start
+:商家/供应商;
+:查询商户ID所对应的开放权限信息;
+:返回AppKey、过期时间和限流值;
+stop
+@enduml

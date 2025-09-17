@@ -1,0 +1,123 @@
+{
+  "properties": {
+    "accountState": {
+      "type": "integer"
+    },
+    "birthday": {
+      "format": "yyyy-MM-dd",
+      "type": "date"
+    },
+    "loginErrorTime": {
+      "type": "integer"
+    },
+    "companyInfoId": {
+      "type": "long"
+    },
+    "accountName": {
+      "type": "keyword"
+    },
+    "departmentIds": {
+      "type": "keyword"
+    },
+    "delFlag": {
+      "type": "integer"
+    },
+    "isMasterAccount": {
+      "type": "integer"
+    },
+    "employeeSaltVal": {
+      "index": false,
+      "type": "keyword"
+    },
+    "loginTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "jobNo": {
+      "type": "keyword"
+    },
+    "customerId": {
+      "type": "keyword"
+    },
+    "email": {
+      "type": "keyword"
+    },
+    "deletePerson": {
+      "type": "keyword"
+    },
+    "employeeName": {
+      "type": "keyword"
+    },
+    "loginLockTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "isEmployee": {
+      "type": "integer"
+    },
+    "thirdId": {
+      "type": "keyword"
+    },
+    "isLeader": {
+      "type": "integer"
+    },
+    "accountType": {
+      "type": "integer"
+    },
+    "sex": {
+      "type": "integer"
+    },
+    "manageDepartmentIds": {
+      "type": "keyword"
+    },
+    "createPerson": {
+      "type": "keyword"
+    },
+    "becomeMember": {
+      "type": "integer"
+    },
+    "employeeId": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "updateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "roleIds": {
+      "type": "keyword"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "deleteTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "accountDisableReason": {
+      "type": "keyword"
+    },
+    "employeeMobile": {
+      "type": "keyword"
+    },
+    "heirEmployeeId": {
+      "type": "keyword"
+    },
+    "position": {
+      "type": "keyword"
+    },
+    "accountPassword": {
+      "index": false,
+      "type": "keyword"
+    },
+    "updatePerson": {
+      "type": "keyword"
+    }
+  }
+}

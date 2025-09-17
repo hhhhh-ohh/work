@@ -1,0 +1,30 @@
+package com.wanmi.sbc.account.api.request.customerdrawcash;
+
+import com.wanmi.sbc.account.api.request.AccountBaseRequest;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import jakarta.validation.constraints.NotNull;
+
+import lombok.*;
+
+/**
+ * <p>单个查询会员提现管理请求参数</p>
+ * @author chenyufei
+ * @date 2019-02-25 17:22:24
+ */
+@EqualsAndHashCode(callSuper = true)
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CustomerDrawCashByIdRequest extends AccountBaseRequest {
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * 提现id
+	 */
+	@Schema(description = "提现id")
+	@NotNull
+	private String drawCashId;
+}

@@ -1,0 +1,1516 @@
+package com.wanmi.sbc.order.trade.request;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.wanmi.sbc.account.bean.enums.PayType;
+import com.wanmi.sbc.account.bean.enums.PayWay;
+import com.wanmi.sbc.common.base.BaseQueryRequest;
+import com.wanmi.sbc.common.enums.*;
+import com.wanmi.sbc.common.util.Constants;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeDeserializer;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeSerializer;
+import com.wanmi.sbc.common.util.DateUtil;
+import com.wanmi.sbc.empower.bean.enums.WxSceneGroup;
+import com.wanmi.sbc.goods.bean.enums.DeliverWay;
+import com.wanmi.sbc.marketing.bean.enums.BookingType;
+import com.wanmi.sbc.marketing.bean.enums.CommunitySalesType;
+import com.wanmi.sbc.marketing.bean.vo.TradeGrouponVO;
+import com.wanmi.sbc.order.bean.enums.AuditState;
+import com.wanmi.sbc.order.bean.enums.DeliverStatus;
+import com.wanmi.sbc.order.bean.enums.FlowState;
+import com.wanmi.sbc.order.bean.enums.PayState;
+import com.wanmi.sbc.order.bean.enums.QueryPayType;
+import com.wanmi.sbc.order.bean.enums.*;
+import com.wanmi.sbc.order.bean.vo.CreditPayInfoVO;
+import com.wanmi.sbc.order.trade.model.entity.TradeState;
+import com.wanmi.sbc.order.util.XssUtils;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.mongodb.core.query.Criteria;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+/**
+ * <p>订单查询参数结构</p>
+ * Created by of628-wenzhi on 2017-07-18-下午3:25.
+ */
+@EqualsAndHashCode(callSuper = false)
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class TradeQueryRequest extends BaseQueryRequest {
+
+    private static final long serialVersionUID = 149142593703964072L;
+
+    /**
+     * 主订单编号
+     */
+    private String id;
+
+    /**
+     * 父订单编号
+     */
+    private String parentId;
+
+    /**
+     * 子订单编号
+     */
+    private String sonOrderIdAccount;
+
+    /**
+     * 子订单编号
+     */
+    private String providerTradeId;
+
+    /**
+     * 客户名称-模糊查询
+     */
+    private String buyerName;
+
+    /**
+     * 客户名称
+     */
+    private String buyerId;
+
+    /**
+     * 客户账号-模糊查询
+     */
+    private String buyerAccount;
+
+    /**
+     * 商品名称-模糊查询
+     */
+    private String skuName;
+    private String skuNo;
+
+    /**
+     * 供应商-模糊查询
+     */
+    private String providerName;
+
+    private String providerCode;
+
+    /**
+     * 收货人-模糊查询
+     */
+    private String consigneeName;
+    private String consigneePhone;
+
+    /**
+     * 订单状态-精确查询
+     */
+    private TradeState tradeState;
+
+    /**
+     * 用于根据ids批量查询场景
+     */
+    private String[] ids;
+
+    /**
+     * 退单创建开始时间，精确到天
+     */
+    private String beginTime;
+
+    /**
+     * 退单创建结束时间，精确到天
+     */
+    private String endTime;
+
+    /**
+     * 客户端条件搜索时使用，订单编号或商品名称
+     */
+    private String keyworks;
+
+    /**
+     * 商家id-精确查询
+     */
+    private Long supplierId;
+
+    /**
+     * 商家编码-模糊查询
+     */
+    private String supplierCode;
+
+    /**
+     * 商家名称-模糊查询
+     */
+    private String supplierName;
+
+    /**
+     * 店铺Id
+     */
+    private Long storeId;
+
+
+    /**
+     * 店铺名称
+     */
+    private String storeName;
+
+    /**
+     * 已完成订单允许申请退单时间
+     */
+    private Integer day;
+
+    /**
+     * 是否允许退单
+     */
+    private Integer status;
+
+    /**
+     * 业务员id
+     */
+    private String employeeId;
+
+    /**
+     * 业务员id集合
+     */
+    private List<String> employeeIds;
+
+    /**
+     * 客户id
+     */
+    private Object[] customerIds;
+
+    /**
+     * 是否boss或商家端
+     */
+//    @Builder.Default
+    private Boolean isBoss;
+
+    /**
+     * 是否团长中心搜索
+     */
+    private Boolean isLeaderCenter;
+
+    /**
+     * 批量流程状态
+     */
+    private List<FlowState> flowStates;
+
+    /**
+     * 批量非流程状态
+     */
+    private List<FlowState> notFlowStates;
+
+    /**
+     * 订单支付顺序
+     */
+    private PaymentOrder paymentOrder;
+
+    /**
+     * 开始支付时间
+     */
+    private LocalDateTime startPayTime;
+
+    /**
+     * 邀请人id
+     */
+    private String inviteeId;
+
+    /**
+     * 分销渠道类型
+     */
+    private ChannelType channelType;
+
+
+    /**
+     * 小b端我的客户列表是否是查询全部
+     */
+    @Schema(description = "小b端我的客户列表是否是查询全部")
+    private boolean customerOrderListAllType;
+
+
+    /**
+     * 是否拼团订单
+     */
+    @Schema(description = "是否拼团订单")
+    private Boolean grouponFlag;
+
+    /**
+     * 是否秒杀订单
+     */
+    @Schema(description = "是否秒杀订单")
+    private Boolean flashSaleFlag;
+
+    /**
+     * 是否预售订单
+     */
+    @Schema(description = "是否预售订单")
+    private Boolean bookingSaleFlag;
+
+    /**
+     * 是否砍价订单
+     */
+    @Schema(description = "是否砍价订单")
+    private Boolean bargainFlag;
+
+    /**
+     * 订单拼团信息
+     */
+    private TradeGrouponVO tradeGroupon;
+
+    /**
+     * 订单类型 0：普通订单；1：积分订单
+     */
+    @Schema(description = "订单类型")
+    private OrderType orderType;
+
+    /**
+     * 订单完成开始时间
+     */
+    private String completionBeginTime;
+
+    /**
+     * 订单完成结束时间
+     */
+    private String completionEndTime;
+
+    /**
+     * 支付单ID
+     */
+    private String payOrderId;
+
+
+    /**
+     * 筛选订单类型
+     */
+    @Schema(description = "筛选订单类型")
+    private QueryOrderType queryOrderType;
+
+    /**
+     * 筛选支付方式
+     */
+    private QueryPayType queryPayType;
+
+    /**
+     * 支付方式
+     */
+    @Schema(description = "支付方式，0：在线支付 1：线下支付")
+    private PayType payType;
+
+    /**
+     * 支付渠道
+     */
+    @Schema(description = "支付渠道，0：微信 1：支付宝 5：企业银联 6：云闪付 8：余额 9：授信 10：拉卡拉")
+    private PayWay payWay;
+
+    /**
+     * 抵扣方式
+     */
+    @Schema(description = "支付渠道，0：积分 1：礼品卡")
+    private OrderDeductionType orderDeductionType;
+
+    /**
+     * 是否是预售商品
+     */
+    private Boolean isBookingSaleGoods;
+
+    /**
+     * 预售类型
+     */
+    private BookingType bookingType;
+
+    /**
+     * 筛选第三方平台订单
+     */
+    private ThirdPlatformType thirdPlatformType;
+
+    /**
+     * 批量多个第三方平台订单
+     */
+    private List<ThirdPlatformType> thirdPlatformTypes;
+
+    /**
+     * 筛选第三方平台订单
+     */
+    @Schema(description = "渠道订单待处理")
+    private Boolean thirdPlatformToDo;
+
+    /**
+     * 预售尾款到达时间
+     */
+    @Schema(description = "预售尾款到达时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime bookingTailTime;
+
+    /**
+     * 尾款订单号
+     */
+    private String tailOrderNo;
+
+    /**
+     * 退单标识 false:没有退单  true:有退单
+     */
+    private Boolean returnHasFlag;
+
+    /**
+     * 物流单号
+     */
+    private List<String> logisticNos;
+
+    /**
+     * 授信支付信息
+     */
+    @Schema(description = "授信支付信息")
+    private CreditPayInfoVO creditPayInfo;
+
+    /**
+     * 需要授信还款
+     */
+    @Schema(description = "需要授信还款")
+    private Boolean needCreditRepayFlag;
+
+    /**
+     * 是否是客户订单查询
+     */
+    private boolean isCustomerPage = false;
+    /**
+     * 是否跨境订单
+     */
+    private Boolean crossBorderFlag ;
+    /**
+     * 配送方式
+     */
+    @Schema(description = "配送方式 0其他 1快递 2同城")
+    private DeliverWay deliverWay;
+
+    /**
+     * 店铺类型
+     */
+    @Schema(description = "店铺类型 0：供应商，1：商家，2：o2o直营店")
+    private StoreType storeType;
+
+    /**
+     * 不过滤StoreType
+     * 展示O2O和SBC所有订单
+     */
+    private transient BoolFlag noneFilterStoreType;
+
+    /**
+     * 关联自提点
+     */
+    @Schema(description = "关联自提点")
+    private List<Long> pickupIds;
+
+    /**
+     * 未绑定员工自提点
+     */
+    @Schema(description = "未绑定员工自提点")
+    private List<Long> noEmployeePickupIds;
+
+    /**
+     * 是否允许在途退货
+     */
+    @Schema(description = "是否允许在途退货")
+    private Boolean canOnTheWayReturn;
+
+    /**
+     * 商品类型，0:实体商品，1：虚拟商品 2：电子卡券
+     */
+    @Schema(description = "商品类型")
+    private Integer goodsType;
+
+    /**
+     * 注销校验 1：查询未完成订单 2：查询未过售后期订单
+     */
+    @Schema(description = "注销校验")
+    private Integer logoutValidate;
+
+    /***
+     * 同城配送收货码
+     */
+    @Schema(description = "收货码")
+    private String orderFinishCode;
+
+    /**
+     * 带货视频号
+     */
+    @Schema(description = "带货视频号")
+    private String videoName;
+
+    /**
+     * 场景值
+     */
+    @Schema(description = "场景值")
+    private Integer sceneGroup;
+
+    /**
+     *
+     */
+    @Schema(description = "代销平台标识")
+    private SellPlatformType sellPlatformType;
+
+
+    @Schema(description = "是否隐藏代销订单")
+    private Boolean screenSellPlatform = Boolean.FALSE;
+
+
+    @Schema(description = "订单是否有售后")
+    private DefaultFlag hasReturn ;
+
+
+    @Schema(description = "订单超时时间")
+    private LocalDateTime orderTimeOut;
+
+
+    /**
+     * 付费会员id
+     */
+    @Schema(description = "付费会员id")
+    private Integer payMemberLevelId;
+
+    /**
+     * 尾款开始支付
+     */
+    @Schema(description = "尾款开始支付")
+    private Boolean bookingStartSendFlag;
+
+    /**
+     * 尾款支付超时提醒
+     */
+    @Schema(description = "尾款支付超时提醒")
+    private Boolean bookingEndSendFlag;
+
+    /**
+     * 查询周期购订单
+     */
+    @Schema(description = "查询周期购订单")
+    private Boolean buyCycleFlag;
+
+    /**
+     * 周期购订单计划开始时间
+     */
+    @Schema(description = "周期购订单计划开始时间")
+    private String buyCyclePlanBeginDate;
+
+    /**
+     * 周期购订单计划结束时间
+     */
+    @Schema(description = "周期购订单计划结束时间")
+    private String buyCyclePlanEndDate;
+
+    /**
+     * 是否过滤周期购订单
+     */
+    @Schema(description = "是否过滤周期购订单")
+    private Boolean filterCycleOrder;
+
+    /**
+     * 是否团长订单 0不是 1是
+     */
+    @Schema(description = "是否团长订单 0不是 1是")
+    private Integer communityOrder;
+
+    /**
+     * 是否已入账订单
+     */
+    @Schema(description = "是否已入账订单 0不是 1是")
+    private Integer communityReceived;
+
+    /**
+     * 社区团长ID
+     */
+    @Schema(description = "社区团长ID")
+    private String leaderId;
+
+    /**
+     * 社区团长ID
+     */
+    @Schema(description = "社区团长会员ID")
+    private String leaderCustomerId;
+
+    /**
+     * 社区团长账号
+     */
+    @Schema(description = "社区团长账号")
+    private String leaderAccount;
+
+    /**
+     * 社区团购活动ID
+     */
+    @Schema(description = "社区团购活动ID")
+    private String communityActivityId;
+
+    /**
+     * 批量-社区团购活动ID
+     */
+    @Schema(description = "批量-社区团购活动ID")
+    private List<String> communityActivityIds;
+
+    /**
+     * 社区团购类型
+     */
+    @Schema(description = "社区团购类型")
+    private CommunitySalesType salesType;
+
+    /**
+     * 入账开始时间，精度到天
+     */
+    @Schema(description = "入账开始时间，精度到天")
+    private String receivedFrom;
+
+    /**
+     * 入账结束时间,精度到天
+     */
+    @Schema(description = "入账结束时间,精度到天")
+    private String receivedTo;
+
+    /**
+     * 付款时间开始时间
+     */
+    @Schema(description = "付款时间开始时间")
+    private LocalDateTime payTimeBegin;
+
+    /**
+     * 需要自定义排序 true:需要
+     */
+    @Schema(description = "需要自定义排序 true:需要")
+    private Boolean customSortFlag;
+
+    @Schema(description = "是否增加")
+    private Boolean isAddFlag;
+
+    /**
+     * @return
+     */
+    public Boolean getIsBoss() {
+        if (this.isBoss == null) {
+            return Boolean.TRUE;
+        }
+        return this.isBoss;
+    }
+    /**
+     * 封装公共条件
+     *
+     * @return
+     */
+    private List<Criteria> getCommonCriteria() {
+        List<Criteria> criterias = new ArrayList<>(60);
+
+        //社区团购订单标识
+        if(null != communityOrder && communityOrder == Constants.ONE){
+            criterias.add(Criteria.where("orderTag.communityFlag").is(Boolean.TRUE));
+        }
+
+        //社区团购订单是否已入账
+        if(null != communityReceived){
+            criterias.add(Criteria.where("communityTradeCommission.boolFlag").is(
+                    communityReceived == Constants.ONE ? BoolFlag.YES : BoolFlag.NO));
+        }
+
+        //社区团购团长ID
+        if(null != leaderId){
+            criterias.add(Criteria.where("communityTradeCommission.leaderId").is(leaderId));
+        }
+
+        //社区团购团长会员ID
+        if(null != leaderCustomerId){
+            criterias.add(Criteria.where("communityTradeCommission.customerId").is(leaderCustomerId));
+        }
+
+        //社区团购团长账号(模糊)
+        if(StringUtils.isNotBlank(leaderAccount)){
+            criterias.add(XssUtils.regex("communityTradeCommission.leaderPhone", leaderAccount));
+        }
+
+        //社区团购活动ID
+        if(StringUtils.isNotBlank(communityActivityId)){
+            criterias.add(Criteria.where("communityTradeCommission.activityId").is(communityActivityId));
+        }
+
+        //社区团购活动ID
+        if(CollectionUtils.isNotEmpty(communityActivityIds)){
+            criterias.add(Criteria.where("communityTradeCommission.activityId").in(communityActivityIds));
+        }
+
+        //社区团购订单类型 0自主销售 1帮卖
+        if(null != salesType){
+            criterias.add(Criteria.where("communityTradeCommission.salesType").is(salesType));
+        }
+
+        //社区团购佣金入账日期，大于/等于开始时间
+        if (StringUtils.isNotBlank(receivedFrom)) {
+            criterias.add(Criteria.where("communityTradeCommission.boolFlag").is(BoolFlag.YES));
+            criterias.add(Criteria.where("communityTradeCommission.settlementTime").gte(DateUtil.parseDay(receivedFrom)));
+        }
+
+        //社区团购佣金入账日期，小于于/等于结束时间
+        if (StringUtils.isNotBlank(receivedTo)) {
+            criterias.add(Criteria.where("communityTradeCommission.boolFlag").is(BoolFlag.YES));
+            criterias.add(Criteria.where("communityTradeCommission.settlementTime").lt(DateUtil.parseDay(receivedTo).plusDays(1)));
+        }
+
+        //判断--小b端我的客户列表是否是查询全部
+        if (customerOrderListAllType) {
+            criterias.add(Criteria.where("tradeState.payState").in(PayState.PAID));
+            criterias.add(Criteria.where("tradeState.flowState").in(FlowState.AUDIT
+                    , FlowState.DELIVERED
+                    , FlowState.CONFIRMED
+                    , FlowState.COMPLETED
+                    , FlowState.VOID, FlowState.DELIVERED_PART));
+        }
+
+        //注销校验,不是已完成、已作废订单
+        if (Objects.nonNull(logoutValidate) && logoutValidate==Constants.ONE) {
+            criterias.add(Criteria.where("tradeState.flowState").nin(FlowState.COMPLETED
+                    , FlowState.VOID));
+        }
+
+        //注销校验,已完成、未过售后期订单
+        if (Objects.nonNull(logoutValidate) && logoutValidate==Constants.TWO) {
+            criterias.add(Criteria.where("tradeState.flowState").in(FlowState.COMPLETED));
+            criterias.add(Criteria.where("tradeState.finalTime").gte(LocalDateTime.now()));
+        }
+
+        // 订单编号
+        if (StringUtils.isNoneBlank(id)) {
+            criterias.add(new Criteria().orOperator(
+                    XssUtils.regex("id", id),
+                    Criteria.where("tailOrderNo").is(id)));
+        }
+        // 订单类型
+        if (Objects.nonNull(crossBorderFlag)){
+            if ( !crossBorderFlag) {
+                criterias.add(Criteria.where("id").exists(true).orOperator(Criteria.where("crossBorderFlag").exists(false),
+                        Criteria.where("crossBorderFlag").is(false)));
+            }else {
+                criterias.add(Criteria.where("crossBorderFlag").is(crossBorderFlag));
+            }
+        }
+
+        //批量订单编号
+        if (Objects.nonNull(ids) && ids.length > 0) {
+            criterias.add(Criteria.where("id").in(Arrays.asList(ids)));
+        }
+
+        // 父订单编号
+        if (StringUtils.isNoneBlank(parentId)) {
+            criterias.add(Criteria.where("parentId").is(parentId));
+        }
+
+        //判断出符合条件的
+        if (Objects.nonNull(orderTimeOut)){
+            Criteria orderTimeOut = Criteria.where("orderTimeOut").is(null);
+            Criteria orderTimeOut1 = Criteria.where("orderTimeOut").gt(LocalDateTime.now());
+            Criteria criteria1 = new Criteria().orOperator(orderTimeOut1, orderTimeOut);
+            criterias.add(criteria1);
+        }
+
+
+        //时间范围，大于开始时间
+        if (StringUtils.isNotBlank(beginTime)) {
+            criterias.add(Criteria.where("tradeState.createTime").gte(DateUtil.parseDay(beginTime)));
+        }
+
+        //小与传入的结束时间+1天，零点前
+        if (StringUtils.isNotBlank(endTime)) {
+            criterias.add(Criteria.where("tradeState.createTime").lt(DateUtil.parseDay(endTime).plusDays(1)));
+        }
+
+        if (Objects.nonNull(payTimeBegin)) {
+            criterias.add(Criteria.where("tradeState.payTime").gte(payTimeBegin));
+        }
+
+        //订单完成日期，大于/等于开始时间
+        if (StringUtils.isNotBlank(completionBeginTime)) {
+            criterias.add(Criteria.where("tradeState.endTime").gte(DateUtil.parseDay(completionBeginTime)));
+            criterias.add(Criteria.where("tradeState.flowState").is(FlowState.COMPLETED.getStateId()));
+        }
+        //小与传入的结束时间+1天，零点前
+        if (StringUtils.isNotBlank(completionEndTime)) {
+            criterias.add(Criteria.where("tradeState.endTime").lt(DateUtil.parseDay(completionEndTime).plusDays(1)));
+            criterias.add(Criteria.where("tradeState.flowState").is(FlowState.COMPLETED.getStateId()));
+        }
+
+
+        //周期购订单计划开始时间
+        if (StringUtils.isNotBlank(buyCyclePlanBeginDate) && StringUtils.isNotBlank(buyCyclePlanEndDate)) {
+            criterias.add(new Criteria().andOperator(
+                    Criteria.where("tradeBuyCycle.buyCycleNextPlanDate").gte(DateUtil.parseDay(buyCyclePlanBeginDate))
+                            .lt(DateUtil.parseDay(buyCyclePlanEndDate).plusDays(Constants.ONE)),
+                    Criteria.where("tradeState.deliverStatus").in(DeliverStatus.NOT_YET_SHIPPED.getStatusId(), DeliverStatus.PART_SHIPPED.getStatusId()),
+                    Criteria.where("tradeState.flowState").ne(FlowState.VOID.getStateId())
+                    ));
+        }
+
+        if (Objects.nonNull(bookingTailTime)) {
+            criterias.add(new Criteria().andOperator(Criteria.where("tradeState.tailStartTime").lt(bookingTailTime),
+                    Criteria.where("tradeState.tailEndTime").gt(bookingTailTime)));
+        }
+
+        // 尾款开始支付
+        if (Objects.nonNull(bookingStartSendFlag)) {
+            criterias.add(Criteria.where("bookingStartSendFlag").is(bookingStartSendFlag));
+        }
+
+        // 尾款支付超时提醒
+        if (Objects.nonNull(bookingEndSendFlag)) {
+            criterias.add(Criteria.where("bookingEndSendFlag").is(bookingEndSendFlag));
+
+            criterias.add(new Criteria().andOperator(Criteria.where("tradeState.tailEndTime").lt(LocalDateTime.now().plusHours(Constants.THREE)),
+                    Criteria.where("tradeState.tailEndTime").gt(LocalDateTime.now())));
+        }
+
+        //所属业务员
+        if (StringUtils.isNotBlank(employeeId)) {
+            criterias.add(Criteria.where("buyer.employeeId").is(employeeId));
+        }
+
+        if (CollectionUtils.isNotEmpty(employeeIds)) {
+            criterias.add(Criteria.where("buyer.employeeId").in(employeeIds));
+        }
+
+        //商家ID
+        if (Objects.nonNull(supplierId)) {
+            criterias.add(Criteria.where("supplier.supplierId").is(supplierId));
+        }
+
+        if (Objects.nonNull(storeId)) {
+            criterias.add(Criteria.where("supplier.storeId").is(storeId));
+        }
+
+        if (Objects.nonNull(storeName)) {
+            criterias.add(XssUtils.regex("supplier.storeName", storeName));
+        }
+
+        //批量客户
+        if (StringUtils.isNotBlank(buyerId)) {
+            criterias.add(Criteria.where("buyer.id").is(buyerId));
+        }
+
+        //批量客户
+        if (Objects.nonNull(customerIds) && customerIds.length > 0) {
+            criterias.add(Criteria.where("buyer.id").in(customerIds));
+        }
+
+        // 发货状态
+        if (Objects.nonNull(tradeState)) {
+            // 发货状态
+            if (Objects.nonNull(tradeState.getDeliverStatus())) {
+                //未发货
+                if(DeliverStatus.NOT_YET_SHIPPED.getStatusId().equals(tradeState.getDeliverStatus().getStatusId())){
+                    criterias.add(Criteria.where("tradeState.flowState").is(FlowState.AUDIT.getStateId()));
+                    //先款后货-未发货
+                    Criteria deliverCriteria1 = new Criteria();
+                    deliverCriteria1.andOperator(
+                            Criteria.where("tradeState.deliverStatus").is(tradeState.getDeliverStatus().getStatusId()),
+                            Criteria.where("tradeState.payState").is(PayState.PAID.getStateId()));
+                    //支付方式不限-未发货
+                    Criteria deliverCriteria = new Criteria();
+                    deliverCriteria.andOperator(
+                            Criteria.where("tradeState.deliverStatus").is(tradeState.getDeliverStatus().getStatusId()),
+                            Criteria.where("paymentOrder").is(PaymentOrder.NO_LIMIT.name()));
+                    Criteria orCriteria = new Criteria();
+                    orCriteria.orOperator(deliverCriteria, deliverCriteria1);
+                    criterias.add(orCriteria);
+                } else {
+                    criterias.add(Criteria.where("tradeState.deliverStatus").is(tradeState.getDeliverStatus().getStatusId()));
+                }
+            }
+
+            // 支付状态
+            if (Objects.nonNull(tradeState.getPayState())) {
+
+                if (tradeState.getPayState() == PayState.NOT_PAID) {
+                    Criteria payCriterias = new Criteria();
+                    // 非尾款支付订单
+                    Criteria comCriterias = new Criteria();
+                    Criteria comPayCriterias = new Criteria();
+                    comPayCriterias.orOperator(Criteria.where("tradeState.payState").is(tradeState.getPayState().getStateId()),
+                            Criteria.where("tradeState.payState").is(PayState.UNCONFIRMED.getStateId()));
+                    if (Boolean.TRUE.equals(isBoss)) {
+                        comCriterias = comPayCriterias;
+                    } else {
+                        Criteria comFlowCriterias = Criteria.where("tradeState.flowState").ne(FlowState.VOID.getStateId());
+                        comCriterias.andOperator(comPayCriterias, comFlowCriterias);
+                    }
+
+
+                    // 待支付定金
+                    Criteria waitPayEarnest = new Criteria();
+                    waitPayEarnest.and("tradeState.flowState").is(FlowState.WAIT_PAY_EARNEST.getStateId());
+                    waitPayEarnest.and("tradeState.payState").is(PayState.NOT_PAID);
+                    // 待支付尾款
+                    Criteria waitPayTailWait = new Criteria();
+                    waitPayTailWait.and("tradeState.flowState").is(FlowState.WAIT_PAY_TAIL.getStateId());
+                    waitPayTailWait.and("tradeState.payState").is(PayState.PAID_EARNEST);
+                    waitPayTailWait.and("tradeState.tailEndTime").gte(LocalDateTime.now());
+                    Criteria waitPayTail = new Criteria();
+                    waitPayTail.and("tradeState.flowState").is(FlowState.AUDIT.getStateId());
+                    waitPayTail.and("tradeState.payState").is(PayState.PAID_EARNEST);
+                    waitPayTail.and("tradeState.tailEndTime").gte(LocalDateTime.now());
+                    Criteria waitPayTailWaitor = new Criteria();
+                    // 待支付尾款订单
+                    Criteria bookingCriterias = new Criteria();
+                    bookingCriterias.orOperator(waitPayEarnest, waitPayTailWaitor.orOperator(waitPayTailWait,
+                            waitPayTail));
+                    payCriterias.orOperator(
+                            comCriterias,
+                            bookingCriterias);
+                    criterias.add(payCriterias);
+                } else {
+                    // 非待支付
+                    Criteria comCriterias =
+                            Criteria.where("tradeState.payState").is(tradeState.getPayState().getStateId());
+                    criterias.add(comCriterias);
+                }
+            }
+
+            // 流程状态
+            if (Objects.nonNull(tradeState.getFlowState())) {
+                // 待支付定金
+                if (FlowState.WAIT_PAY_EARNEST == tradeState.getFlowState()) {
+                    Criteria waitPayEarnest = new Criteria();
+                    waitPayEarnest.and("tradeState.flowState").is(FlowState.WAIT_PAY_EARNEST.getStateId());
+                    waitPayEarnest.and("tradeState.payState").is(PayState.NOT_PAID);
+                    criterias.add(waitPayEarnest);
+                } else if (FlowState.WAIT_PAY_TAIL == tradeState.getFlowState()) {
+                    // 待支付尾款
+                    Criteria waitPayTailWait = new Criteria();
+                    waitPayTailWait.and("tradeState.flowState").is(FlowState.WAIT_PAY_TAIL.getStateId());
+                    waitPayTailWait.and("tradeState.payState").is(PayState.PAID_EARNEST);
+                    waitPayTailWait.and("tradeState.tailStartTime").gte(LocalDateTime.now());
+                    Criteria waitPayTail = new Criteria();
+                    waitPayTail.and("tradeState.flowState").is(FlowState.AUDIT.getStateId());
+                    waitPayTail.and("tradeState.payState").is(PayState.PAID_EARNEST);
+                    waitPayTail.and("tradeState.tailEndTime").gte(LocalDateTime.now());
+                    criterias.add(new Criteria().orOperator(waitPayTailWait, waitPayTail));
+                } else if (FlowState.VOID == tradeState.getFlowState()) {
+                    Criteria voidState = new Criteria();
+                    voidState.and("tradeState.flowState").is(FlowState.VOID.getStateId());
+                    criterias.add(voidState);
+                } else {
+                    criterias.add(Criteria.where("tradeState.flowState").is(tradeState.getFlowState().getStateId()));
+                }
+            }
+
+            //订单来源
+            if (Objects.nonNull(tradeState.getOrderSource())) {
+                criterias.add(Criteria.where("orderSource").is(tradeState.getOrderSource().toValue()));
+            }
+
+            //审核状态
+            if (Objects.nonNull(tradeState.getAuditState())){
+                criterias.add(Criteria.where("tradeState.auditState").is(tradeState.getAuditState()));
+            }
+        }
+
+        //支付单id
+        if (Objects.nonNull(payOrderId)) {
+            criterias.add(Criteria.where("payOrderId").is(payOrderId));
+        }
+        if (Objects.nonNull(isBookingSaleGoods)) {
+            criterias.add(Criteria.where("isBookingSaleGoods").is(isBookingSaleGoods));
+        }
+
+        if (Objects.nonNull(bookingType)) {
+            criterias.add(Criteria.where("bookingType").is(bookingType));
+        }
+
+        //批量流程状态
+        if (CollectionUtils.isNotEmpty(flowStates)) {
+            criterias.add(Criteria.where("tradeState.flowState").in(flowStates.stream().map(FlowState::getStateId).collect(Collectors.toList())));
+        }
+
+        if (StringUtils.isNotBlank(supplierCode)) {
+            criterias.add(XssUtils.regex("supplier.supplierCode", supplierCode));
+        }
+
+        if (StringUtils.isNotBlank(supplierName)) {
+            criterias.add(XssUtils.regex("supplier.supplierName", supplierName));
+        }
+
+        //供应商名称 模糊查询
+        if (StringUtils.isNoneBlank(providerName)) {
+            criterias.add(XssUtils.regex("tradeItems.providerName", providerName));
+        }
+        //供应商编号
+        if (StringUtils.isNoneBlank(providerCode)) {
+            criterias.add(XssUtils.regex("tradeItems.providerCode", providerCode));
+        }
+
+        // 客户名称-模糊查询
+        if (StringUtils.isNotBlank(buyerName)) {
+            criterias.add(XssUtils.regex("buyer.name", buyerName));
+        }
+
+        // 客户账号-模糊查询
+        if (StringUtils.isNotBlank(buyerAccount)) {
+            criterias.add(XssUtils.regex("buyer.account", buyerAccount));
+        }
+
+        // 收货人
+        if (StringUtils.isNotBlank(consigneeName)) {
+            criterias.add(XssUtils.regex("consignee.name", consigneeName));
+        }
+
+        // 收货电话
+        if (StringUtils.isNotBlank(consigneePhone)) {
+            criterias.add(XssUtils.regex("consignee.phone", consigneePhone));
+        }
+
+        // 尾款订单号
+        if (StringUtils.isNotBlank(tailOrderNo)) {
+            criterias.add(Criteria.where("tailOrderNo").is(tailOrderNo));
+        }
+
+        // skuName模糊查询
+        if (StringUtils.isNotBlank(skuName)) {
+            Criteria orCriteria = new Criteria();
+            orCriteria.orOperator(
+                    XssUtils.regex("tradeItems.skuName", skuName),
+                    XssUtils.regex("gifts.skuName", skuName));
+            criterias.add(orCriteria);
+        }
+
+        // skuNo模糊查询
+        if (StringUtils.isNotBlank(skuNo)) {
+            Criteria orCriteria = new Criteria();
+            orCriteria.orOperator(
+                    XssUtils.regex("tradeItems.skuNo", skuNo),
+                    XssUtils.regex("gifts.skuNo", skuNo));
+            criterias.add(orCriteria);
+        }
+
+        //关键字
+        if (StringUtils.isNotBlank(keyworks)) {
+            //团长中心需要客户名称搜索
+            if(null != isLeaderCenter && isLeaderCenter.equals(Boolean.TRUE)){
+                Criteria orCriteria = new Criteria();
+                orCriteria.orOperator(
+                        XssUtils.regex("tradeItems.skuName", keyworks),
+                        XssUtils.regex("gifts.skuName", keyworks),
+                        XssUtils.regex("buyer.name", keyworks),
+                        XssUtils.regex("preferential.skuName", keyworks));
+                criterias.add(orCriteria);
+            }else{
+                Criteria orCriteria = new Criteria();
+                orCriteria.orOperator(
+                        XssUtils.regex("id", keyworks),
+                        XssUtils.regex("tradeItems.skuName", keyworks),
+                        XssUtils.regex("gifts.skuName", keyworks),
+                        XssUtils.regex("preferential.skuName", keyworks));
+                criterias.add(orCriteria);
+            }
+
+        }
+
+        //批量流程状态
+        if (CollectionUtils.isNotEmpty(notFlowStates)) {
+            criterias.add(Criteria.where("tradeState.flowState").nin(notFlowStates.stream().map(FlowState::getStateId).collect(Collectors.toList())));
+        }
+
+        //是否有错误
+        if (Boolean.TRUE.equals(thirdPlatformToDo)) {
+            criterias.add(Criteria.where("thirdPlatformPayErrorFlag").is(thirdPlatformToDo));
+        }
+
+        // 第三方平台订单
+        if (Objects.nonNull(thirdPlatformType)) {
+            criterias.add(Criteria.where("thirdPlatformType").is(thirdPlatformType));
+        }
+
+        // 批量 - 第三方平台订单
+        if (CollectionUtils.isNotEmpty(thirdPlatformTypes)) {
+            criterias.add(Criteria.where("thirdPlatformType").in(thirdPlatformTypes));
+        }
+
+        // 订单支付顺序
+        if (Objects.nonNull(paymentOrder)) {
+            criterias.add(Criteria.where("paymentOrder").is(paymentOrder.getStateId()));
+        }
+
+        // 订单开始支付时间，开始支付的订单，进行锁定，不能进行其他操作，比如未支付超时作废
+        if (Objects.nonNull(startPayTime)) {
+            criterias.add(new Criteria().orOperator(Criteria.where("tradeState.startPayTime").lt(startPayTime),
+                    Criteria.where("tradeState.startPayTime").exists(false)));
+        }
+
+        //分销渠道类型和邀请人ID不为空
+        if (Objects.nonNull(channelType) && StringUtils.isNotEmpty(inviteeId)) {
+            Criteria andCriteria = new Criteria();
+            andCriteria.andOperator(Criteria.where("channelType").is(channelType.toString()), Criteria.where(
+                    "distributionShareCustomerId").is(inviteeId));
+//            criterias.add(new Criteria().orOperator(andCriteria,Criteria.where("storeBagsFlag").is(DefaultFlag.YES)));
+            criterias.add(new Criteria().orOperator(andCriteria, Criteria.where("storeBagsInviteeId").is(inviteeId)));
+        } else {
+            // 邀请人id
+            if (StringUtils.isNotEmpty(inviteeId)) {
+                criterias.add(Criteria.where("inviteeId").is(inviteeId));
+            }
+        }
+
+        //订单类型
+        if (Objects.nonNull(orderType)) {
+            if (orderType == OrderType.ALL_ORDER) {
+                criterias.add(Criteria.where("id").exists(true));
+            } else if (orderType == OrderType.NORMAL_ORDER) {
+                criterias.add(Criteria.where("id").exists(true).orOperator(Criteria.where("orderType").exists(false),
+                        Criteria.where("orderType").is(orderType.getOrderTypeId())));
+                //查询包含积分价商品的订单
+                if (Objects.nonNull(queryOrderType) && queryOrderType == QueryOrderType.BUY_POINTS_ORDER) {
+                    criterias.add(Criteria.where("tradeItems.buyPoint").gt(0));
+                }
+            } else {
+                criterias.add(Criteria.where("orderType").is(orderType));
+            }
+        } else {
+            criterias.add(Criteria.where("id").exists(true).orOperator(Criteria.where("orderType").exists(false),
+                    Criteria.where("orderType").is(OrderType.NORMAL_ORDER)));
+        }
+        // 是否拼团订单
+        if (Objects.nonNull(grouponFlag)) {
+            criterias.add(Criteria.where("grouponFlag").is(grouponFlag));
+        }
+        // 是否秒杀订单
+        if (Objects.nonNull(flashSaleFlag) ) {
+            criterias.add(Criteria.where("isFlashSaleGoods").is(flashSaleFlag));
+        }
+        // 是否预售订单
+        if (Objects.nonNull(bookingSaleFlag)) {
+            criterias.add(Criteria.where("isBookingSaleGoods").is(bookingSaleFlag));
+        }
+        // 是否砍价订单
+        if (Objects.nonNull(bargainFlag)) {
+            criterias.add(Criteria.where("bargain").is(bargainFlag));
+        }
+
+        if (Objects.nonNull(queryPayType)) {
+            switch (queryPayType) {
+                case ALIPAY:
+                    //支付宝支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.ALIPAY));
+                    break;
+                case WECHAT:
+                    //微信支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.WECHAT));
+                    break;
+                case UNIONPAY_B2B:
+                    //企业银联支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.UNIONPAY_B2B));
+                    break;
+                case UNIONPAY:
+                    //云闪付支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.UNIONPAY));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gt("0.00"));
+                    break;
+                case BALANCE:
+                    //余额支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.BALANCE));
+                    break;
+                case CREDIT:
+                    //授信支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.CREDIT));
+                    break;
+                case OFFLINE:
+                    //线下支付
+                    criterias.add(Criteria.where("payInfo.payTypeId").is(String.valueOf(PayType.OFFLINE.toValue())));
+                    break;
+                case POINT:
+                    //积分支付
+                    criterias.add(Criteria.where("tradePrice.points").gt(0));
+                    break;
+                case POINT_ALIPAY:
+                    //积分+支付宝支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.ALIPAY));
+                    criterias.add(Criteria.where("tradePrice.points").gt(0));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gt("0.00"));
+                    break;
+                case POINT_WECHAT:
+                    //积分+微信支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.WECHAT));
+                    criterias.add(Criteria.where("tradePrice.points").gt(0));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gt("0.00"));
+                    break;
+                case POINT_UNIONPAY_B2B:
+                    //积分+企业银联支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.UNIONPAY_B2B));
+                    criterias.add(Criteria.where("tradePrice.points").gt(0));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gt("0.00"));
+                    break;
+                case POINT_UNIONPAY:
+                    //积分+云闪付
+                    criterias.add(Criteria.where("payWay").is(PayWay.UNIONPAY));
+                    criterias.add(Criteria.where("tradePrice.points").gt(0));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gt("0.00"));
+                    break;
+                case POINT_BALANCE:
+                    //积分+余额支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.BALANCE));
+                    criterias.add(Criteria.where("tradePrice.points").gt(0));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gt("0.00"));
+                    break;
+                case POINT_CREDIT:
+                    //积分+授信支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.CREDIT));
+                    criterias.add(Criteria.where("tradePrice.points").gt(0));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gt("0.00"));
+                    break;
+                case POINT_OFFLINE:
+                    //积分+线下支付
+                    criterias.add(Criteria.where("payInfo.payTypeId").is(String.valueOf(PayType.OFFLINE.toValue())));
+                    criterias.add(Criteria.where("tradePrice.points").gt(0));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gt("0.00"));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        //支付方式
+        if(Objects.nonNull(payType)){
+            switch (payType) {
+                case ONLINE:
+                    //线上支付
+                    criterias.add(Criteria.where("payInfo.payTypeId").is(String.valueOf(PayType.ONLINE.toValue())));
+                    break;
+                case OFFLINE:
+                    //线下支付
+                    criterias.add(Criteria.where("payInfo.payTypeId").is(String.valueOf(PayType.OFFLINE.toValue())));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        //支付渠道
+        if(Objects.nonNull(payWay)){
+            switch (payWay) {
+                case ALIPAY:
+                    //支付宝支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.ALIPAY));
+                    break;
+                case WECHAT:
+                    //微信支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.WECHAT));
+                    break;
+                case UNIONPAY_B2B:
+                    //企业银联支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.UNIONPAY_B2B));
+                    break;
+                case UNIONPAY:
+                    //云闪付支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.UNIONPAY));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gt("0.00"));
+                    break;
+                case BALANCE:
+                    //余额支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.BALANCE));
+                    break;
+                case CREDIT:
+                    //授信支付
+                    criterias.add(Criteria.where("payWay").is(PayWay.CREDIT));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        //抵扣方式
+        if(Objects.nonNull(orderDeductionType)){
+            switch (orderDeductionType) {
+                case POINT:
+                    //积分
+                    criterias.add(Criteria.where("tradePrice.pointsPrice").gt("0.00"));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gte("0.00"));
+                    break;
+                case CASH_GIFT_CARD:
+                    //礼品卡
+                    criterias.add(Criteria.where("tradePrice.giftCardPrice").gt("0"));
+                    criterias.add(Criteria.where("tradePrice.totalPrice").gte("0"));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (Objects.nonNull(tradeGroupon)) {
+            // 是否团长订单
+            if (Objects.nonNull(tradeGroupon.getLeader())) {
+                criterias.add(Criteria.where("tradeGroupon.leader").is(tradeGroupon.getLeader()));
+            }
+
+            // 团订单状态
+            if (Objects.nonNull(tradeGroupon.getGrouponOrderStatus())) {
+                criterias.add(Criteria.where("tradeGroupon.grouponOrderStatus").is(tradeGroupon.getGrouponOrderStatus
+                        ().toString()));
+            }
+
+            // 团编号
+            if (Objects.nonNull(tradeGroupon.getGrouponNo())) {
+                criterias.add(Criteria.where("tradeGroupon.grouponNo").is(tradeGroupon.getGrouponNo()));
+            }
+
+            // 团活动id
+            if (Objects.nonNull(tradeGroupon.getGrouponActivityId())) {
+                criterias.add(Criteria.where("tradeGroupon.grouponActivityId").is(tradeGroupon.getGrouponActivityId()));
+            }
+
+            // 团商品
+            if (Objects.nonNull(tradeGroupon.getGoodInfoId())) {
+                criterias.add(Criteria.where("tradeGroupon.goodInfoId").is(tradeGroupon.getGoodInfoId()));
+            }
+        }
+
+        //物流号查询
+        if (CollectionUtils.isNotEmpty(logisticNos)) {
+            criterias.add(Criteria.where("tradeDelivers.logistics.logisticNo").in(logisticNos));
+        }
+
+        //退单标记
+        if (Objects.nonNull(returnHasFlag)) {
+            //有退单 > 0
+            if (returnHasFlag) {
+                criterias.add(Criteria.where("returnOrderNum").gt(0));
+            } else {//有退单 <= 0
+                criterias.add(Criteria.where("returnOrderNum").lte(0));
+            }
+        }
+
+        //授信支付信息
+        if (Objects.nonNull(creditPayInfo)) {
+            if(StringUtils.isNotBlank(creditPayInfo.getCreditAcccountId())){
+                criterias.add(Criteria.where("creditPayInfo.creditAcccountId").is(creditPayInfo.getCreditAcccountId()));
+            }
+            if(Objects.nonNull(creditPayInfo.getStartTime())){
+                criterias.add(Criteria.where("tradeState.payTime").gte(creditPayInfo.getStartTime()));
+            }
+            if(Objects.nonNull(creditPayInfo.getEndTime())){
+                criterias.add(Criteria.where("tradeState.payTime").lte(creditPayInfo.getEndTime()));
+            }
+            if(Objects.nonNull(creditPayInfo.getHasRepaid())){
+                criterias.add(Criteria.where("creditPayInfo.hasRepaid").is(creditPayInfo.getHasRepaid()));
+            }
+        }
+
+        //需要授信还款订单
+        if (Objects.nonNull(needCreditRepayFlag) && needCreditRepayFlag) {
+            criterias.add(new Criteria().orOperator(Criteria.where("tradeState.flowState").ne(FlowState.VOID.getStateId()),
+                    Criteria.where("tradeState.flowState").is(FlowState.VOID.getStateId())
+                            .and("needCreditRepayFlag").is(Boolean.TRUE)));
+        }
+
+
+        if (isCustomerPage) {
+            //待发货状态下排除未支付、待确认订单
+            criterias.add(new Criteria().orOperator(Criteria.where("tradeState.deliverStatus").
+                            nin(DeliverStatus.NOT_YET_SHIPPED.getStatusId(), DeliverStatus.SHIPPED.getStatusId()),
+                    Criteria.where("tradeState.payState").
+                            nin(PayState.NOT_PAID.getStateId(), PayState.UNCONFIRMED.getStateId())));
+        }
+        //配送方式
+        if (Objects.nonNull(deliverWay)) {
+            criterias.add(Criteria.where("deliverWay").is(deliverWay));
+        }
+
+        //店铺类型
+        if(Objects.isNull(isBoss) || isBoss) {
+            if (BoolFlag.YES != noneFilterStoreType) {
+                if (Objects.nonNull(storeType) && storeType.equals(StoreType.O2O)) {
+                    criterias.add(Criteria.where("supplier.storeType").is(storeType));
+                } else {
+                    criterias.add(Criteria.where("supplier.storeType").nin(StoreType.O2O));
+                }
+            }
+        }
+
+        //自提订单
+        if (CollectionUtils.isNotEmpty(pickupIds)){
+            criterias.add(Criteria.where("pickSettingInfo.id").in(pickupIds));
+        }
+
+        // 商品类型，0:实体商品，1：虚拟商品 2：电子卡券
+        if (Objects.nonNull(goodsType)){
+            switch (goodsType) {
+                case 0:
+                    criterias.add(
+                        new Criteria().orOperator(Criteria.where("orderTag").exists(false),
+                            new Criteria().andOperator(Criteria.where("orderTag.virtualFlag").is(Boolean.FALSE),
+                                Criteria.where("orderTag.electronicCouponFlag").is(Boolean.FALSE)))
+                    );
+                    break;
+                case 1:
+                    criterias.add(Criteria.where("orderTag.virtualFlag").is(Boolean.TRUE));
+                    break;
+                case 2:
+                    criterias.add(Criteria.where("orderTag.electronicCouponFlag").is(Boolean.TRUE));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // 收货码
+        if (StringUtils.isNotEmpty(orderFinishCode)) {
+            criterias.add(Criteria.where("orderFinishCode").is(orderFinishCode));
+        }
+
+        //带货视频号
+        if (StringUtils.isNotBlank(videoName)) {
+            criterias.add(XssUtils.regex("videoUser.videoName", videoName));
+        }
+
+        //场景值
+        if (Objects.nonNull(sceneGroup)) {
+            // 特殊处理"直播间"，它有2个值，入参只有1个
+            if (WxSceneGroup.LIVE_ROOM_1.toValue().equals(sceneGroup) || WxSceneGroup.LIVE_ROOM_2.toValue().equals(sceneGroup)) {
+                Criteria orCriteria = new Criteria().orOperator(
+                        Criteria.where("sceneGroup").is(WxSceneGroup.LIVE_ROOM_1.toValue()),
+                        Criteria.where("sceneGroup").is(WxSceneGroup.LIVE_ROOM_2.toValue()));
+                criterias.add(orCriteria);
+            } else {
+                criterias.add(Criteria.where("sceneGroup").is(sceneGroup));
+            }
+        }
+
+        // 代销平台订单
+        if (Objects.nonNull(sellPlatformType)) {
+            criterias.add(Criteria.where("sellPlatformType").is(sellPlatformType));
+        }
+
+        if(Objects.nonNull(screenSellPlatform) && screenSellPlatform) {
+            criterias.add(Criteria.where("sellPlatformType").exists(false));
+        }
+
+        if(Objects.nonNull( hasReturn )){
+            if (DefaultFlag.YES == hasReturn) {
+                criterias.add(Criteria.where("hasReturn").is(true));
+                // 表示筛选出没有售后的订单，系统并没有对无售后的订单的 hasReturn 字段持久化 false 值
+                // 故当不存在 hasReturn 字段 或 hasReturn 字段 为null时，即为无售后订单
+            } else {
+                criterias.add(Criteria.where("hasReturn").is(null));
+            }
+        }
+
+        if (Objects.nonNull(payMemberLevelId)) {
+            criterias.add(Criteria.where("payingMemberInfo.totalDiscount").gt(BigDecimal.ZERO));
+            criterias.add(Criteria.where("payingMemberInfo.levelId").is(payMemberLevelId));
+        }
+
+        //周期购订单
+        if (Boolean.TRUE.equals(filterCycleOrder)) {
+            criterias.add(Criteria.where("orderTag.buyCycleFlag").ne(Boolean.TRUE));
+        } else if (Boolean.TRUE.equals(buyCycleFlag)) {
+            criterias.add(Criteria.where("orderTag.buyCycleFlag").is(Boolean.TRUE));
+        }
+
+        return criterias;
+    }
+
+    /**
+     * 公共条件
+     *
+     * @return
+     */
+    public Criteria getWhereCriteria() {
+        List<Criteria> criteriaList = this.getCommonCriteria();
+        if (CollectionUtils.isEmpty(criteriaList)) {
+            return new Criteria();
+        }
+        return new Criteria().andOperator(criteriaList.toArray(new Criteria[criteriaList.size()]));
+    }
+
+    /**
+     * 可退订单的条件
+     *
+     * @return
+     */
+    public Criteria getCanReturnCriteria() {
+        /**
+         * 允许退单
+         */
+        if (Objects.nonNull(status) && status == 0) {
+            if (tradeState == null) {
+                tradeState = new TradeState();
+            }
+            boolean flag = Objects.nonNull(canOnTheWayReturn) && canOnTheWayReturn;
+            if (!flag) {
+                tradeState.setDeliverStatus(DeliverStatus.NOT_YET_SHIPPED);
+            }
+        }
+
+        List<Criteria> criteria = this.getCommonCriteria();
+
+        Criteria dayCriteria = new Criteria();
+        // 开店礼包及提货卡订单不支持退单
+        criteria.add(Criteria.where("storeBagsFlag").ne(DefaultFlag.YES));
+        criteria.add(Criteria.where("orderTag.pickupCardFlag").ne(Boolean.TRUE));
+
+        //已完成订单允许申请退单时间
+        if (Objects.nonNull(day) && day > 0) {
+            dayCriteria.andOperator(
+                    Criteria.where("tradeState.flowState").is(FlowState.COMPLETED.getStateId()),
+                    Criteria.where("tradeState.endTime").gte(LocalDateTime.now().minusDays(day))
+            );
+        } else {
+            dayCriteria.andOperator(Criteria.where("tradeState.flowState").is(FlowState.COMPLETED.getStateId()));
+        }
+        //是否允许在途退货
+        if (Objects.nonNull(canOnTheWayReturn) && canOnTheWayReturn) {
+            criteria.add(
+                    new Criteria().orOperator(
+                            dayCriteria,
+                            new Criteria().andOperator(
+                                    Criteria.where("tradeState.deliverStatus").ne(DeliverStatus.VOID.getStatusId()),
+                                    Criteria.where("tradeState.payState").is(PayState.PAID.getStateId()),
+                                    Criteria.where("tradeState.auditState").is(AuditState.CHECKED.getStatusId()),
+                                    Criteria.where("tradeState.flowState").nin(
+                                            FlowState.VOID.getStateId(), FlowState.INIT.getStateId(),
+                                            FlowState.GROUPON.getStateId())
+                            )
+                    )
+            );
+        } else {
+            criteria.add(
+                    new Criteria().orOperator(
+                            dayCriteria,
+                            new Criteria().andOperator(
+                                    Criteria.where("tradeState.deliverStatus").is(DeliverStatus.NOT_YET_SHIPPED.getStatusId()),
+                                    Criteria.where("tradeState.payState").is(PayState.PAID.getStateId()),
+                                    Criteria.where("tradeState.auditState").is(AuditState.CHECKED.getStatusId()),
+                                    Criteria.where("tradeState.flowState").nin(
+                                            FlowState.VOID.getStateId(), FlowState.INIT.getStateId(),
+                                            FlowState.GROUPON.getStateId())
+                            )
+                    )
+            );
+        }
+
+        return new Criteria().andOperator(criteria.toArray(new Criteria[criteria.size()]));
+    }
+
+
+    @Override
+    public String getSortColumn() {
+        String sortColumn = super.getSortColumn();
+        if(Boolean.TRUE.equals(customSortFlag) && StringUtils.isNotBlank(sortColumn)) {
+            return sortColumn;
+        }
+        return "tradeState.createTime";
+    }
+
+    @Override
+    public String getSortRole() {
+        String sortRole = super.getSortRole();
+        if(Boolean.TRUE.equals(customSortFlag) && StringUtils.isNotBlank(sortRole)) {
+            return sortRole;
+        }
+        return "desc";
+    }
+
+    @Override
+    public String getSortType() {
+        return "Date";
+    }
+}

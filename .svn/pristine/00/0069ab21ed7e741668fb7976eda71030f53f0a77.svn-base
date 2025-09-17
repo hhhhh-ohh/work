@@ -1,0 +1,164 @@
+package com.wanmi.sbc.marketing.api.request.distributionrecord;
+
+import com.wanmi.sbc.common.base.BaseRequest;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.wanmi.sbc.common.enums.DeleteFlag;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeDeserializer;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeSerializer;
+import com.wanmi.sbc.marketing.bean.enums.CommissionReceived;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * <p>DistributionRecord列表查询请求参数</p>
+ * @author baijz
+ * @date 2019-02-27 18:56:40
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema
+public class DistributionRecordListRequest extends BaseRequest {
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * 批量查询-分销记录表主键List
+	 */
+	@Schema(description = "分销记录表主键List")
+	private List<String> recordIdList;
+
+
+	/**
+	 *  订单号id
+	 */
+	@Schema(description = "订单号idList")
+	private List<String> tradeIdList;
+
+	/**
+	 * 分销记录表主键
+	 */
+	@Schema(description = "分销记录表主键")
+	private String recordId;
+
+	/**
+	 * 货品Id
+	 */
+	@Schema(description = "货品Id")
+	private String goodsInfoId;
+
+	/**
+	 * 订单交易号
+	 */
+	@Schema(description = "订单交易号")
+	private String tradeId;
+
+	/**
+	 * 店铺Id
+	 */
+	@Schema(description = "店铺Id")
+	private Long storeId;
+
+	/**
+	 * 会员Id
+	 */
+	@Schema(description = "会员Id")
+	private String customerId;
+
+	/**
+	 * 分销员标识UUID
+	 */
+	@Schema(description = "分销员标识UUID")
+	private String distributorId;
+
+	/**
+	 * 搜索条件:付款时间开始
+	 */
+	@Schema(description = "付款时间开始")
+	@JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+	@JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+	private LocalDateTime payTimeBegin;
+	/**
+	 * 搜索条件:付款时间截止
+	 */
+	@Schema(description = "付款时间截止")
+	@JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+	@JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+	private LocalDateTime payTimeEnd;
+
+	/**
+	 * 搜索条件:订单完成时间开始
+	 */
+	@Schema(description = "订单完成时间开始")
+	@JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+	@JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+	private LocalDateTime finishTimeBegin;
+	/**
+	 * 搜索条件:订单完成时间截止
+	 */
+	@Schema(description = "订单完成时间截止")
+	@JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+	@JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+	private LocalDateTime finishTimeEnd;
+
+	/**
+	 * 搜索条件:佣金入账时间开始
+	 */
+	@Schema(description = "佣金入账时间开始")
+	@JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+	@JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+	private LocalDateTime missionReceivedTimeBegin;
+	/**
+	 * 搜索条件:佣金入账时间截止
+	 */
+	@Schema(description = "佣金入账时间截止")
+	@JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+	@JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+	private LocalDateTime missionReceivedTimeEnd;
+
+	/**
+	 * 订单单个商品金额
+	 */
+	@Schema(description = "订单单个商品金额")
+	private BigDecimal orderGoodsPrice;
+
+	/**
+	 * 商品的数量
+	 */
+	@Schema(description = "商品的数量")
+	private Long orderGoodsCount;
+
+	/**
+	 * 单个货品的佣金
+	 */
+	@Schema(description = "单个货品的佣金")
+	private BigDecimal commissionGoods;
+
+	/**
+	 * 佣金是否入账
+	 */
+	@Schema(description = "佣金是否入账")
+	private CommissionReceived commissionState;
+
+	/**
+	 * 分销员的客户id
+	 */
+	@Schema(description = "分销员的客户id")
+	private String distributorCustomerId;
+
+
+	/**
+	 * 是否删除 0：未删除  1：已删除
+	 */
+	@Schema(description = "是否删除 0：未删除  1：已删除")
+	private DeleteFlag deleteFlag;
+}

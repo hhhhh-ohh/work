@@ -1,0 +1,66 @@
+package com.wanmi.sbc.order.api.provider.orderperformance;
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.base.MicroServicePage;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceModifyRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformancePageRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceSummaryRequest;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceSummaryNewResponse;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceSummaryResponse;
+import com.wanmi.sbc.order.bean.vo.OrderPerformanceVO;
+import jakarta.validation.Valid;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+/**
+ * @Author: ZhangLingKe
+ * @Description:
+ * @Date: 2018-11-30 11:23
+ */
+@FeignClient(value = "${application.order.name}", contextId = "OrderPerformanceQueryProvider")
+public interface OrderPerformanceQueryProvider {
+
+
+    /**
+     * 根据订单ID查询订单业绩信息
+     * @param request
+     * @return
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-order-performance-summary")
+    BaseResponse<OrderPerformanceSummaryResponse> getOrderPerformanceSummary(@RequestBody @Valid OrderPerformanceSummaryRequest request);
+
+
+    /**
+     * 获取订单业绩分页列表
+     * @param request
+     * @return
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-order-performance-page")
+    BaseResponse<MicroServicePage<OrderPerformanceVO>> getOrderPerformancePage(@RequestBody @Valid OrderPerformancePageRequest request);
+
+
+    /**
+     * 根据订单ID查询订单业绩信息新的
+     * @param request
+     * @return
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-order-performance-summary-new")
+    BaseResponse<OrderPerformanceSummaryNewResponse> getOrderPerformanceSummaryNew(@RequestBody @Valid OrderPerformanceSummaryRequest request);
+
+    /**
+     * 创建订单业绩信息
+     * @param request
+     * @return
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/create-order-performance")
+    BaseResponse createOrderPerformance(@RequestBody @Valid OrderPerformanceModifyRequest request);
+
+    /**
+     * 退货订单业绩信息
+     * @param request
+     * @return
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/return-order-performance")
+    BaseResponse returnOrderPerformance(@RequestBody @Valid OrderPerformanceModifyRequest request);
+}

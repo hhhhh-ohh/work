@@ -1,0 +1,79 @@
+@startuml
+start
+:C端下单;
+partition VOP验证判断 {
+   if(含有VOP商品) then (yes)
+     if(渠道设置关闭) then (yes)
+        :提示商品无效;
+     else if(收货地址与京东地址是否完整映射) then (yes)
+        :提示商品不支持销售;
+     else if(京东商品是否下架) then (yes)
+        :下架本地商品刷新ES;
+        :提示商品无效;
+     else if(京东商品是否不可售) then (yes)
+        :下架本地商品刷新ES;
+        :提示商品无效;
+     else if(京东商品是否区域受限) then (yes)
+        :提示商品不支持销售;
+     else if(京东商品是否缺货) then (yes)
+        :提示商品缺货;
+     endif;
+   endif;
+}
+:下单成功;
+partition VOP拆单 {
+   if(是否是VOP订单) then (yes)
+     :远程调用京东查询运费接口获得第三方运费;
+     :保存thirdPlatformTrade表;
+     :将第三方运费合计保存至providerTrade表;
+   endif;
+}
+:完成支付;
+partition VOP订单 {
+   :远程调用createOrder（下单）接口;
+   if(返回是否成功) then (yes)
+     :保存VOP订单号;
+   else
+     :自动退款;
+   endif;
+   :批量远程调用confirmOrder（确认预占库存订单）接口;
+   if(所有订单是否失败) then (yes)
+      :自动退款;
+   elseif(部分订单是否失败) then(yes)
+      :标记部分订单支付失败;
+      :走人工退款流程;
+   elseif(支付是否网络异常) then(yes)
+      :标记支付待确认状态
+      :进入支付补偿定时任务队列;
+   else
+      :完成;
+   endif;
+}
+partition 支付补偿定时任务 {
+   :遍历加载队列
+   :远程调用selectJdOrder（订单详情）接口;
+   if(是否支付成功) then (yes)
+      :标记支付成功;
+   elseif(是否未预占库存) then(yes)
+      :远程调用confirmOrder（支付）接口;
+      if(所有订单是否失败) then (yes)
+         :自动退款;
+      elseif(部分订单是否失败) then(yes)
+         :标记部分订单支付失败;
+         :走人工退款流程;
+      elseif(支付是否网络异常) then(yes)
+         :标记支付待确认状态
+         :进入支付补偿定时任务队列;
+      else
+         :完成;
+      endif;
+   elseif(部分订单是否失败) then(yes)
+      :标记部分订单支付失败;
+      :走人工退款流程;
+   else
+      :标记支付失败;
+      :自动退款;
+   endif;
+}
+stop
+@enduml

@@ -1,0 +1,2647 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.marketing.overview.dao.MarketingSituationMapper">
+    <sql id="commonAddColSql">
+        store_id,
+        marketing_type,
+        activity_num,
+        pay_roi,
+        pay_money,
+        discount_money,
+        pay_customer_count,
+        pay_goods_count,
+        pay_trade_count,
+        new_customer,
+        old_customer,
+        join_rate,
+        customer_price,
+        pv,
+        uv,
+        create_time
+    </sql>
+    <sql id="selectColumnCommon">
+       COALESCE(sum(activity_num), 0)                                        activity_num,
+       case when sum( discount_money )=0 then  0
+        else COALESCE ( TRUNCATE ( sum( pay_money ) / sum( discount_money ), 2 ), 0 ) end pay_roi,
+       COALESCE(sum(pay_money), 0)                                           pay_money,
+       COALESCE(sum(discount_money), 0)                                      discount_money,
+       COALESCE(sum(pay_customer_count), 0)                                  pay_customer_count,
+       COALESCE(sum(pay_goods_count), 0)                                     pay_goods_count,
+       COALESCE(sum(pay_trade_count), 0)                                     pay_trade_count,
+       COALESCE(sum(new_customer), 0)                                        new_customer,
+       COALESCE(sum(old_customer), 0)                                        old_customer,
+       case when sum( pay_trade_count )=0 then  0
+        else COALESCE(truncate(sum(pay_goods_count) / sum(pay_trade_count), 2), 0) end joint_rate,
+        case when sum( pay_customer_count )=0 then  0
+        else COALESCE(truncate(sum(pay_money) / sum(pay_customer_count), 2), 0) end customer_price,
+       COALESCE(sum(pv), 0)                                                  pv,
+       COALESCE(sum(uv), 0)                                                  uv,
+        now()
+    </sql>
+
+    <!--秒杀活动-->
+    <sql id="bossFlashStatisticsQuery">
+        select
+            0                                                                          as activity_num,
+            sum(f.pay_money)                                                           as pay_money,
+            sum(f.discount_money)                                                      as discount_money,
+            count(distinct f.customer_id)                                              as pay_customer_count,
+            sum(f.pay_goods_count)                                                     as pay_goods_count,
+            count(f.id)                                                                as pay_trade_count,
+            count(distinct case when c.customer_id is null then f.customer_id end)     as new_customer,
+            count(distinct case when c.customer_id is not null then f.customer_id end) as old_customer,
+            0                                                                          as pv,
+            0                                                                          as uv
+        from flash_sale f
+        left join (select distinct customer_id
+                    from customer_first_pay
+                    where date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}) c on f.customer_id = c.customer_id
+        where date_format(f.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(f.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        union all
+        select count(g.id) activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0           pv,
+        0           uv
+        from replay_flash_sale_goods g
+        where g.del_flag = 0 and g.type = 0
+        and date_format(g.activity_date, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(g.activity_date, '%Y-%m-%d') &lt; #{request.endTime}
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        <where>
+            p.marketing_type = 5
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        <where>
+            u.marketing_type = 5
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+    </sql>
+    <sql id="supplierFlashStatisticsQuery">
+        select
+            f.store_id                                                                 as store_id,
+            0                                                                          as activity_num,
+            sum(f.pay_money)                                                           as pay_money,
+            sum(f.discount_money)                                                      as discount_money,
+            count(distinct f.customer_id)                                              as pay_customer_count,
+            sum(f.pay_goods_count)                                                     as pay_goods_count,
+            count(f.id)                                                                as pay_trade_count,
+            count(distinct case when c.customer_id is null then f.customer_id end)     as new_customer,
+            count(distinct case when c.customer_id is not null then f.customer_id end) as old_customer,
+            0                                                                          as pv,
+            0                                                                          as uv
+        from flash_sale f
+        left join customer_first_pay c on f.customer_id = c.customer_id and f.store_id = c.store_id
+          and date_format(c.first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}
+        where date_format(f.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(f.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        group by f.store_id
+        union all
+        select g.store_id store_id,
+        count(g.id) activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0           pv,
+        0           uv
+        from replay_flash_sale_goods g
+        where g.del_flag = 0 and g.type = 0
+        and date_format(g.activity_date, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(g.activity_date, '%Y-%m-%d') &lt; #{request.endTime}
+        group by g.store_id
+        union all
+              select
+              s.store_id store_id,
+               0 activityNum,
+               0 pay_money,
+               0 discount_money,
+               0 pay_customer_count,
+               0 pay_goods_count,
+               0 pay_trade_count,
+               0 new_customer,
+               0 old_customer,
+               0 pv,
+               0 uv
+              from replay_store s
+            where s.del_flag = 0
+
+        union all
+
+        SELECT
+        g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+        where p.marketing_type = 5
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+
+        union all
+
+        SELECT
+         g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        where
+            u.marketing_type = 5
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+
+    </sql>
+
+    <insert id="saveBossFlashDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        -1          store_id,
+        2           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossFlashStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossFlashSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        2  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossFlashStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossFlashThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        2  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossFlashStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossFlashMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        -1 store_id,
+        2  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossFlashStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveSupplierFlashDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        store_id,
+        2           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierFlashStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierFlashSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        2           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierFlashStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierFlashThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        2           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierFlashStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierFlashMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        store_id,
+        2           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierFlashStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <!--预售活动-->
+    <sql id="bossBookingStatisticsQuery">
+        select
+            0                       as activity_num,
+             sum(a.pay_money)       as pay_money,
+             sum(a.discount_money)  as discount_money,
+             sum(a.pay_goods_count) as pay_goods_count,
+             count(a.id)            as pay_trade_count,
+             0                      as new_customer,
+             0                      as old_customer,
+             0                      as pay_customer_count,
+             0                      as pv,
+             0                      as uv
+        from full_money_booking a
+        where date_format(a.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        union all
+        select 0                    as activity_num,
+             sum(a.pay_money)       as pay_money,
+             sum(a.discount_money)  as discount_money,
+             sum(a.pay_goods_count) as pay_goods_count,
+             count(a.id)            as pay_trade_count,
+             0                      as new_customer,
+             0                      as old_customer,
+             0                      as pay_customer_count,
+             0                      as pv,
+             0                      as uv
+        from deposit_booking a
+      where a.presell_type = 1
+        and date_format(a.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+      union all
+        select 0                                                                   as activity_num,
+        0                                                                          as pay_money,
+        0                                                                          as discount_money,
+        0                                                                          as pay_goods_count,
+        0                                                                          as pay_trade_count,
+        count(distinct case when b.customer_id is null then a.customer_id end)     as new_customer,
+        count(distinct case when b.customer_id is not null then a.customer_id end) as old_customer,
+        count(distinct a.customer_id)                                              as pay_customer_count,
+        0       as pv,
+        0       as uv
+        from (select distinct a.customer_id
+            from full_money_booking a
+            where date_format(a.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+            and date_format(a.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+            union all
+            select distinct a.customer_id
+            from deposit_booking a
+            where a.presell_type = 1
+            and date_format(a.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+            and date_format(a.create_time, '%Y-%m-%d') &lt; #{request.endTime}) a
+        left join (select distinct customer_id
+        from customer_first_pay
+        where date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}) b on a.customer_id = b.customer_id
+        union all
+        select count(a.id) activity_num,
+        0           pay_money,
+        0 as        discount_money,
+        0 as        pay_goods_count,
+        0 as        pay_trade_count,
+        0 as        new_customer,
+        0 as        old_customer,
+        0 as        pay_customer_count,
+        0           pv,
+        0           uv
+        from replay_booking_sale a
+        where a.del_flag = 0
+        and date_format(a.end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.start_time, '%Y-%m-%d') &lt; #{request.endTime}
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        <where>
+            p.marketing_type in (103 , 105)
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        <where>
+            u.marketing_type in (103 , 105)
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+    </sql>
+    <sql id="supplierBookingStatisticsQuery">
+        select
+            a.store_id             as store_id,
+             0                      as activity_num,
+             sum(a.pay_money)       as pay_money,
+             sum(a.discount_money)  as discount_money,
+             sum(a.pay_goods_count) as pay_goods_count,
+             count(a.id)            as pay_trade_count,
+             0                      as new_customer,
+             0                      as old_customer,
+             0                      as pay_customer_count,
+             0                      as pv,
+             0                      as uv
+        from full_money_booking a
+        where date_format(a.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        group by a.store_id
+        union all
+        select
+        a.store_id             as store_id,
+             0                      as activity_num,
+             sum(a.pay_money)       as pay_money,
+             sum(a.discount_money)  as discount_money,
+             sum(a.pay_goods_count) as pay_goods_count,
+             count(a.id)            as pay_trade_count,
+             0                      as new_customer,
+             0                      as old_customer,
+             0                      as pay_customer_count,
+             0                      as pv,
+             0                      as uv
+        from deposit_booking a
+        where a.presell_type = 1
+        and date_format(a.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        group by a.store_id
+        union all
+        select a.store_id                                                                    store_id,
+        0                                                                          as activity_num,
+        0                                                                             pay_money,
+        0                                                                          as discount_money,
+        0                                                                          as pay_goods_count,
+        0                                                                          as pay_trade_count,
+        count(distinct case when b.customer_id is null then a.customer_id end)     as new_customer,
+        count(distinct case when b.customer_id is not null then a.customer_id end) as old_customer,
+        count(distinct a.customer_id)                                              as pay_customer_count,
+        0       as pv,
+        0       as uv
+        from (select a.customer_id, a.store_id
+        from full_money_booking a
+        where date_format(a.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        group by a.store_id,a.customer_id
+        union all
+        select a.customer_id, a.store_id
+        from deposit_booking a
+        where a.presell_type = 1
+        and date_format(a.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        group by a.store_id,a.customer_id) a
+        left join customer_first_pay b on a.customer_id = b.customer_id and a.store_id = b.store_id
+        and date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}
+        group by a.store_id
+        union all
+        select
+        a.store_id  store_id,
+        count(a.id) activity_num,
+        0           pay_money,
+        0 as        discount_money,
+        0 as        pay_goods_count,
+        0 as        pay_trade_count,
+        0 as        new_customer,
+        0 as        old_customer,
+        0 as        pay_customer_count,
+        0           pv,
+        0           uv
+        from replay_booking_sale a
+        where a.del_flag = 0
+        and date_format(a.end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.start_time, '%Y-%m-%d') &lt; #{request.endTime}
+        group by a.store_id
+        union all
+              select
+              s.store_id store_id,
+               0 activityNum,
+               0 pay_money,
+               0 discount_money,
+               0 pay_customer_count,
+               0 pay_goods_count,
+               0 pay_trade_count,
+               0 new_customer,
+               0 old_customer,
+               0 pv,
+               0 uv
+              from replay_store s
+            where s.del_flag = 0
+
+        union all
+
+        SELECT
+        g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+        where p.marketing_type in (103,105)
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+
+        union all
+
+        SELECT
+         g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        where
+            u.marketing_type in (103,105)
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+    </sql>
+
+    <insert id="saveBossBookingDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        -1          store_id,
+        10           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossBookingStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossBookingSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        10  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossBookingStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossBookingThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        10  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossBookingStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossBookingMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        -1 store_id,
+        10  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossBookingStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveSupplierBookingDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        store_id,
+        10           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierBookingStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierBookingSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        10           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierBookingStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierBookingThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        10           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierBookingStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierBookingMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        store_id,
+        10           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierBookingStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+
+    <!--预约活动-->
+    <sql id="bossAppointmentStatisticsQuery">
+        SELECT 0                                                                               AS activity_num,
+        sum(pay_money)                                                                         AS pay_money,
+        sum(discount_money)                                                                    AS discount_money,
+        sum(pay_goods_count)                                                                   AS pay_goods_count,
+        count(DISTINCT detail.id)                                                              AS pay_trade_count,
+        count(DISTINCT detail.customer_id)                                                     AS pay_customer_count,
+        count(DISTINCT CASE WHEN customer.customer_id is null THEN detail.customer_id END)     AS new_customer,
+        count(DISTINCT CASE WHEN customer.customer_id is not null THEN detail.customer_id END) AS old_customer,
+        0                                                   as pv,
+        0                                                   as uv
+        FROM appointment_trade_detail detail
+        LEFT JOIN (select distinct customer_id
+            from customer_first_pay
+            where date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}) customer
+            ON detail.customer_id = customer.customer_id
+        WHERE date_format(detail.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        AND date_format(detail.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        union all
+        select count(a.id) activity_num,
+        0 AS        pay_money,
+        0 AS        discount_money,
+        0 AS        pay_goods_count,
+        0 AS        pay_trade_count,
+        0 AS        pay_customer_count,
+        0 AS        new_customer,
+        0 AS        old_customer,
+        0   pv,
+        0   uv
+        from replay_appointment_sale a
+        where del_flag = 0
+        and date_format(a.snap_up_end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.appointment_start_time, '%Y-%m-%d') &lt; #{request.endTime}
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        <where>
+            p.marketing_type = 102
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        <where>
+            u.marketing_type = 102
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+    </sql>
+    <sql id="supplierAppointmentStatisticsQuery">
+        SELECT
+        detail.store_id                                                                        AS store_id,
+        0                                                                                      AS activity_num,
+        sum(pay_money)                                                                         AS pay_money,
+        sum(discount_money)                                                                    AS discount_money,
+        sum(pay_goods_count)                                                                   AS pay_goods_count,
+        count(DISTINCT detail.id)                                                              AS pay_trade_count,
+        count(DISTINCT detail.customer_id)                                                     AS pay_customer_count,
+        count(DISTINCT CASE WHEN customer.customer_id is null THEN detail.customer_id END)     AS new_customer,
+        count(DISTINCT CASE WHEN customer.customer_id is not null THEN detail.customer_id END) AS old_customer,
+        0                                                                           as pv,
+        0                                                                           as uv
+        FROM appointment_trade_detail detail
+        LEFT JOIN customer_first_pay customer ON detail.customer_id = customer.customer_id
+        and detail.store_id = customer.store_id
+        and date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}
+        WHERE date_format(detail.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        AND date_format(detail.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        group by detail.store_id
+        union all
+        select a.store_id store_id,
+        count(a.id) activity_num,
+        0 AS        pay_money,
+        0 AS        discount_money,
+        0 AS        pay_goods_count,
+        0 AS        pay_trade_count,
+        0 AS        pay_customer_count,
+        0 AS        new_customer,
+        0 AS        old_customer,
+        0           pv,
+        0           uv
+        from replay_appointment_sale a
+        where del_flag = 0
+        and date_format(a.snap_up_end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(a.appointment_start_time, '%Y-%m-%d') &lt; #{request.endTime}
+        group by a.store_id
+        union all
+              select
+              s.store_id store_id,
+               0 activityNum,
+               0 pay_money,
+               0 discount_money,
+               0 pay_customer_count,
+               0 pay_goods_count,
+               0 pay_trade_count,
+               0 new_customer,
+               0 old_customer,
+               0 pv,
+               0 uv
+              from replay_store s
+            where s.del_flag = 0
+
+          union all
+
+        SELECT
+        g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+        where p.marketing_type = 102
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+
+        union all
+
+        SELECT
+         g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        where
+            u.marketing_type = 102
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+    </sql>
+
+    <insert id="saveBossAppointmentDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        -1          store_id,
+        7           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossAppointmentStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossAppointmentSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        7  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossAppointmentStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossAppointmentThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        7  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossAppointmentStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossAppointmentMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        -1 store_id,
+        7  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossAppointmentStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveSupplierAppointmentDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        store_id,
+        7           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierAppointmentStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierAppointmentSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        7           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierAppointmentStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierAppointmentThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        7           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierAppointmentStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierAppointmentMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        store_id,
+        7           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierAppointmentStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+
+    <!--拼团活动-->
+    <sql id="bossGrouponStatisticsQuery">
+        select 0                                                                   as activity_num,
+        sum(a.pay_money)                                                           as pay_money,
+        sum(a.discount_money)                                                      as discount_money,
+        count(distinct a.customer_id)                                              as pay_customer_count,
+        sum(a.pay_goods_count)                                                     as pay_goods_count,
+        count(a.id)                                                                as pay_trade_count,
+        count(distinct case when b.customer_id is null then a.customer_id end)     as new_customer,
+        count(distinct case when b.customer_id is not null then a.customer_id end) as old_customer,
+        0                                                                   as pv,
+        0                                                                   as uv
+        from (select CONCAT(d.groupon_activity_id, d.goods_info_id) as group_id
+        from replay_groupon_goods_info d
+        where d.audit_status = 1
+        and (date_format(d.start_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and
+        date_format(d.end_time, '%Y-%m-%d') &gt;= #{request.beginTime})) rg
+        left join (select *
+        from groupon_trade_detail
+        where date_format(create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(create_time, '%Y-%m-%d') &lt; #{request.endTime}) a on a.group_id = rg.group_id
+        left join (select distinct customer_id from customer_first_pay
+        where date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}) b
+        on a.customer_id = b.customer_id
+        union all
+        select count(b.groupon_activity_id) activity_num,
+        0                            pay_money,
+        0                            discount_money,
+        0                            pay_customer_count,
+        0                            pay_goods_count,
+        0                            pay_trade_count,
+        0                            new_customer,
+        0                            old_customer,
+        0                            pv,
+        0                            uv
+        from replay_groupon_goods_info b
+        where b.audit_status = 1
+        and (date_format(b.start_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and
+        date_format(b.end_time, '%Y-%m-%d') &gt;= #{request.beginTime})
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        <where>
+            p.marketing_type = 101
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        <where>
+            u.marketing_type = 101
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+    </sql>
+    <sql id="supplierGrouponStatisticsQuery">
+        select
+        a.store_id                                                                 as store_id,
+        0                                                                          as activity_num,
+        sum(a.pay_money)                                                           as pay_money,
+        sum(a.discount_money)                                                      as discount_money,
+        count(distinct a.customer_id)                                              as pay_customer_count,
+        sum(a.pay_goods_count)                                                     as pay_goods_count,
+        count(a.id)                                                                as pay_trade_count,
+        count(distinct case when b.customer_id is null then a.customer_id end)     as new_customer,
+        count(distinct case when b.customer_id is not null then a.customer_id end) as old_customer,
+        0                                                                          as pv,
+        0                                                                          as uv
+        from (select CONCAT(d.groupon_activity_id, d.goods_info_id) as group_id
+        from replay_groupon_goods_info d
+        where d.audit_status = 1
+        and (date_format(d.start_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and
+        date_format(d.end_time, '%Y-%m-%d') &gt;= #{request.beginTime})) rg
+        left join (select *
+        from groupon_trade_detail
+        where date_format(create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(create_time, '%Y-%m-%d') &lt; #{request.endTime}) a on a.group_id = rg.group_id
+        left join customer_first_pay b on a.customer_id = b.customer_id and a.store_id = b.store_id
+        and date_format(b.first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}
+        group by a.store_id
+        union all
+        select b.store_id            store_id,
+        count(b.groupon_activity_id) activity_num,
+        0                            pay_money,
+        0                            discount_money,
+        0                            pay_customer_count,
+        0                            pay_goods_count,
+        0                            pay_trade_count,
+        0                            new_customer,
+        0                            old_customer,
+        0                            pv,
+        0                            uv
+        from replay_groupon_goods_info b
+        where b.audit_status = 1
+        and (date_format(b.start_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and
+        date_format(b.end_time, '%Y-%m-%d') &gt;= #{request.beginTime})
+        group by b.store_id
+        union all
+              select
+              s.store_id store_id,
+               0 activityNum,
+               0 pay_money,
+               0 discount_money,
+               0 pay_customer_count,
+               0 pay_goods_count,
+               0 pay_trade_count,
+               0 new_customer,
+               0 old_customer,
+               0 pv,
+               0 uv
+              from replay_store s
+            where s.del_flag = 0
+
+          union all
+
+        SELECT
+        g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+        where p.marketing_type = 101
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+
+        union all
+
+        SELECT
+         g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        where
+            u.marketing_type = 101
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+    </sql>
+
+    <insert id="saveBossGrouponDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        -1          store_id,
+        1           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossGrouponStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossGrouponSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        1  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossGrouponStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossGrouponThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        1  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossGrouponStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossGrouponMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        -1 store_id,
+        1  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossGrouponStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveSupplierGrouponDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        store_id,
+        1           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierGrouponStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierGrouponSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        1           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierGrouponStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierGrouponThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        1           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierGrouponStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierGrouponMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        store_id,
+        1           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierGrouponStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+
+    <!--优惠券活动-->
+    <sql id="bossCouponStatisticsQuery">
+        select 0             as activity_num,
+        c.pay_money          as pay_money,
+        c.discount_money     as discount_money,
+        0                    as pay_customer_count,
+        c.pay_goods_count    as pay_goods_count,
+        c.pay_trade_count    as pay_trade_count,
+        0                    as new_customer,
+        0                    as old_customer,
+        0                    as pv,
+        0                    as uv
+        from coupon_overview_day c
+        where date_format(c.stat_date, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(c.stat_date, '%Y-%m-%d') &lt; #{request.endTime}
+        and store_id = -1
+
+        union all
+        SELECT 0         activity_num,
+        0                pay_money,
+        0                discount_money,
+        sum(newCustomer) + sum(oldCustomer)                pay_customer_count,
+        0                pay_goods_count,
+        0                pay_trade_count,
+        sum(newCustomer) new_customer,
+        sum(oldCustomer) old_customer,
+        0                    as pv,
+        0                    as uv
+        FROM (SELECT CASE
+        WHEN b.customer_id IS NOT NULL THEN 1
+        ELSE 0
+        END AS oldCustomer,
+        CASE
+        WHEN b.customer_id IS NULL THEN 1
+        ELSE 0
+        END AS newCustomer
+        FROM (SELECT rt.customer_id
+        FROM replay_trade_coupon rtc
+        JOIN replay_trade rt ON rtc.tid = rt.tid
+        WHERE rt.pay_state = 2
+        AND rtc.coupon_type = 0
+        AND date_format(rt.pay_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        AND date_format(rt.pay_time, '%Y-%m-%d') &lt; #{request.endTime}
+        GROUP BY rt.customer_id) a
+        LEFT JOIN (SELECT customer_id
+        FROM customer_first_pay cfp
+        WHERE cfp.first_pay_time &lt; #{request.beginTime}
+        group by customer_id) b ON (a.customer_id = b.customer_id)) tmp
+
+        union all
+        select count(r.activity_id) activity_num,
+        0                    pay_money,
+        0                    discount_money,
+        0                    pay_customer_count,
+        0                    pay_goods_count,
+        0                    pay_trade_count,
+        0                    new_customer,
+        0                    old_customer,
+        0                    as pv,
+        0                    as uv
+        from replay_coupon_activity r
+        where date_format(r.start_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and date_format(r.end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+    </sql>
+    <sql id="supplierCouponStatisticsQuery">
+        select original.* from (
+            select c.store_id           as store_id,
+            0             as activity_num,
+            c.pay_money          as pay_money,
+            c.discount_money     as discount_money,
+            0                    as pay_customer_count,
+            c.pay_goods_count    as pay_goods_count,
+            c.pay_trade_count    as pay_trade_count,
+            0                    as new_customer,
+            0                    as old_customer,
+            0                    as pv,
+            0                    as uv
+            from coupon_overview_day c
+            where date_format(c.stat_date, '%Y-%m-%d') &gt;= #{request.beginTime}
+            and date_format(c.stat_date, '%Y-%m-%d') &lt; #{request.endTime}
+            and store_id != -1
+
+            union all
+            SELECT tmp.store_id     store_id,
+            0         activity_num,
+            0                pay_money,
+            0                discount_money,
+            sum(newCustomer) + sum(oldCustomer)                pay_customer_count,
+            0                pay_goods_count,
+            0                pay_trade_count,
+            sum(newCustomer) new_customer,
+            sum(oldCustomer) old_customer,
+            0                    as pv,
+            0                    as uv
+            FROM (SELECT a.store_id,CASE
+            WHEN b.customer_id IS NOT NULL THEN 1
+            ELSE 0
+            END AS oldCustomer,
+            CASE
+            WHEN b.customer_id IS NULL THEN 1
+            ELSE 0
+            END AS newCustomer
+            FROM (SELECT rt.customer_id,
+                             rt.store_id
+            FROM replay_trade_coupon rtc
+            JOIN replay_trade rt ON rtc.tid = rt.tid
+            WHERE rt.pay_state = 2
+            and rt.store_id != -1
+            AND rtc.coupon_type = 1
+            AND date_format(rt.pay_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+            AND date_format(rt.pay_time, '%Y-%m-%d') &lt; #{request.endTime}
+            GROUP BY rt.customer_id,rt.store_id) a
+            LEFT JOIN (SELECT customer_id,store_id
+            FROM customer_first_pay cfp
+            WHERE cfp.first_pay_time &lt; #{request.beginTime}
+                                  and cfp.store_id != -1
+            group by customer_id, store_id) b ON (a.customer_id = b.customer_id and a.store_id = b.store_id)) tmp
+            group by tmp.store_id
+
+            union all
+            select r.store_id           store_id,
+            count(r.activity_id) activity_num,
+            0                    pay_money,
+            0                    discount_money,
+            0                    pay_customer_count,
+            0                    pay_goods_count,
+            0                    pay_trade_count,
+            0                    new_customer,
+            0                    old_customer,
+            0                    as pv,
+            0                    as uv
+            from replay_coupon_activity r
+            where date_format(r.start_time, '%Y-%m-%d') &lt; #{request.endTime}
+            and date_format(r.end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+          and r.store_id != -1
+          group by r.store_id ) original
+        inner join replay_store rs on original.store_id = rs.store_id and rs.store_type <![CDATA[ <> ]]> 2
+    </sql>
+
+    <insert id="saveBossCouponDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        -1          store_id,
+        0           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossCouponStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossCouponSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        0  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossCouponStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossCouponThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        0  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossCouponStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossCouponMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        -1 store_id,
+        0  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossCouponStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveSupplierCouponDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        store_id,
+        0           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierCouponStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierCouponSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        0           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierCouponStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierCouponThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        0           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierCouponStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierCouponMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        store_id,
+        0           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierCouponStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+
+    <!--减折赠活动-->
+    <sql id="bossFullSeriesStatisticsQuery">
+        SELECT 0                           as activity_num,
+             SUM(a.total_pay_cash)       as pay_money,
+             SUM(a.discounts_pay_amount) as discount_money,
+             sum(a.goods_pay_num)        as pay_goods_count,
+             sum(a.order_pay_sum)        as pay_trade_count,
+             SUM(a.customer_pay_num)     as pay_customer_count,
+             sum(a.new_customer)         as new_customer,
+             sum(a.old_customer)         as old_customer,
+             0                           as pv,
+             0                           as uv
+        FROM (SELECT tid,
+                   min(total_pay_cash) as total_pay_cash,
+                   sum(discounts_pay_amount) AS discounts_pay_amount,
+                   min(order_pay_sum) as order_pay_sum,
+                   0                            customer_pay_num,
+                   SUM(goods_pay_num)        AS goods_pay_num,
+                   0                         as new_customer,
+                   0                         as old_customer,
+                   0                         as pv,
+                   0                         as uv
+        FROM marketing_statistics_day d
+        where date_format(d.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(d.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and d.marketing_type IN (0, 1, 2)
+        GROUP BY d.tid
+        union all
+        SELECT 0                                                                             tid,
+        0                                                                             total_pay_cash,
+        0                                                                          AS discounts_pay_amount,
+        0                                                                             order_pay_sum,
+        count(DISTINCT d.customer_id)                                                 customer_pay_num,
+        0                                                                          AS goods_pay_num,
+        count(DISTINCT CASE WHEN b.customer_id IS NULL THEN d.customer_id END)     as new_customer,
+        count(DISTINCT CASE WHEN b.customer_id IS NOT NULL THEN d.customer_id END) as old_customer,
+        0                                                                           as pv,
+        0                                                                           as uv
+        FROM marketing_statistics_day d
+        left join (select distinct customer_id
+            from customer_first_pay
+            where date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}) b
+            on d.customer_id = b.customer_id
+        where date_format(d.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(d.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and d.marketing_type IN (0, 1, 2)
+        ) a
+        union all
+        SELECT count(m.marketing_id) activity_num,
+        0                     pay_money,
+        0                     discount_money,
+        0                     pay_goods_count,
+        0                     pay_trade_count,
+        0                     pay_customer_count,
+        0                     new_customer,
+        0                     old_customer,
+        0                     pv,
+        0                     uv
+        FROM replay_marketing m
+        where m.marketing_type IN (0, 1, 2)
+        and date_format(m.end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(m.begin_time, '%Y-%m-%d') &lt; #{request.endTime}
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        <where>
+            p.marketing_type in (0,1,2)
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        <where>
+            u.marketing_type  in (0,1,2)
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+    </sql>
+    <sql id="supplierFullSeriesStatisticsQuery">
+        select original.* from (
+            SELECT a.store_id            as store_id,
+                0                            as activity_num,
+                SUM(a.total_pay_cash)       as pay_money,
+                 SUM(a.discounts_pay_amount) as discount_money,
+                 sum(a.goods_pay_num)        as pay_goods_count,
+                 sum(a.order_pay_sum)        as pay_trade_count,
+                 SUM(a.customer_pay_num)     as pay_customer_count,
+                 sum(a.new_customer)         as new_customer,
+                 sum(a.old_customer)         as old_customer,
+                 0                           as pv,
+                 0                           as uv
+            FROM (SELECT d.store_id,tid,
+                   min(total_pay_cash) as total_pay_cash,
+                   sum(discounts_pay_amount) AS discounts_pay_amount,
+                   min(order_pay_sum) as order_pay_sum,
+                   0                            customer_pay_num,
+                   SUM(goods_pay_num)        AS goods_pay_num,
+                   0                         as new_customer,
+                   0                         as old_customer,
+                   0                         as pv,
+                   0                         as uv
+                FROM marketing_statistics_day d
+                where date_format(d.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+                and date_format(d.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+                and d.marketing_type IN (0, 1, 2)
+                GROUP BY d.tid, d.store_id
+                union all
+                SELECT d.store_id,
+                  0                                                                          tid,
+                  0                                                                          total_pay_cash,
+                  0                                                                          AS discounts_pay_amount,
+                  0                                                                          order_pay_sum,
+                  count(DISTINCT d.customer_id)                                              customer_pay_num,
+                  0                                                                          AS goods_pay_num,
+                  count(DISTINCT CASE WHEN b.customer_id IS NULL THEN d.customer_id END)     as new_customer,
+                  count(DISTINCT CASE WHEN b.customer_id IS NOT NULL THEN d.customer_id END) as old_customer,
+                  0 pv,
+                  0 uv
+                FROM marketing_statistics_day d
+                left join customer_first_pay b
+                on d.customer_id = b.customer_id and d.store_id = b.store_id
+                and date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}
+                where date_format(d.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+                and date_format(d.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+                and d.marketing_type IN (0, 1, 2)
+               group by d.store_id) a
+              GROUP BY a.store_id
+            union all
+            SELECT m.store_id     store_id,
+            count(m.marketing_id) activity_num,
+            0                     pay_money,
+            0                     discount_money,
+            0                     pay_goods_count,
+            0                     pay_trade_count,
+            0                     pay_customer_count,
+            0                     new_customer,
+            0                     old_customer,
+            0                     pv,
+            0                     uv
+            FROM replay_marketing m
+            where m.marketing_type IN (0, 1, 2)
+            and date_format(m.end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+            and date_format(m.begin_time, '%Y-%m-%d') &lt; #{request.endTime}
+            group by m.store_id
+            union all
+                  select
+                  s.store_id store_id,
+                   0 activityNum,
+                   0 pay_money,
+                   0 discount_money,
+                   0 pay_customer_count,
+                   0 pay_goods_count,
+                   0 pay_trade_count,
+                   0 new_customer,
+                   0 old_customer,
+                   0 pv,
+                   0 uv
+                  from replay_store s
+                where s.del_flag = 0
+
+              union all
+
+            SELECT
+            g.store_id  store_id,
+            0           activity_num,
+            0           pay_money,
+            0           discount_money,
+            0           pay_customer_count,
+            0           pay_goods_count,
+            0           pay_trade_count,
+            0           new_customer,
+            0           old_customer,
+            SUM( p.pv ) as pv,
+            0           as uv
+            FROM
+            replay_marketing_sku_pv p
+            LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+            where p.marketing_type in (0,1,2)
+                <![CDATA[
+                   and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                   and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+                ]]>
+            group by g.store_id
+
+            union all
+
+            SELECT
+             g.store_id  store_id,
+            0           activity_num,
+            0           pay_money,
+            0           discount_money,
+            0           pay_customer_count,
+            0           pay_goods_count,
+            0           pay_trade_count,
+            0           new_customer,
+            0           old_customer,
+            0                               as pv,
+            COUNT(DISTINCT u.customer_id)   as uv
+            FROM
+            replay_marketing_sku_uv u
+            LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+            where
+                u.marketing_type in (0,1,2)
+                <![CDATA[
+                    and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                    and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+                ]]>
+            group by g.store_id ) original
+        inner join replay_store rs on original.store_id = rs.store_id and rs.store_type <![CDATA[ <> ]]> 2
+    </sql>
+
+    <insert id="saveBossFullSeriesDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        -1          store_id,
+        3           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossFullSeriesStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossFullSeriesSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        3  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossFullSeriesStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossFullSeriesThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        3  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossFullSeriesStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossFullSeriesMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        -1 store_id,
+        3  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossFullSeriesStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveSupplierFullSeriesDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        store_id,
+        3           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierFullSeriesStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierFullSeriesSeven">
+        insert into marketing_situation_seven (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        3           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierFullSeriesStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierFullSeriesThirty">
+        insert into marketing_situation_thirty (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        3           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierFullSeriesStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierFullSeriesMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        store_id,
+        3           marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierFullSeriesStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <delete id="deleteDay">
+        delete from marketing_situation_day where start_date=#{startDate}
+    </delete>
+
+    <delete id="deleteSeven">
+        TRUNCATE TABLE marketing_situation_seven
+    </delete>
+
+    <delete id="deleteThirty">
+        TRUNCATE TABLE marketing_situation_thirty
+    </delete>
+
+    <delete id="deleteMonth">
+        delete from marketing_situation_month where month=#{startDate}
+    </delete>
+
+    <resultMap id="MarketingDataSituation" type="com.wanmi.ares.response.MarketingDataSituation">
+        <result property="marketingType" column="marketing_type" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+        <result property="marketingActivityCount" column="activity_num"/>
+        <result property="payMoney" column="pay_money"/>
+        <result property="discountMoney" column="discount_money"/>
+        <result property="payCustomerCount" column="pay_customer_count"/>
+        <result property="payGoodsCount" column="pay_goods_count"/>
+        <result property="payTradeCount" column="pay_trade_count"/>
+        <result property="newCustomerCount" column="new_customer"/>
+        <result property="oldCustomerCount" column="old_customer"/>
+        <result property="payROI" column="pay_roi"/>
+        <result property="jointRate" column="join_rate"/>
+        <result property="customerPrice" column="customer_price"/>
+        <result property="pv" column="pv"/>
+        <result property="uv" column="uv"/>
+        <result property="uvPayRate" column="uvPayRate"/>
+    </resultMap>
+
+    <!-- 昨天 -->
+    <select id="findByDay" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingDataSituation">
+        select marketing_type,
+               store_id,
+               activity_num,
+               pay_money,
+               discount_money,
+               pay_customer_count,
+               pay_goods_count,
+               pay_trade_count,
+               new_customer,
+               old_customer,
+               pay_roi,
+               join_rate,
+               customer_price,
+                pv,
+                uv,
+        COALESCE(truncate(pay_customer_count / uv , 2), 0)           uvPayRate
+        from marketing_situation_day
+        where start_date = date_sub(current_date, interval 1 day) and store_id = #{storeId}
+        <if test="sortName != null and sortName != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortName} ${sortOrder}
+        </if>
+    </select>
+
+    <!-- 最近7天 -->
+    <select id="findBySeven" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingDataSituation">
+        select marketing_type,
+               store_id,
+               activity_num,
+               pay_money,
+               discount_money,
+               pay_customer_count,
+               pay_goods_count,
+               pay_trade_count,
+               new_customer,
+               old_customer,
+               pay_roi,
+               join_rate,
+               customer_price,
+                pv,
+                uv,
+        COALESCE(truncate(pay_customer_count / uv , 2), 0)           uvPayRate
+        from marketing_situation_seven
+        where store_id = #{storeId}
+        <if test="sortName != null and sortName != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortName} ${sortOrder}
+        </if>
+    </select>
+
+    <!-- 最近30天 -->
+    <select id="findByThirty" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingDataSituation">
+        select
+            marketing_type,
+            store_id,
+            activity_num,
+            pay_money,
+            discount_money,
+            pay_customer_count,
+            pay_goods_count,
+            pay_trade_count,
+            new_customer,
+            old_customer,
+            pay_roi,
+            join_rate,
+            customer_price,
+            pv,
+            uv,
+            COALESCE(truncate(pay_customer_count / uv , 2), 0)           uvPayRate
+        from marketing_situation_thirty
+        where store_id = #{storeId}
+        <if test="sortName != null and sortName != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortName} ${sortOrder}
+        </if>
+    </select>
+
+    <!-- 自然月 -->
+    <select id="findByMonth" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingDataSituation">
+        select marketing_type,
+               store_id,
+               activity_num,
+               pay_money,
+               discount_money,
+               pay_customer_count,
+               pay_goods_count,
+               pay_trade_count,
+               new_customer,
+               old_customer,
+               pay_roi,
+               join_rate,
+               customer_price,
+               pv,
+               uv,
+               COALESCE(truncate(pay_customer_count / uv , 2), 0)           uvPayRate
+        from marketing_situation_month
+        where month = #{month} and store_id = #{storeId}
+        <if test="sortName != null and sortName != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortName} ${sortOrder}
+        </if>
+    </select>
+
+    <insert id="saveBossCommonDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        -1          store_id,
+        #{request.targetMarketingType}         marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossCommonStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossCommon">
+        insert into ${request.table} (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        #{request.targetMarketingType}  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossCommonStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossCommonMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        -1 store_id,
+        #{request.targetMarketingType}  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossCommonStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveSupplierCommonDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        store_id,
+        #{request.targetMarketingType}    marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierCommonStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierCommon">
+        insert into ${request.table} (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        #{request.targetMarketingType}    marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierCommonStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierCommonMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        store_id,
+        #{request.targetMarketingType}   marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierCommonStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <!--打包一口价活动-->
+    <sql id="bossCommonStatisticsQuery">
+        SELECT 0                           as activity_num,
+        SUM(a.total_pay_cash)       as pay_money,
+        SUM(a.discounts_pay_amount) as discount_money,
+        sum(a.goods_pay_num)        as pay_goods_count,
+        sum(a.order_pay_sum)        as pay_trade_count,
+        SUM(a.customer_pay_num)     as pay_customer_count,
+        sum(a.new_customer)         as new_customer,
+        sum(a.old_customer)         as old_customer,
+        0                           as pv,
+        0                           as uv
+        FROM (SELECT tid,
+        min(total_pay_cash) as total_pay_cash,
+        sum(discounts_pay_amount) AS discounts_pay_amount,
+        min(order_pay_sum) as order_pay_sum,
+        0                            customer_pay_num,
+        SUM(goods_pay_num)        AS goods_pay_num,
+        0                         as new_customer,
+        0                         as old_customer,
+        0                         as pv,
+        0                         as uv
+        FROM marketing_statistics_day d
+        where date_format(d.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(d.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and d.marketing_type = #{request.marketingType}
+        GROUP BY d.tid
+        union all
+        SELECT 0                                                                             tid,
+        0                                                                             total_pay_cash,
+        0                                                                          AS discounts_pay_amount,
+        0                                                                             order_pay_sum,
+        count(DISTINCT d.customer_id)                                                 customer_pay_num,
+        0                                                                          AS goods_pay_num,
+        count(DISTINCT CASE WHEN b.customer_id IS NULL THEN d.customer_id END)     as new_customer,
+        count(DISTINCT CASE WHEN b.customer_id IS NOT NULL THEN d.customer_id END) as old_customer,
+        0                                                                           as pv,
+        0                                                                           as uv
+        FROM marketing_statistics_day d
+        left join (select distinct customer_id
+        from customer_first_pay
+        where date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}) b
+        on d.customer_id = b.customer_id
+        where date_format(d.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(d.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and d.marketing_type = #{request.marketingType}
+        ) a
+        union all
+        SELECT count(m.marketing_id) activity_num,
+        0                     pay_money,
+        0                     discount_money,
+        0                     pay_goods_count,
+        0                     pay_trade_count,
+        0                     pay_customer_count,
+        0                     new_customer,
+        0                     old_customer,
+        0                     pv,
+        0                     uv
+        FROM replay_marketing m
+        where m.marketing_type = #{request.marketingType}
+        and date_format(m.end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(m.begin_time, '%Y-%m-%d') &lt; #{request.endTime}
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        <where>
+            p.marketing_type = #{request.marketingType}
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        <where>
+            u.marketing_type = #{request.marketingType}
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+    </sql>
+    <sql id="supplierCommonStatisticsQuery">
+        select original.* from (
+            SELECT a.store_id            as store_id,
+                0                            as activity_num,
+                SUM(a.total_pay_cash)       as pay_money,
+                 SUM(a.discounts_pay_amount) as discount_money,
+                 sum(a.goods_pay_num)        as pay_goods_count,
+                 sum(a.order_pay_sum)        as pay_trade_count,
+                 SUM(a.customer_pay_num)     as pay_customer_count,
+                 sum(a.new_customer)         as new_customer,
+                 sum(a.old_customer)         as old_customer,
+                 0                           as pv,
+                 0                           as uv
+            FROM (SELECT d.store_id,tid,
+                   min(total_pay_cash) as total_pay_cash,
+                   sum(discounts_pay_amount) AS discounts_pay_amount,
+                   min(order_pay_sum) as order_pay_sum,
+                   0                            customer_pay_num,
+                   SUM(goods_pay_num)        AS goods_pay_num,
+                   0                         as new_customer,
+                   0                         as old_customer,
+                   0                         as pv,
+                   0                         as uv
+                FROM marketing_statistics_day d
+                where date_format(d.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+                and date_format(d.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+                and d.marketing_type = #{request.marketingType}
+                GROUP BY d.tid, d.store_id
+                union all
+                SELECT d.store_id,
+                  0                                                                          tid,
+                  0                                                                          total_pay_cash,
+                  0                                                                          AS discounts_pay_amount,
+                  0                                                                          order_pay_sum,
+                  count(DISTINCT d.customer_id)                                              customer_pay_num,
+                  0                                                                          AS goods_pay_num,
+                  count(DISTINCT CASE WHEN b.customer_id IS NULL THEN d.customer_id END)     as new_customer,
+                  count(DISTINCT CASE WHEN b.customer_id IS NOT NULL THEN d.customer_id END) as old_customer,
+                  0 pv,
+                  0 uv
+                FROM marketing_statistics_day d
+                left join customer_first_pay b
+                on d.customer_id = b.customer_id and d.store_id = b.store_id
+                and date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}
+                where date_format(d.create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+                and date_format(d.create_time, '%Y-%m-%d') &lt; #{request.endTime}
+                and d.marketing_type = #{request.marketingType}
+               group by d.store_id) a
+              GROUP BY a.store_id
+            union all
+            SELECT m.store_id     store_id,
+            count(m.marketing_id) activity_num,
+            0                     pay_money,
+            0                     discount_money,
+            0                     pay_goods_count,
+            0                     pay_trade_count,
+            0                     pay_customer_count,
+            0                     new_customer,
+            0                     old_customer,
+            0                     pv,
+            0                     uv
+            FROM replay_marketing m
+            where m.marketing_type = #{request.marketingType}
+            and date_format(m.end_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+            and date_format(m.begin_time, '%Y-%m-%d') &lt; #{request.endTime}
+            group by m.store_id
+            union all
+                  select
+                  s.store_id store_id,
+                   0 activityNum,
+                   0 pay_money,
+                   0 discount_money,
+                   0 pay_customer_count,
+                   0 pay_goods_count,
+                   0 pay_trade_count,
+                   0 new_customer,
+                   0 old_customer,
+                   0 pv,
+                   0 uv
+                  from replay_store s
+                where s.del_flag = 0
+
+              union all
+
+            SELECT
+            g.store_id  store_id,
+            0           activity_num,
+            0           pay_money,
+            0           discount_money,
+            0           pay_customer_count,
+            0           pay_goods_count,
+            0           pay_trade_count,
+            0           new_customer,
+            0           old_customer,
+            SUM( p.pv ) as pv,
+            0           as uv
+            FROM
+            replay_marketing_sku_pv p
+            LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+            where p.marketing_type = #{request.marketingType}
+                <![CDATA[
+                   and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                   and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+                ]]>
+            group by g.store_id
+
+            union all
+
+            SELECT
+             g.store_id  store_id,
+            0           activity_num,
+            0           pay_money,
+            0           discount_money,
+            0           pay_customer_count,
+            0           pay_goods_count,
+            0           pay_trade_count,
+            0           new_customer,
+            0           old_customer,
+            0                               as pv,
+            COUNT(DISTINCT u.customer_id)   as uv
+            FROM
+            replay_marketing_sku_uv u
+            LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+            where
+                u.marketing_type = #{request.marketingType}
+                <![CDATA[
+                    and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                    and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+                ]]>
+            group by g.store_id ) original
+        inner join replay_store rs on original.store_id = rs.store_id and rs.store_type <![CDATA[ <> ]]> 2
+    </sql>
+
+    <insert id="saveBossBargainDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        -1          store_id,
+        #{request.targetMarketingType}   marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossBargainStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossBargainCommon">
+        insert into ${request.table} (
+        <include refid="commonAddColSql"/>
+        )select
+        -1 store_id,
+        #{request.targetMarketingType}  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossBargainStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossBargainMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        -1 store_id,
+        #{request.targetMarketingType}  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossBargainStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveSupplierBargainDay">
+        insert into marketing_situation_day (
+        start_date,
+        <include refid="commonAddColSql"/>
+        )select
+        #{request.startDate} start_date,
+        store_id,
+        #{request.targetMarketingType}   marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierBargainStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierBargainCommon">
+        insert into ${request.table} (
+        <include refid="commonAddColSql"/>
+        )select
+        store_id,
+        #{request.targetMarketingType}  marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierBargainStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+
+    <insert id="saveSupplierBargainMonth">
+        insert into marketing_situation_month (
+        month,
+        <include refid="commonAddColSql"/>
+        )select
+        date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        store_id,
+        #{request.targetMarketingType} marketing_type,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierBargainStatisticsQuery"/>
+        ) statistics
+        group by statistics.store_id
+    </insert>
+    <!--砍价活动-->
+    <sql id="bossBargainStatisticsQuery">
+        select 0                                                                   as activity_num,
+        sum(a.pay_money)                                                           as pay_money,
+        sum(a.discount_money)                                                      as discount_money,
+        count(distinct a.customer_id)                                              as pay_customer_count,
+        sum(a.pay_goods_count)                                                     as pay_goods_count,
+        count(a.id)                                                                as pay_trade_count,
+        count(distinct case when b.customer_id is null then a.customer_id end)     as new_customer,
+        count(distinct case when b.customer_id is not null then a.customer_id end) as old_customer,
+        0                                                                   as pv,
+        0                                                                   as uv
+        from (select d.bargain_goods_id as group_id
+        from replay_bargain_goods d
+        where d.audit_status = 1
+        and (date_format(d.begin_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and
+        date_format(d.end_time, '%Y-%m-%d') &gt;= #{request.beginTime})) rg
+        left join (select *
+        from bargain_sale
+        where date_format(create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(create_time, '%Y-%m-%d') &lt; #{request.endTime}) a on a.marketing_id = rg.group_id
+        left join (select distinct customer_id from customer_first_pay
+        where date_format(first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}) b
+        on a.customer_id = b.customer_id
+        union all
+        select count(b.bargain_goods_id) activity_num,
+        0                            pay_money,
+        0                            discount_money,
+        0                            pay_customer_count,
+        0                            pay_goods_count,
+        0                            pay_trade_count,
+        0                            new_customer,
+        0                            old_customer,
+        0                            pv,
+        0                            uv
+        from replay_bargain_goods b
+        where b.audit_status = 1
+        and (date_format(b.begin_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and
+        date_format(b.end_time, '%Y-%m-%d') &gt;= #{request.beginTime})
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        <where>
+            p.marketing_type = 11
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+
+        union all
+
+        SELECT
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        <where>
+            u.marketing_type = 11
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        </where>
+    </sql>
+    <sql id="supplierBargainStatisticsQuery">
+        select
+        a.store_id                                                                 as store_id,
+        0                                                                          as activity_num,
+        sum(a.pay_money)                                                           as pay_money,
+        sum(a.discount_money)                                                      as discount_money,
+        count(distinct a.customer_id)                                              as pay_customer_count,
+        sum(a.pay_goods_count)                                                     as pay_goods_count,
+        count(a.id)                                                                as pay_trade_count,
+        count(distinct case when b.customer_id is null then a.customer_id end)     as new_customer,
+        count(distinct case when b.customer_id is not null then a.customer_id end) as old_customer,
+        0                                                                          as pv,
+        0                                                                          as uv
+        from (select d.bargain_goods_id as group_id
+        from replay_bargain_goods d
+        where d.audit_status = 1
+        and (date_format(d.begin_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and
+        date_format(d.end_time, '%Y-%m-%d') &gt;= #{request.beginTime})) rg
+        left join (select *
+        from bargain_sale
+        where date_format(create_time, '%Y-%m-%d') &gt;= #{request.beginTime}
+        and date_format(create_time, '%Y-%m-%d') &lt; #{request.endTime}) a on a.marketing_id = rg.group_id
+        left join customer_first_pay b on a.customer_id = b.customer_id and a.store_id = b.store_id
+        and date_format(b.first_pay_time, '%Y-%m-%d') &lt; #{request.beginTime}
+        group by a.store_id
+        union all
+        select b.store_id            store_id,
+        count(b.bargain_goods_id) activity_num,
+        0                            pay_money,
+        0                            discount_money,
+        0                            pay_customer_count,
+        0                            pay_goods_count,
+        0                            pay_trade_count,
+        0                            new_customer,
+        0                            old_customer,
+        0                            pv,
+        0                            uv
+        from replay_bargain_goods b
+        where b.audit_status = 1
+        and (date_format(b.begin_time, '%Y-%m-%d') &lt; #{request.endTime}
+        and
+        date_format(b.end_time, '%Y-%m-%d') &gt;= #{request.beginTime})
+        group by b.store_id
+        union all
+              select
+              s.store_id store_id,
+               0 activityNum,
+               0 pay_money,
+               0 discount_money,
+               0 pay_customer_count,
+               0 pay_goods_count,
+               0 pay_trade_count,
+               0 new_customer,
+               0 old_customer,
+               0 pv,
+               0 uv
+              from replay_store s
+            where s.del_flag = 0
+
+          union all
+
+        SELECT
+        g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+        replay_marketing_sku_pv p
+        LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+        where p.marketing_type = 11
+            <![CDATA[
+               and date_format(p.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+               and date_format(p.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+
+        union all
+
+        SELECT
+         g.store_id  store_id,
+        0           activity_num,
+        0           pay_money,
+        0           discount_money,
+        0           pay_customer_count,
+        0           pay_goods_count,
+        0           pay_trade_count,
+        0           new_customer,
+        0           old_customer,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        where
+            u.marketing_type = 11
+            <![CDATA[
+                and date_format(u.stat_date, '%Y-%m-%d') >= #{request.beginTime}
+                and date_format(u.stat_date, '%Y-%m-%d') <= #{request.endTime}
+            ]]>
+        group by g.store_id
+    </sql>
+</mapper>

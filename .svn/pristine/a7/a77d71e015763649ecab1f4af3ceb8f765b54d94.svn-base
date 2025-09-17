@@ -1,0 +1,93 @@
+{
+  "properties": {
+    "addedFlag": {
+      "type": "integer"
+    },
+    "marketPrice": {
+      "type": "double"
+    },
+    "goodsId": {
+      "type": "keyword"
+    },
+    "goodsInfoName": {
+      "analyzer": "wm_standard",
+      "norms": false,
+      "type": "text"
+    },
+    "sales": {
+      "type": "long"
+    },
+    "points": {
+      "type": "long"
+    },
+    "goodsDelFlag": {
+      "type": "integer"
+    },
+    "providerId": {
+      "type": "long"
+    },
+    "vendibilityStatus": {
+      "type": "integer"
+    },
+    "beginTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "id": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "stock": {
+      "type": "long"
+    },
+    "goodsName": {
+      "type": "keyword"
+    },
+    "recommendFlag": {
+      "type": "integer"
+    },
+    "pointsStock": {
+      "type": "long"
+    },
+    "goodsInfoId": {
+      "type": "keyword"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "cateId": {
+      "type": "integer"
+    },
+    "auditStatus": {
+      "type": "integer"
+    },
+    "settlementPrice": {
+      "type": "float"
+    },
+    "endTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "goodsInfoNo": {
+      "type": "keyword"
+    },
+    "providerStatus": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "integer"
+    },
+    "goodsType": {
+      "type": "keyword"
+    }
+  }
+}

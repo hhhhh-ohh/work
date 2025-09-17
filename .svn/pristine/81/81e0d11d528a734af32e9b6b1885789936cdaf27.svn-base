@@ -1,0 +1,113 @@
+{
+  "properties": {
+    "goodsImg": {
+      "type": "keyword"
+    },
+    "addedFlag": {
+      "type": "integer"
+    },
+    "marketPrice": {
+      "type": "double"
+    },
+    "goodsInfoNos": {
+      "type": "keyword"
+    },
+    "goodsId": {
+      "type": "keyword"
+    },
+    "delFlag": {
+      "type": "integer"
+    },
+    "goodsSource": {
+      "type": "integer"
+    },
+    "goodsWeight": {
+      "type": "double"
+    },
+    "thirdCateId": {
+      "type": "long"
+    },
+    "goodsSubtitle": {
+      "type": "keyword"
+    },
+    "sellerId": {
+      "type": "long"
+    },
+    "recommendedRetailPrice": {
+      "type": "double"
+    },
+    "moreSpecFlag": {
+      "type": "integer"
+    },
+    "thirdPlatformSpuId": {
+      "type": "keyword"
+    },
+    "goodsCubage": {
+      "type": "double"
+    },
+    "goodsUnit": {
+      "type": "keyword"
+    },
+    "stock": {
+      "type": "long"
+    },
+    "goodsName": {
+      "type": "keyword"
+    },
+    "providerName": {
+      "type": "keyword"
+    },
+    "goodsNo": {
+      "type": "keyword"
+    },
+    "supplyPrice": {
+      "type": "double"
+    },
+    "providerGoodsId": {
+      "type": "keyword"
+    },
+    "costPrice": {
+      "type": "double"
+    },
+    "goodsMobileDetail": {
+      "type": "text"
+    },
+    "updateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "index": false,
+      "type": "date"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "deleteReason": {
+      "type": "text"
+    },
+    "goodsVideo": {
+      "type": "keyword"
+    },
+    "relStoreIds": {
+      "type": "long"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "index": false,
+      "type": "date"
+    },
+    "cateId": {
+      "type": "long"
+    },
+    "brandId": {
+      "type": "long"
+    },
+    "goodsDetail": {
+      "type": "text"
+    },
+    "goodsInfoIds": {
+      "type": "keyword"
+    },
+    "goodsType": {
+      "type": "integer"
+    }
+  }
+}

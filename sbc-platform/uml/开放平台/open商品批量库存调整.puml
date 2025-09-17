@@ -1,0 +1,25 @@
+@startuml
+start
+:校验入参的必填，库存不允许为0;
+:根据商品编码和店铺id批量获取商品SKU列表;
+:定义减量库存List变量和增量库存List变量;
+partition 遍历sku列表 {
+    if(库存 < 0) then (yes)
+        if(库存绝对值 > sku信息stock or 库存绝对值 > redis库存) then (yes)
+            :返回库存不足错误;
+            stop;
+        endif;
+        :加入减量库存List变量;
+    else
+        :加入增量库存List变量;
+    endif;
+}
+if(增量库存List变量不为空?)
+:调用商品微服务的增量库存批量接口;
+endif;
+if(减量库存List变量不为空?)
+:调用商品微服务的减量库存批量接口;
+endif;
+:库存调整成功;
+stop;
+@enduml

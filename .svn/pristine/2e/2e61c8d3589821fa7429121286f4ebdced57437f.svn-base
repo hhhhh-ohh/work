@@ -1,0 +1,27 @@
+package com.wanmi.sbc.customer.api.response.customer;
+
+import com.wanmi.sbc.common.base.BasicResponse;
+import com.wanmi.sbc.customer.bean.vo.CustomerDetailInitEsVO;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.util.List;
+
+/**
+ * 会员信息响应
+ * Created by CHENLI on 2017/4/19.
+ */
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema
+@Data
+public class CustomerDetailInitEsResponse extends BasicResponse {
+    private static final long serialVersionUID = 1L;
+
+    @Schema(description = "客户列表")
+    private List<CustomerDetailInitEsVO> customerDetailInitEsVOList;
+}

@@ -1,0 +1,126 @@
+## 魔方x-site
+1、x-site项目
+  config文件中的"business"项新增是否是连锁o2o模式"isO2oFlag",为true时，开启连锁o2o模式，为false时，未开启连锁o2o模式
+  示例如下
+  "business": {
+      "isO2oFlag": false
+  },
+
+Jenkins --> x-site --> 配置：
+# business setting 配置新增如下配置
+export isO2oFlag=false
+# 添加项目配置信息 配置新增如下配置
+isO2oFlag:${isO2oFlag},
+
+2、 高德JSAPI增加安全密钥，Nginx新增 高德地图Web服务配置（jscode根据实际情况进行修改）
+   示例如下
+   server {
+       # Web服务API 代理
+       location /_AMapService/ {
+           set $args "$args&jscode=c0ff2318b4a2d8dc690ca2fbf6832e72";
+           proxy_pass https://restapi.amap.com/;
+       }
+   }
+
+3、本地开发需注意（以下配置根据实际情况进行修改）：
+1)mini-program 项目
+  高德地图key统一提取到config中便于后期修改。
+  config中新增
+  "aMapServiceHost" 高德地址JSAPI key的代理服务器地址
+  "securityJsCode" 本地开发高德地址安全密钥
+  "mobileAmapKey" 高德地图web端key
+  "wechatAmapKey" 高德地图微信小程序key
+  示例如下：
+  {
+    "dev":{
+      "aMapServiceHost": "https://s2btest6.kstore.shop/_AMapService",
+      "securityJsCode": "c0ff2318b4a2d8dc690ca2fbf6832e72",
+      "mobileAmapKey": "3b68be238dbac33715f08b6449bf88a1",
+      "wechatAmapKey": "d793fcb47325caf6f6287c1fe8b6aad3",
+    }
+  }
+
+2)Boss端项目
+  高德地图key统一提取到config中便于后期修改。
+  config中新增
+  "aMapServiceHost" 高德地址JSAPI key的代理服务器地址
+  "securityJsCode" 本地开发高德地址安全密钥
+  "mobileAmapKey" 高德地图web端key
+  示例如下：
+  {
+    "dev":{
+    aMapServiceHost: "https://s2btest6.kstore.shop/_AMapService",
+    securityJsCode: "c0ff2318b4a2d8dc690ca2fbf6832e72",
+    mobileAmapKey: "645cdd04e5e35ad9884b690458347fe1",
+    }
+  }
+
+ 3)Supplier端项目
+  高德地图key统一提取到config中便于后期修改。
+  config中新增
+  "aMapServiceHost" 高德地址JSAPI key的代理服务器地址
+  "securityJsCode" 本地开发高德地址安全密钥
+  "mobileAmapKey" 高德地图web端key
+  示例如下：
+  {
+    "dev":{
+    aMapServiceHost: "https://s2btest6.kstore.shop/_AMapService",
+    securityJsCode: "c0ff2318b4a2d8dc690ca2fbf6832e72",
+    mobileAmapKey: "645cdd04e5e35ad9884b690458347fe1",
+    }
+  }
+
+ 4、Jenkins里面（以下配置根据实际情况进行修改）
+  Frontend-All项目
+  # 启动环境, 名称任意, 尽量保持和上面一致, 如果是uat和prod, 则会压缩前端静态文件  下面添加如下配置
+  aMapServiceHost=${base_url}/_AMapService
+  securityJsCode=''
+  mobileAmapKey=3b68be238dbac33715f08b6449bf88a1
+  wechatAmapKey=''
+
+  #yarn配置  在 "${project}" == 'mobile' 下面添加如下配置
+  aMapServiceHost:${aMapServiceHost},securityJsCode:${securityJsCode},mobileAmapKey:${mobileAmapKey},wechatAmapKey:${wechatAmapKey},
+
+  #yarn配置  在 "${project}" == 'boss' 下面添加如下配置
+  aMapServiceHost:${aMapServiceHost},securityJsCode:${securityJsCode},mobileAmapKey:${mobileAmapKey},
+
+  #yarn配置  在 "${project}" == 'supplier' 下面添加如下配置
+  aMapServiceHost:${aMapServiceHost},securityJsCode:${securityJsCode},mobileAmapKey:${mobileAmapKey},
+  
+ 5、app打包平台（以下配置根据实际情况进行修改）
+  小程序项目
+  自定义命令新增
+  \mobileAmapKey:'',\wechatAmapKey:d793fcb47325caf6f6287c1fe8b6aad3
+
+
+6、x-site-magic-box项目（以下配置根据实际情况进行修改）
+  高德地图key提取到config中便于后期修改
+  config中新增
+  "aMapServiceHost" 高德地址JSAPI key的代理服务器地址
+  "securityJsCode" 本地开发高德地址安全密钥
+  "mobileAmapKey" 高德地图web端key
+  示例如下：
+  dev: {
+  "aMapServiceHost": "https://s2btest6.kstore.shop/_AMapService",
+  "securityJsCode": "c0ff2318b4a2d8dc690ca2fbf6832e72",
+  "mobileAmapKey": "3b68be238dbac33715f08b6449bf88a1",
+  },
+  
+  Jenkins里面 
+  # project setting 配置新增如下配置
+  export aMapServiceHost=${base_url}/_AMapService
+  export securityJsCode=''
+  export mobileAmapKey=3b68be238dbac33715f08b6449bf88a1
+
+  # 添加项目配置信息  配置新增如下配置
+  aMapServiceHost:${aMapServiceHost},securityJsCode:${securityJsCode},mobileAmapKey:${mobileAmapKey}
+
+7.mongo同步数据
+  o2o迭代在com.wanmi.sbc.marketing.bean.enums.couponType中新增两个类型
+  解决数据从MongoDB同步到mysql时，couponType 等于 STOREFRONT_VOUCHER，BOSS_STOREFRONT_VOUCHER 时同步不过去的问题：
+  需要在服务器/data/s2b/dbreplay/conf/mongo/data/enum目录下的coupon_type.json文件下添加配置
+  #配置如下：
+  "STOREFRONT_VOUCHER": 3, 
+  "BOSS_STOREFRONT_VOUCHER": 4
+  
+  

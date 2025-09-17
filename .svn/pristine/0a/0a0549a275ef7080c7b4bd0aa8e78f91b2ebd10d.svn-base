@@ -1,0 +1,106 @@
+package com.wanmi.sbc.customer.api.provider.agent;
+
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.customer.api.request.agent.AgentGetByUniqueCodeRequest;
+import com.wanmi.sbc.customer.api.request.agent.GetAgentRequest;
+import com.wanmi.sbc.customer.api.request.customer.CustomerGetByIdRequest;
+import com.wanmi.sbc.customer.api.response.agent.AgentGetByUniqueCodeResponse;
+import com.wanmi.sbc.customer.api.response.agent.GetAgentResponse;
+import com.wanmi.sbc.customer.api.response.agent.GetUserAreaIdResponse;
+import com.wanmi.sbc.customer.api.response.customer.CustomerGetByIdResponse;
+import jakarta.validation.Valid;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.List;
+
+@FeignClient(value = "${application.customer.name}", contextId = "AgentQueryProvider")
+public interface AgentQueryProvider {
+
+    /**
+     * 查询单条会员信息（任意状态）
+     *
+     * @param request {@link CustomerGetByIdRequest}
+     * @return {@link CustomerGetByIdResponse}
+     */
+    @PostMapping("/agent-query/${application.customer.version}/agent/agent-info-by-unique-code")
+    BaseResponse<AgentGetByUniqueCodeResponse> getAgentGetByUniqueCode(@RequestBody @Valid AgentGetByUniqueCodeRequest request);
+
+
+    /**
+     * 查询单条会员信息（有效）
+     *
+     * @param request {@link CustomerGetByIdRequest}
+     * @return {@link CustomerGetByIdResponse}
+     */
+    @PostMapping("/agent-query/${application.customer.version}/agent/query-vaild-agent-info-by-unique-code")
+    BaseResponse<AgentGetByUniqueCodeResponse> queryVaildAgentByUniqueCode(@RequestBody @Valid AgentGetByUniqueCodeRequest request);
+
+    /**
+     * 获取会员信息
+     *
+     * @param request {@link CustomerGetByIdRequest}
+     * @return {@link CustomerGetByIdResponse}
+     */
+    @PostMapping("/agent-query/${application.customer.version}/agent/get-agent")
+    BaseResponse<GetAgentResponse> getAgent(@RequestBody  @Valid GetAgentRequest request);
+
+    /**
+     * 获取会员信息
+     *
+     * @param request {@link CustomerGetByIdRequest}
+     * @return {@link CustomerGetByIdResponse}
+     */
+    @PostMapping("/agent-query/${application.customer.version}/agent/get-agent-by-contact-phone")
+    BaseResponse<GetAgentResponse> getAgentByContactPhone(@RequestBody  @Valid GetAgentRequest request);
+
+    /**
+     * 获取会员信息
+     *
+     * @param request {@link CustomerGetByIdRequest}
+     * @return {@link CustomerGetByIdResponse}
+     */
+    @PostMapping("/agent-query/${application.customer.version}/agent/get-agent-by-unique-code")
+    BaseResponse<GetAgentResponse> getAgentByUniqueCode(@RequestBody  @Valid GetAgentRequest request);
+
+    /**
+     * 获取会员信息
+     *
+     * @param request {@link CustomerGetByIdRequest}
+     * @return {@link CustomerGetByIdResponse}
+     */
+    @PostMapping("/agent-query/${application.customer.version}/agent/query-agent")
+    BaseResponse<GetAgentResponse> queryAgent(@RequestBody  @Valid GetAgentRequest request);
+
+    /**
+     * 获取会员信息
+     *
+     * @param request {@link CustomerGetByIdRequest}
+     * @return {@link CustomerGetByIdResponse}
+     */
+    @PostMapping("/agent-query/${application.customer.version}/agent/query-user-area-id")
+    BaseResponse<GetUserAreaIdResponse> queryUserAreaId(@RequestBody  @Valid GetAgentRequest request);
+
+    /**
+     * 获取会员信息
+     *
+     * @param request {@link CustomerGetByIdRequest}
+     * @return {@link CustomerGetByIdResponse}
+     */
+    @PostMapping("/agent-query/${application.customer.version}/agent/query-user-bind-agent")
+    BaseResponse<GetAgentResponse> queryUserBindAgent(@RequestBody  @Valid GetAgentRequest request);
+
+    /**
+     * 获取会员信息
+     *
+     * @param request {@link CustomerGetByIdRequest}
+     * @return {@link CustomerGetByIdResponse}
+     */
+    @PostMapping("/agent-query/${application.customer.version}/agent/query-customer-bind-agent")
+    BaseResponse<GetAgentResponse> queryCustomerBindAgent(@RequestBody  @Valid GetAgentRequest request);
+
+    @PostMapping("/agent-query/${application.customer.version}/agent/get-agent-list")
+    BaseResponse<List<GetAgentResponse>> getAgentList(@RequestBody  GetAgentRequest getAgentRequest);
+}

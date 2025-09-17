@@ -1,0 +1,33 @@
+package com.wanmi.sbc.customer.bean.vo;
+
+import com.wanmi.sbc.common.base.BasicResponse;
+import lombok.Data;
+
+import java.io.Serializable;
+
+/**
+ * <p>会员等级与权益关联表VO</p>
+ *
+ * @author yang
+ * @since 2019/2/27
+ */
+@Data
+public class CustomerLevelRightsRelVO extends BasicResponse {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 主键id
+     */
+    private Integer id;
+
+    /**
+     * 用户等级id
+     */
+    private Long customerLevelId;
+
+    /**
+     * 权益id
+     */
+    private Integer rightsId;
+}

@@ -1,0 +1,19 @@
+1、mobile项目application.properties配置文件增加配置项：
+jwt.excluded-urls增加配置：/intelligent-recommendation/goods/click/unLogin
+
+2、pc项目application.properties配置文件增加配置项：
+jwt.excluded-urls增加配置：/intelligent-recommendation/goods/click/unLogin
+
+3、dw项目nacos配置增加配置项：
+#添加Kylin 数据源
+spring.datasource.kylin.url=jdbc:kylin://172.19.25.67:7070/analysis
+spring.datasource.kylin.driver-class-name=org.apache.kylin.jdbc.Driver
+spring.datasource.kylin.username=dev
+spring.datasource.kylin.password=kylin@123
+spring.datasource.kylin.default-auto-commit=true
+#构建的restful接口地址
+kylin.build.base.url=http://172.19.25.67:7070/kylin/api
+#load sql
+kylin.build.load.sql.path=classpath:kylin_load_data.sql
+#项目名
+kylin.build.project.name=analysis

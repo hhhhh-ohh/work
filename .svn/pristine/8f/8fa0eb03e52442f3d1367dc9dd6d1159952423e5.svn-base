@@ -1,0 +1,34 @@
+# canal
+/data/canal/conf/example/instance.properties新增了监听的表，尾部追加，配置如下：
+```properties
+canal.instance.filter.regex=sbc-marketing.coupon_activity,sbc-marketing.coupon_activity_config,\
+  sbc-marketing.coupon_code_0,sbc-marketing.coupon_code_1,sbc-marketing.coupon_code_2,\
+  sbc-marketing.coupon_code_3,sbc-marketing.coupon_code_4,sbc-marketing.coupon_info,\
+  sbc-goods.booking_sale,sbc-goods.booking_sale_goods,sbc-goods.flash_sale_goods,\
+  sbc-goods.appointment_sale,sbc-goods.appointment_sale_goods,sbc-goods.groupon_goods_info,\
+  sbc-goods.groupon_share_record
+```
+#dbrelay
+* dbreplay程序做了更新，请使用最新的jar包
+* dbreplay配置文件做了更新：
+    * application.propertis
+    ```properties
+      canal.config.replay-table=coupon_code*:coupon_code
+      topics.canal=sbc-marketing.coupon_activity,sbc-marketing.coupon_activity_config,sbc-marketing.coupon_code_0,sbc-marketing.coupon_code_1,sbc-marketing.coupon_code_2,sbc-marketing.coupon_code_3,sbc-marketing.coupon_code_4,sbc-marketing.coupon_info,sbc-goods.booking_sale,sbc-goods.booking_sale_goods,sbc-goods.flash_sale_goods,sbc-goods.appointment_sale,sbc-goods.appointment_sale_goods,sbc-goods.groupon_goods_info,sbc-goods.groupon_share_record
+      topics.capture=s2b.trade,s2b.returnOrder,s2b.appointmentRecord
+    ```
+    * mapping文件都有做更新，请拖演示环境的/data/s2b/dbreplay/conf/mongo/data/mapping所有配置文件
+    
+# Mongo-capture
+配置文件有做更新，application.yml
+```yaml
+capture:
+  client:
+    regex-filter: s2b.trade,s2b.returnOrder,s2b.appointmentRecord
+```
+# Nacos
+ares增加配置项
+```
+### 对date类型进行时区校正
+spring.jackson.time-zone=GMT+8
+```

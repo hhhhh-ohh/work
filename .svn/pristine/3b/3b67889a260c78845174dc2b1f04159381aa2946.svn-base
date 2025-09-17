@@ -1,0 +1,173 @@
+package com.wanmi.sbc.order.bean.dto;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.wanmi.sbc.common.enums.PluginType;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeDeserializer;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeSerializer;
+import com.wanmi.sbc.order.bean.enums.DistributionState;
+import com.wanmi.sbc.order.bean.enums.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+/**
+ * 订单总体状态
+ * Created by jinwei on 19/03/2017.
+ */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class TradeStateDTO implements Serializable {
+
+    /**
+     * 审核状态
+     */
+    @Schema(description = "审核状态")
+    private AuditState auditState;
+
+    /**
+     * 流程状态
+     */
+    @Schema(description = "流程状态")
+    private FlowState flowState;
+
+    /**
+     * 支付状态
+     */
+    @Schema(description = "支付状态")
+    private PayState payState;
+
+    /**
+     * 发货状态
+     */
+    @Schema(description = "发货状态")
+    private DeliverStatus deliverStatus;
+
+    @Schema(description = "创建时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime createTime;
+
+    @Schema(description = "修改时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime modifyTime;
+
+    @Schema(description = "结束时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime endTime;
+
+    @Schema(description = "支付时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime payTime;
+
+    /**
+     * 发货时间
+     */
+    @Schema(description = "发货时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime deliverTime;
+
+    /**
+     * 自动确认收货时间
+     */
+    @Schema(description = "自动确认收货时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime autoConfirmTime;
+
+    /**
+     * 进入支付页面的时间
+     *
+     * 暂时控制银联b2b支付，扫描订单超时支付的时候使用
+     */
+    @Schema(description = "进入支付页面的时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime startPayTime;
+
+    /**
+     * 订单入账时间(由可退时间、处理完最后一笔退单时间决定)
+     */
+    @Schema(description = "订单入账时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime finalTime;
+
+    /**
+     * 作废原因，订单作废后设置
+     */
+    @Schema(description = "作废原因，订单作废后设置")
+    private String obsoleteReason;
+
+    /**
+     * 订单来源
+     */
+    @Schema(description = "订单来源")
+    private OrderSource orderSource;
+
+
+    /**
+     * 定金支付开始时间
+     */
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime handSelStartTime;
+
+    /**
+     * 定金支付结束时间
+     */
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime handSelEndTime;
+
+    /**
+     * 尾款支付开始时间
+     */
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime tailStartTime;
+
+    /**
+     * 尾款支付结束时间
+     */
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime tailEndTime;
+
+    /**
+     * 配送状态
+     *
+     */
+    @Schema(description = "配送状态")
+    private DistributionState distributionState;
+    /**
+     * 允许申请退单状态 0:未启用1:已启用
+     */
+    private Integer refundStatus;
+
+    @Schema(description = "插件类型", hidden = true)
+    private PluginType pluginType;
+
+    /**
+     * 订单完成开始时间，精确到天
+     */
+    @Schema(description = "订单创建结束时间,精确到天")
+    private String completionBeginTime;
+
+    /**
+     * 订单完成结束时间，精确到天
+     */
+    @Schema(description = "订单创建结束时间,精确到天")
+    private String completionEndTime;
+}

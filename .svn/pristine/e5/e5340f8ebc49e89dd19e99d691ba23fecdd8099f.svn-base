@@ -1,0 +1,72 @@
+关于本次迭代对应脚本执行注意点：
+1、执行全部sql
+2、关闭vop标示对应脚本(未购买京东vop，请执行该脚本)
+update `sbc-setting`.`system_config` set status = 0 where config_key='value_added_services' and
+ config_type = 'third_platform_vop';
+update `sbc-setting`.`menu_info` set del_flag = 1 where menu_id = '2c939a82795a1f8d01795e76b84d0000';
+
+UPDATE `sbc-message`.`push_send_node` SET `del_flag` = 1 WHERE `node_type` = 3  and `node_code` = 'THIRD_PAY_ERROR_AUTO_REFUND';
+UPDATE `sbc-message`.`message_send_node` SET `del_flag` = 1 WHERE `node_type` = 3 and `node_code` = 'THIRD_PAY_ERROR_AUTO_REFUND';
+
+UPDATE `sbc-empower`.`channel_config` SET `del_flag` = 1 WHERE 
+`channel_type` = 0;
+UPDATE `sbc-empower`.`channel_co￿nfig` SET `del_flag` = 1 WHERE 
+`channel_type` = 1;
+3. nacos配置
+
+将sbc-service-vas.properties的以下配置，移动到sbc-service-empower.properties：
+```
+REGION_ID=***
+ACCESS_KEY_ID=***
+ACCESS_KEY_SECRET=***
+linkedmall.publicKey=***
+linkedmall.signatureAlgorithm=***
+linkedmall.keyAlgorithm=***
+```
+
+sbc-service-empower.properties增加如下配置
+```
+# ----------------------------------------
+# 京东VOP增票
+# ----------------------------------------
+vop.order.regCompanyName=南京万米信息技术有限公司
+vop.order.regCode=91320114MA1MYKYL74
+vop.order.invoiceAddress=南京市雨花台区软件大道118号A1栋4层
+vop.order.invoicePhone=02568586888
+vop.order.invoiceProvice=12
+vop.order.invoiceCity=904
+vop.order.invoiceCounty=3379
+vop.order.companyName=南京万米信息技术有限公司
+vop.order.email=gongxiaoxiao@wanmi.com
+#1:货到付款，4:账户余额，5:公司转账，101:金采支付
+vop.order.paymentType=4
+#使用余额paymentType=4时，此值固定是1，其他支付方式0
+vop.order.useBalanceFlag=1
+
+spring.cache.type=ehcache
+spring.cache.ehcache.config=classpath:ehcache.xml
+
+spring.rabbitmq.host=rabbitMQ对应的地址
+spring.rabbitmq.port=rabbitMQ对应的端口
+spring.rabbitmq.username=rabbitMQ用户名
+spring.rabbitmq.password=rabbitMQ密码
+spring.cloud.stream.default.group=group-1
+
+#\u5546\u54C1\u540C\u6B65\u5B8C\u6210\u751F\u4EA7\u8005
+spring.cloud.stream.bindings.goods-sync-notice.destination=q.empower.goods.temp.sync.over
+```
+
+#sbc-service-vas.properties增加如下配置:
+```
+#设置超时熔断时间（spring-cloud-starter-openfeign中的HystrixCommandProperties默认为1000毫秒）
+hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=60000
+ribbon.ReadTimeout=30000
+ribbon.ConnectTimeout=30000
+
+#商品同步完成消费者
+spring.cloud.stream.bindings.goods-sync-notice.destination=q.empower.goods.temp.sync.over
+```
+#provider新增配置
+#限制第三方渠道供应商登录，开关打开：open=true, 限制平台：type=1,2，linkedmall，2京东vop
+channel.env.prod.open=false
+channel.env.prod.type=1,2

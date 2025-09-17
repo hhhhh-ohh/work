@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wanmi.ares.marketing.coupon.dao.CouponOverviewRecentMapper">
+  <resultMap id="BaseResultMap" type="com.wanmi.ares.marketing.coupon.model.CouponOverviewRecent">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="store_id" jdbcType="BIGINT" property="storeId" />
+    <result column="pay_money" jdbcType="DECIMAL" property="payMoney" />
+    <result column="discount_money" jdbcType="DECIMAL" property="discountMoney" />
+    <result column="pay_goods_count" jdbcType="BIGINT" property="payGoodsCount" />
+    <result column="pay_trade_count" jdbcType="BIGINT" property="payTradeCount" />
+    <result column="old_customer_count" jdbcType="BIGINT" property="oldCustomerCount" />
+    <result column="new_customer_count" jdbcType="BIGINT" property="newCustomerCount" />
+    <result column="acquire_count" jdbcType="BIGINT" property="acquireCount" />
+    <result column="acquire_customer_count" jdbcType="BIGINT" property="acquireCustomerCount" />
+    <result column="use_count" jdbcType="BIGINT" property="useCount" />
+    <result column="use_customer_count" jdbcType="BIGINT" property="useCustomerCount" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, store_id, pay_money, discount_money, pay_goods_count, pay_trade_count,
+    old_customer_count, new_customer_count, acquire_count, acquire_customer_count, use_count, 
+    use_customer_count, create_time
+  </sql>
+  <select id="selectByStoreId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from coupon_overview_recent
+    where store_id = #{storeId,jdbcType=BIGINT}
+  </select>
+
+</mapper>

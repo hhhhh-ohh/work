@@ -1,0 +1,70 @@
+package com.wanmi.sbc.crm.bean.vo;
+
+import com.wanmi.sbc.common.base.BasicResponse;
+import com.wanmi.sbc.crm.bean.enums.PositionOpenFlag;
+import com.wanmi.sbc.crm.bean.enums.PositionType;
+import com.wanmi.sbc.crm.bean.enums.TacticsType;
+import lombok.Data;
+import java.io.Serializable;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+/**
+ * <p>推荐坑位设置VO</p>
+ * @author lvzhenwei
+ * @date 2020-11-17 14:04:35
+ */
+@Schema
+@Data
+public class RecommendPositionConfigurationVO extends BasicResponse {
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * 主键id
+	 */
+	@Schema(description = "主键id")
+	private Long id;
+
+	/**
+	 * 坑位名称
+	 */
+	@Schema(description = "坑位名称")
+	private String name;
+
+	/**
+	 * 坑位类型，0：购物车，1：商品详情，2：商品列表；3：个人中心；4：会员中心；5：收藏商品；6：支付成功页；7：分类
+	 */
+	@Schema(description = "坑位类型，0：购物车，1：商品详情，2：商品列表；3：个人中心；4：会员中心；5：收藏商品；6：支付成功页；7：分类")
+	private PositionType type;
+
+	/**
+	 * 坑位标题
+	 */
+	@Schema(description = "坑位标题")
+	private String title;
+
+	/**
+	 * 推荐内容
+	 */
+	@Schema(description = "推荐内容")
+	private String content;
+
+	/**
+	 * 推荐策略类型，0：热门推荐；1：基于商品相关性推荐
+	 */
+	@Schema(description = "推荐策略类型，0：热门推荐；1：基于商品相关性推荐")
+	private TacticsType tacticsType;
+
+	/**
+	 * 推荐上限
+	 */
+	@Schema(description = "推荐上限")
+	private Integer upperLimit;
+
+	/**
+	 * 坑位开关，0：关闭；1：开启
+	 */
+	@Schema(description = "坑位开关，0：关闭；1：开启")
+	private PositionOpenFlag isOpen;
+
+}

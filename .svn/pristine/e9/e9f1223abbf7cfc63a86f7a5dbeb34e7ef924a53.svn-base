@@ -1,0 +1,124 @@
+##1.执行初始化脚本
+##2.执行菜单权限脚本
+##3.dbReplay的application.properties对应配置项topics.canal追加如下配置
+
+````
+sbc-customer.customer_delivery_address,sbc-customer.customer_points_detail,sbc-customer.third_login_relation,sbc-setting.system_config,sbc-setting.platform_address,sbc-account.customer_funds,sbc-account.customer_funds_detail,sbc-marketing.coupon_marketing_scope,sbc-marketing.groupon_activity,sbc-marketing.coupon_marketing_customer_scope,sbc-goods.goods_spec,sbc-order.refund_order
+````
+##4.dbReplay服务下的mapping文件修改
+conf/mongo/data/mapping/trade_mapping文件增加
+````json
+    ,
+    {
+        "field": "buyer.name",
+        "replayField": "customer_name",
+        "dataType": 12
+    },
+    {
+      "field": "tradeState.endTime",
+      "replayField": "end_time",
+      "dataType": 93
+    },
+    {
+      "field": "tradeState.finalTime",
+      "replayField": "final_time",
+      "dataType": 93
+    },
+    {
+      "field": "orderType",
+      "replayField": "order_type",
+      "dataType": 4,
+      "enumType": {
+        "NORMAL_ORDER": 0,
+        "POINTS_ORDER": 1,
+        "All_ORDER": 2
+      }
+    },
+   {
+     "field": "tradeState.deliverStatus",
+     "replayField": "deliver_status",
+     "dataType": 4,
+     "enumType": {
+       "NOT_YET_SHIPPED": 0,
+       "SHIPPED": 1,
+       "PART_SHIPPED": 2,
+       "VOID": 3
+     }
+   }
+````
+将tradeState.flowState一项内容更新如下
+````json
+      {
+        "field": "tradeState.flowState",
+        "replayField": "flow_state",
+        "dataType": 4,
+        "enumType": {
+          "INIT": 0,
+          "REMEDY": 1,
+          "REFUND": 2,
+          "AUDIT": 3,
+          "DELIVERED_PART": 4,
+          "DELIVERED": 5,
+          "CONFIRMED": 6,
+          "COMPLETED": 7,
+          "VOID": 8,
+          "GROUPON": 9,
+          "WAIT_PAY_EARNEST": 10,
+          "WAIT_PAY_TAIL": 11,
+          "CANCEL_DELIVERED": 12,
+          "AVAILABLE_ORDER": 13
+        }
+      }
+````
+
+##5.dbReplay服务下的conf/mongo/data/mapping/trade_item_mapping.json文件增加
+````json
+    ,
+    {
+      "field": "cateTopId",
+      "replayField": "cate_top_id",
+      "dataType": -5
+    },
+    {
+     "field": "pic",
+     "replayField": "img",
+     "dataType": 12
+    }
+````
+##6.dbReplay服务下的conf/mongo/data/enum/coupon_type.json内容更新如下
+````json
+    {
+      "GENERAL_VOUCHERS": 0,
+      "STORE_VOUCHERS": 1,
+      "FREIGHT_VOUCHER": 2,
+      "STOREFRONT_VOUCHER":3,
+      "BOSS_STOREFRONT_VOUCHER":4
+    }
+````
+
+##7.canal的conf/example/instance.propertiesd对应配置项canal.instance.filter.regex追加如下配置
+ 
+````
+sbc-customer.customer_delivery_address,sbc-customer.customer_points_detail,sbc-customer.third_login_relation,sbc-setting.system_config,sbc-setting.platform_address,sbc-account.customer_funds,sbc-account.customer_funds_detail,sbc-marketing.coupon_marketing_scope,sbc-marketing.groupon_activity,sbc-marketing.coupon_marketing_customer_scope,sbc-goods.goods_spec,sbc-order.refund_order
+````
+
+##8.open服务的application.properties内容修改如下
+（1）新增配置
+````
+#新增属性
+scan-task.within-time=30
+````
+（2）将原先配置 application.open.version=1.0.0 改为 application.open.version=1.0.1
+
+##9.小程序打包新增配置项：
+````
+requestDomainUrl:https://sm-gateway-api.test1.qianmi.com
+````
+##10.open-getaway的包需要更新，可以从25.97环境拷贝；
+##11.dbReplay的包需要更新，可以从25.97环境拷贝
+##12.dbReplay服务包更新好以后，replay_trade增加的新字段数据以及oid完善
+执行 
+```
+curl -X GET "http://127.0.0.1:8500/dbreplay/mongoReplayHistoryData?dbName=trade&type=update&oidFillFlag=true" -H "Content-Type: application/json"
+```
+##13.新增服务dataglaxy服务，可以参考25.97环境部署

@@ -1,0 +1,5 @@
+{
+    "trade" : ["trade_mapping.json","trade_item_mapping.json","consignee_mapping.json","trade_coupon_mapping.json","trade_groupon_mapping.json","trade_marketing_mapping.json","trade_marketing_sku_mapping.json","trade_item_marketing_mapping.json","trade_coupon_mapping_for_freight.json","trade_community_customer_mapping.json","trade_community_sku_mapping.json"],
+    "returnOrder" : ["return_order_mapping.json","return_order_item_mapping.json"],
+    "appointmentRecord": ["appointment_record_mapping.json"]
+}

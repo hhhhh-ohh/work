@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.marketing.coupon.dao.CouponOverViewMapper">
+    <sql id="commonAddColSql">
+        store_id,
+        pay_money,
+        discount_money,
+        pay_trade_count,
+        pay_goods_count,
+        old_customer_count,
+        new_customer_count,
+        acquire_count,
+        acquire_customer_count,
+        use_count,
+        use_customer_count,
+        create_time
+    </sql>
+    <sql id="selectColumnCommon">
+        COALESCE(sum(payMoney),0)             payMoney,
+        COALESCE(sum(discountMoney),0)        discountMoney,
+        COALESCE(sum(payTradeCount),0)        payTradeCount,
+        COALESCE(sum(payGoodsCount),0)        payGoodsCount,
+        COALESCE(sum(oldCustomerCount),0)     oldCustomerCount,
+        COALESCE(sum(newCustomerCount),0)     newCustomerCount,
+        COALESCE(sum(acquireCount),0)         acquireCount,
+        COALESCE(sum(acquireCustomerCount),0) acquireCustomerCount,
+        COALESCE(sum(useCount),0)             useCount,
+        COALESCE(sum(useCustomerCount),0)     useCustomerCount,
+        now()
+    </sql>
+
+    <sql id="bossStatisticsQuery">
+        <!--营销金额-->
+        SELECT
+            sum(rt1.total_price) payMoney,
+            sum(trP.reducePrice)    discountMoney,
+            0                       payTradeCount,
+            0                       payGoodsCount,
+            0                       oldCustomerCount,
+            0                       newCustomerCount,
+            0                       acquireCount,
+            0                       acquireCustomerCount,
+            0                       useCount,
+            0                       useCustomerCount
+        FROM replay_trade rt1
+        JOIN (
+            SELECT rtc.tid               tid,
+                   sum(rtc.reduce_price) reducePrice
+            FROM replay_trade_coupon rtc
+            JOIN replay_trade rt ON rtc.tid = rt.tid
+            WHERE rt.pay_state = 2
+                AND rtc.coupon_type = 0
+                AND rt.pay_time &gt;= #{beginTime}
+                AND rt.pay_time &lt; #{endTime}
+            GROUP BY rtc.tid
+        ) trP ON rt1.tid = trP.tid
+
+        union all
+        <!--营销件数-->
+        SELECT
+            0                       payMoney,
+            0                       discountMoney,
+            count(DISTINCT rti.tid) payTradeCount,
+            sum(rti.num)            payGoodsCount,
+            0                       oldCustomerCount,
+            0                       newCustomerCount,
+            0                       acquireCount,
+            0                       acquireCustomerCount,
+            0                       useCount,
+            0                       useCustomerCount
+        FROM replay_trade_item rti
+        JOIN (
+            SELECT rtc.oid oid
+            FROM replay_trade_coupon rtc
+            JOIN replay_trade rt ON rtc.tid = rt.tid
+            WHERE rt.pay_state = 2
+                AND rtc.coupon_type = 0
+                AND rt.pay_time &gt;= #{beginTime}
+                AND rt.pay_time &lt; #{endTime}
+            GROUP BY rtc.oid
+        ) trP ON rti.oid = trP.oid
+
+        union all
+        <!-- 新老客户-->
+        SELECT
+            0                payMoney,
+            0                discountMoney,
+            0                payTradeCount,
+            0                payGoodsCount,
+            sum(oldCustomer) oldCustomerCount,
+            sum(newCustomer) newCustomerCount,
+            0                acquireCount,
+            0                acquireCustomerCount,
+            0                useCount,
+            0                useCustomerCount
+        FROM (
+            SELECT
+                CASE
+                WHEN
+                    b.customer_id IS NOT NULL THEN
+                        1
+                    ELSE 0
+                END AS oldCustomer,
+                CASE
+                WHEN b.customer_id IS NULL THEN
+                        1
+                    ELSE 0
+                END AS newCustomer
+            FROM (
+                SELECT
+                    rt.customer_id
+                FROM replay_trade_coupon rtc
+                JOIN replay_trade rt ON rtc.tid = rt.tid
+                WHERE rt.pay_state = 2
+                    AND rtc.coupon_type = 0
+                    AND rt.pay_time &gt;= #{beginTime}
+                    AND rt.pay_time &lt; #{endTime}
+                GROUP BY rt.customer_id
+            ) a
+            LEFT JOIN (
+                    SELECT customer_id
+                    FROM customer_first_pay cfp
+                    WHERE cfp.first_pay_time &lt; #{beginTime}
+                    group by customer_id
+                ) b
+            ON (a.customer_id = b.customer_id )
+        ) tmp
+
+
+        union all
+        <!--领取情况-->
+        SELECT
+            0                           payMoney,
+            0                           discountMoney,
+            0                           payTradeCount,
+            0                           payGoodsCount,
+            0                           oldCustomerCount,
+            0                           newCustomerCount,
+            count(coupon_code)            acquireCount,
+            count(DISTINCT customer_id) acquireCustomerCount,
+            0                           useCount,
+            0                           useCustomerCount
+        FROM replay_coupon_code rcc
+        JOIN replay_coupon_info rci ON rcc.coupon_id = rci.coupon_id
+        WHERE rci.coupon_type = 0
+            AND acquire_time &gt;= #{beginTime}
+            AND acquire_time &lt; #{endTime}
+
+        union all
+        <!--使用情况-->
+        SELECT
+            0                           payMoney,
+            0                           discountMoney,
+            0                           payTradeCount,
+            0                           payGoodsCount,
+            0                           oldCustomerCount,
+            0                           newCustomerCount,
+            0                           acquireCount,
+            0                           acquireCustomerCount,
+            count( DISTINCT rtc.coupon_code ) useCount,
+            count( DISTINCT rt.customer_id ) useCustomerCount
+        FROM
+            replay_trade_coupon rtc
+        join replay_coupon_code rcc ON rcc.coupon_code_id = rtc.coupon_code_id
+        JOIN replay_trade rt on rtc.tid = rt.tid
+        WHERE
+            rt.pay_state = 2
+            AND rtc.coupon_type = 0
+            AND rt.pay_time &gt;= #{beginTime}
+            AND rt.pay_time &lt; #{endTime}
+            AND rcc.use_status = 1
+    </sql>
+    <sql id="supplierStatisticsQuery">
+
+        <!--营销金额-->
+        SELECT rt1.store_id         storeId,
+            sum(rt1.total_price) payMoney,
+            sum(trP.reducePrice)    discountMoney,
+            0                       payTradeCount,
+            0                       payGoodsCount,
+            0                       oldCustomerCount,
+            0                       newCustomerCount,
+            0                       acquireCount,
+            0                       acquireCustomerCount,
+            0                       useCount,
+            0                       useCustomerCount
+        FROM replay_trade rt1
+        JOIN (
+            SELECT rtc.tid               tid,
+                   sum(rtc.reduce_price) reducePrice
+            FROM replay_trade_coupon rtc
+            JOIN replay_trade rt ON rtc.tid = rt.tid
+            WHERE rt.pay_state = 2
+                AND rtc.coupon_type = 1
+                AND rt.pay_time &gt;= #{beginTime}
+                AND rt.pay_time &lt; #{endTime}
+            GROUP BY rtc.tid
+        ) trP ON rt1.tid = trP.tid
+        GROUP BY rt1.store_id
+
+        union all
+        <!--营销件数-->
+        SELECT rti.store_id         storeId,
+            0                       payMoney,
+            0                       discountMoney,
+            count(DISTINCT rti.tid) payTradeCount,
+            sum(rti.num)            payGoodsCount,
+            0                       oldCustomerCount,
+            0                       newCustomerCount,
+            0                       acquireCount,
+            0                       acquireCustomerCount,
+            0                       useCount,
+            0                       useCustomerCount
+        FROM replay_trade_item rti
+        JOIN (
+            SELECT rtc.oid oid
+            FROM replay_trade_coupon rtc
+            JOIN replay_trade rt ON rtc.tid = rt.tid
+            WHERE rt.pay_state = 2
+                AND rtc.coupon_type = 1
+                AND rt.pay_time &gt;= #{beginTime}
+                AND rt.pay_time &lt; #{endTime}
+            GROUP BY rtc.oid
+        ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+        GROUP BY rti.store_id
+
+        union all
+        <!--新老客户-->
+        SELECT storeId       storeId,
+            0                payMoney,
+            0                discountMoney,
+            0                payTradeCount,
+            0                payGoodsCount,
+            sum(oldCustomer) oldCustomerCount,
+            sum(newCustomer) newCustomerCount,
+            0                acquireCount,
+            0                acquireCustomerCount,
+            0                useCount,
+            0                useCustomerCount
+        FROM (
+            SELECT a.store_id storeId,
+                CASE
+                    WHEN
+                    b.customer_id IS NOT NULL THEN
+                    1
+                    ELSE 0
+                END AS oldCustomer,
+                CASE
+                    WHEN b.customer_id IS NULL THEN
+                    1
+                    ELSE 0
+                END AS newCustomer
+            FROM (
+                SELECT rt.store_id,
+                    rt.customer_id
+                FROM replay_trade_coupon rtc
+                JOIN replay_trade rt ON rtc.tid = rt.tid
+                WHERE rt.pay_state = 2
+                    AND rtc.coupon_type = 1
+                    AND rt.pay_time &gt;= #{beginTime}
+                    AND rt.pay_time &lt; #{endTime}
+                GROUP BY rt.store_id, rt.customer_id
+            ) a
+            LEFT JOIN (
+                SELECT store_id, customer_id
+                FROM customer_first_pay cfp
+                WHERE cfp.first_pay_time &lt; #{beginTime}
+                group by store_id, customer_id
+            )b ON (a.customer_id = b.customer_id and a.store_id = b.store_id)
+        ) tmp
+        group by storeId
+
+        union all
+        <!--领取情况-->
+        SELECT rci.store_id             storeId,
+            0                           payMoney,
+            0                           discountMoney,
+            0                           payTradeCount,
+            0                           payGoodsCount,
+            0                           oldCustomerCount,
+            0                           newCustomerCount,
+            count(coupon_code)            acquireCount,
+            count(DISTINCT customer_id) acquireCustomerCount,
+            0                           useCount,
+            0                           useCustomerCount
+        FROM replay_coupon_code rcc
+        JOIN replay_coupon_info rci ON rcc.coupon_id = rci.coupon_id
+        WHERE rci.coupon_type = 1
+            AND acquire_time &gt;= #{beginTime}
+            AND acquire_time &lt; #{endTime}
+        group by rci.store_id
+
+        union all
+        <!--使用情况-->
+        SELECT rt.store_id              storeId,
+            0                           payMoney,
+            0                           discountMoney,
+            0                           payTradeCount,
+            0                           payGoodsCount,
+            0                           oldCustomerCount,
+            0                           newCustomerCount,
+            0                           acquireCount,
+            0                           acquireCustomerCount,
+            count( DISTINCT rtc.coupon_code ) useCount,
+            count( DISTINCT rt.customer_id ) useCustomerCount
+        FROM
+            replay_trade_coupon rtc
+        join replay_coupon_code rcc ON rcc.coupon_code_id = rtc.coupon_code_id
+        JOIN replay_trade rt on rtc.tid = rt.tid
+        WHERE
+            rt.pay_state = 2
+            AND rtc.coupon_type = 1
+            AND rt.pay_time &gt;= #{beginTime}
+            AND rt.pay_time &lt; #{endTime}
+            AND rcc.use_status = 1
+        group by rt.store_id
+
+        union all
+        <!--关联店铺-->
+        select store_id storeId,
+                0        payMoney,
+                0        discountMoney,
+                0        payTradeCount,
+                0        payGoodsCount,
+                0        oldCustomerCount,
+                0        newCustomerCount,
+                0        acquireCount,
+                0        acquireCustomerCount,
+                0        useCount,
+                0        useCustomerCount
+        from replay_store
+        where del_flag = 0
+    </sql>
+
+    <delete id="deleteDay">
+        delete from coupon_overview_day where stat_date=#{statDate}
+    </delete>
+
+    <delete id="deleteWeek">
+        delete from coupon_overview_week where week_start_date=#{beginTime}
+    </delete>
+
+    <delete id="deleteRecent">
+        TRUNCATE TABLE coupon_overview_recent
+    </delete>
+
+    <insert id="saveBossDay">
+        insert into coupon_overview_day (
+            stat_date,
+            <include refid="commonAddColSql"/>
+        )select
+            #{statDate} statDate,
+            -1          storeId,
+            <include refid="selectColumnCommon"/>
+        from(
+            <include refid="bossStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossWeek">
+        insert into coupon_overview_week (
+            week_start_date,
+            week_end_date,
+            <include refid="commonAddColSql"/>
+        )select
+            #{beginTime},
+            #{statDate},
+            -1 storeId,
+            <include refid="selectColumnCommon"/>
+        from(
+            <include refid="bossStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveBossRecent">
+        insert into coupon_overview_recent (
+            <include refid="commonAddColSql"/>
+        )select
+            -1 storeId,
+            <include refid="selectColumnCommon"/>
+        from(
+            <include refid="bossStatisticsQuery"/>
+        ) statistics
+    </insert>
+
+    <insert id="saveSupplierDay">
+        insert into coupon_overview_day (
+            stat_date,
+            <include refid="commonAddColSql"/>
+        )select
+            #{statDate} statDate,
+            storeId,
+            <include refid="selectColumnCommon"/>
+        from(
+            <include refid="supplierStatisticsQuery"/>
+        ) statistics
+        where statistics.storeId != -1
+        group by statistics.storeId
+    </insert>
+
+    <insert id="saveSupplierWeek">
+        insert into coupon_overview_week (
+            week_start_date,
+            week_end_date,
+        <include refid="commonAddColSql"/>
+        )select
+            #{beginTime},
+            #{statDate},
+            storeId,
+            <include refid="selectColumnCommon"/>
+        from(
+            <include refid="supplierStatisticsQuery"/>
+        ) statistics
+        where statistics.storeId != -1
+        group by statistics.storeId
+    </insert>
+
+    <insert id="saveSupplierRecent">
+        insert into coupon_overview_recent (
+        <include refid="commonAddColSql"/>
+        )select
+            storeId,
+            <include refid="selectColumnCommon"/>
+        from(
+            <include refid="supplierStatisticsQuery"/>
+        ) statistics
+        where statistics.storeId != -1
+        group by statistics.storeId
+    </insert>
+
+</mapper>

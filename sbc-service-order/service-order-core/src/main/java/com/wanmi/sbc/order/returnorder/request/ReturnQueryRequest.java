@@ -1,0 +1,695 @@
+package com.wanmi.sbc.order.returnorder.request;
+
+import com.wanmi.sbc.common.base.BaseQueryRequest;
+import com.wanmi.sbc.common.enums.*;
+import com.wanmi.sbc.common.util.Constants;
+import com.wanmi.sbc.common.util.DateUtil;
+import com.wanmi.sbc.empower.bean.enums.WxSceneGroup;
+import com.wanmi.sbc.order.bean.enums.ReturnFlowState;
+import com.wanmi.sbc.order.bean.enums.ReturnOrderType;
+import com.wanmi.sbc.order.bean.enums.ReturnType;
+import com.wanmi.sbc.order.trade.model.entity.CrossGoodsInfo;
+import com.wanmi.sbc.order.util.XssUtils;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.mongodb.core.query.Criteria;
+
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * 查询接口
+ * Created by jinwei on 6/5/2017.
+ */
+@EqualsAndHashCode(callSuper = true)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ReturnQueryRequest extends BaseQueryRequest {
+
+    @Schema(description = "退单编号")
+    private String rid;
+
+    @Schema(description = "订单编号")
+    private String tid;
+
+    @Schema(description = "订单ID集合")
+    private List<String> tids;
+
+    @Schema(description = "父订单ID")
+    private String ptid;
+
+    @Schema(description = "业务尾款ID")
+    private String businessTailId;
+    /**
+     * 退单类型 0 是普通退单 1是跨境退单
+     */
+    @Schema(description = "退单类型 0 是普通退单 1是跨境退单")
+    private ReturnOrderType returnOrderType;
+    /**
+     * 购买人编号
+     */
+    @Schema(description = "购买人编号")
+    private String buyerId;
+
+    @Schema(description = "购买人名称")
+    private String buyerName;
+
+    @Schema(description = "购买人账号")
+    private String buyerAccount;
+
+    /**
+     * 收货人
+     */
+    @Schema(description = "收货人")
+    private String consigneeName;
+
+    @Schema(description = "收货人手机")
+    private String consigneePhone;
+
+    /**
+     * 供应商
+     */
+    @Schema(description = "供应商名称")
+    private String providerName;
+
+    @Schema(description = "供应商编号")
+    private String providerCode;
+
+    /**
+     * 退单流程状态
+     */
+    @Schema(description = "退单流程状态")
+    private ReturnFlowState returnFlowState;
+
+    /**
+     * 商品名称
+     */
+    @Schema(description = "商品名称")
+    private String skuName;
+
+    @Schema(description = "sku编号")
+    private String skuNo;
+
+    /**
+     * 退单编号列表
+     */
+    @Schema(description = "退单编号列表")
+    private String[] rids;
+
+    /**
+     * 退单创建开始时间，精确到天
+     */
+    @Schema(description = "退单创建开始时间，精确到天")
+    private String beginTime;
+
+    /**
+     * 退单创建结束时间，精确到天
+     */
+    @Schema(description = "退单创建结束时间，精确到天")
+    private String endTime;
+
+    /**
+     * 商家名称
+     */
+    @Schema(description = "商家名称")
+    private Long companyInfoId;
+
+    /**
+     * 店铺ID
+     */
+    @Schema(description = "店铺ID")
+    private Long storeId;
+
+    /**
+     * 店铺名称
+     */
+    @Schema(description = "店铺名称")
+    private String storeName;
+
+    /**
+     * 商家名称
+     */
+    @Schema(description = "商家名称")
+    private String supplierName;
+
+    /**
+     * 商家编号
+     */
+    @Schema(description = "商家编号")
+    private String supplierCode;
+
+    /**
+     * 业务员id
+     */
+    @Schema(description = "业务员id")
+    private String employeeId;
+
+
+    /**
+     * 业务员id集合
+     */
+    @Schema(description = "业务员id集合")
+    private List<String> employeeIds;
+
+
+    /**
+     * 客户id
+     */
+    @Schema(description = "客户id")
+    private Object[] customerIds;
+
+    /**
+     * pc搜索条件
+     */
+    @Schema(description = "pc搜索条件")
+    private String tradeOrSkuName;
+
+    /**
+     * 邀请人会员id
+     */
+    @Schema(description = "邀请人会员id")
+    private String inviteeId;
+
+    /**
+     * 分销渠道类型
+     */
+    @Schema(description = "分销渠道类型")
+    private ChannelType channelType;
+
+    /**
+     * 供应商公司id
+     */
+    @Schema(description = "供应商公司id")
+    private Long providerCompanyInfoId;
+
+    /**
+     * 订单所属第三方平台类型
+     */
+    @Schema(description = "订单所属第三方平台类型")
+    private ThirdPlatformType thirdPlatformType;
+
+    /**
+     * 是否存在发起第三方平台申请
+     */
+    @Schema(description = "是否存在发起第三方平台申请")
+    private Boolean thirdPlatFormApplyFlag;
+    /**
+     * 跨境商品信息
+     */
+    @Schema(description = "跨境商品信息")
+    private CrossGoodsInfo crossGoodsInfo;
+    /**
+     * ES中的createTime日期格式
+     */
+    @Schema(description = "时间格式")
+    private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+    /**
+     * 店铺类型
+     */
+    @Schema(description = "店铺类型")
+    private StoreType storeType;
+
+    /**
+     * 平台类型
+     */
+    @Schema(description = "平台类型")
+    private Platform platform;
+
+    /**
+     * 商品类型，0：实体商品，1：虚拟商品 2：电子卡券
+     */
+    @Schema(description = "商品类型，0：实体商品，1：虚拟商品 2：电子卡券")
+    private Integer goodsType;
+
+    /**
+     * 注销校验 1：查询未完成退单
+     */
+    @Schema(description = "注销校验")
+    private Integer logoutValidate;
+
+    /**
+     * 带货视频号
+     */
+    @Schema(description = "带货视频号")
+    private String videoName;
+
+    /**
+     * 场景值:全部、直播间（下单场景值1176、1177）、橱窗（场景值1195）、视频号活动（场景值1191）、视频号商店（场景值1175）
+     */
+    @Schema(description = "场景值:全部、直播间（下单场景值1176、1177）、橱窗（场景值1195）、视频号活动（场景值1191）、视频号商店（场景值1175）")
+    private Integer sceneGroup;
+
+    /**
+     * 代销平台标识
+     */
+    @Schema(description = "代销平台标识")
+    private SellPlatformType sellPlatformType;
+
+    /**
+     * 退单完成开始时间
+     */
+    @Schema(description = "退单完成开始时间，精确到天")
+    private String completionBeginTime;
+
+    /**
+     * 退单完成结束时间
+     */
+    @Schema(description = "退单完成结束时间，精确到天")
+    private String completionEndTime;
+
+    /**
+     * 是否过滤周期购退单
+     */
+    @Schema(description = "是否过滤周期购退单")
+    private Boolean filterBuyCycle;
+
+    /**
+     * 退货物流单号
+     */
+    private List<String> returnLogisticNos;
+
+
+    public Criteria build() {
+        List<Criteria> criteria = new ArrayList<>(33);
+
+        //注销校验,不是已完成、已作退单单
+        if (Objects.nonNull(logoutValidate) && logoutValidate== Constants.ONE) {
+            criteria.add(Criteria.where("returnFlowState").nin(ReturnFlowState.COMPLETED
+                    , ReturnFlowState.VOID, ReturnFlowState.REJECT_REFUND, ReturnFlowState.REJECT_RECEIVE));
+        }
+
+        // ids 用于导出时的查询，如果传了ids，以ids为准
+        if (Objects.nonNull(rids) && rids.length > 0) {
+            criteria.add(Criteria.where("id").in(Arrays.asList(rids)));
+        }
+
+        // 订单编号
+        if (StringUtils.isNotBlank(tid)) {
+            criteria.add(XssUtils.regex("tid", tid));
+        }
+
+        // 订单编号List
+        if (CollectionUtils.isNotEmpty(tids)) {
+            criteria.add(Criteria.where("tid").in(tids));
+        }
+
+        // 子订单编号
+        if (StringUtils.isNotBlank(ptid)) {
+            criteria.add(XssUtils.regex("ptid", ptid));
+        }
+
+        // 尾款退单编号
+        if (StringUtils.isNotBlank(businessTailId)) {
+            criteria.add(Criteria.where("businessTailId").is(businessTailId));
+        }
+
+        if (Objects.nonNull(customerIds) && customerIds.length > 0) {
+            criteria.add(Criteria.where("buyer.id").in(Arrays.asList(customerIds)));
+        }
+
+        if (CollectionUtils.isNotEmpty(employeeIds)) {
+            criteria.add(Criteria.where("buyer.employeeId").in(employeeIds));
+        }
+
+
+        if (StringUtils.isNotBlank(employeeId)) {
+            criteria.add(Criteria.where("buyer.employeeId").is(employeeId));
+        }
+
+        if (StringUtils.isNotBlank(buyerId)) {
+            criteria.add(Criteria.where("buyer.id").is(buyerId));
+        }
+
+        //邀请人id
+        if (StringUtils.isNotBlank(inviteeId)) {
+            criteria.add(Criteria.where("inviteeId").is(inviteeId));
+        }
+
+        //分销渠道类型
+        if (Objects.nonNull(channelType)) {
+            if (channelType == ChannelType.SHOP) {
+                criteria.add(Criteria.where("channelType").is(ChannelType.SHOP.toString()));
+            } else if (channelType == ChannelType.PC_MALL) {
+                criteria.add(Criteria.where("channelType").is(ChannelType.PC_MALL.toString()));
+            } else if (channelType == ChannelType.MALL) {
+                criteria.add(Criteria.where("channelType").is(ChannelType.MALL.toString()));
+            }
+        }
+        // 跨境退单过滤
+        if(Objects.nonNull(returnOrderType)){
+            if(returnOrderType == ReturnOrderType.CROSS_BORDER){
+                criteria.add(Criteria.where("returnOrderType").is(ReturnOrderType.CROSS_BORDER.toString()));
+            } else {
+                criteria.add(Criteria.where("id").exists(true).orOperator(Criteria.where("returnOrderType").exists(false),Criteria.where("returnOrderType").is(ReturnOrderType.GENERAL_TRADE.toString())));
+
+            }
+        }
+        //跨境商品信息
+        if (Objects.nonNull(crossGoodsInfo)) {
+            if (StringUtils.isNotEmpty(crossGoodsInfo.getElectronPort())) {
+                criteria.add(Criteria.where("returnItems.extendedAttributes.crossGoodsInfo.electronPort").is(crossGoodsInfo
+                        .getElectronPort()));
+            }
+
+            if (StringUtils.isNotEmpty(crossGoodsInfo.getTradeType())) {
+                criteria.add(Criteria.where("returnItems.extendedAttributes.crossGoodsInfo.tradeType").is(crossGoodsInfo.getTradeType()));
+            }
+        }
+        // 客户信息
+        if (StringUtils.isNotBlank(buyerName)) {
+            criteria.add(XssUtils.regex("buyer.name", buyerName));
+        } else if (StringUtils.isNotBlank(buyerAccount)) {
+            criteria.add(XssUtils.regex("buyer.account", buyerAccount));
+        }
+        //供应商编号
+        if (StringUtils.isNotBlank(providerName)) {
+            criteria.add(XssUtils.regex("providerName", providerName));
+        }
+        if (StringUtils.isNotBlank(providerCode)) {
+            criteria.add(XssUtils.regex("providerCode", providerCode));
+        }
+        // 收货人
+        if (StringUtils.isNotBlank(consigneeName)) {
+            criteria.add(XssUtils.regex("consignee.name", consigneeName));
+        } else if (StringUtils.isNotBlank(consigneePhone)) {
+            criteria.add(XssUtils.regex("consignee.phone", consigneePhone));
+        }
+
+        /**
+         * 商家名称
+         */
+        if (StringUtils.isNotBlank(supplierName)) {
+            criteria.add(XssUtils.regex("company.supplierName", supplierName));
+        }
+
+        if (StringUtils.isNotBlank(supplierCode)) {
+            criteria.add(XssUtils.regex("company.companyCode", supplierCode));
+        }
+
+        if (Objects.nonNull(companyInfoId)) {
+            criteria.add(Criteria.where("company.companyInfoId").is(companyInfoId));
+        }
+
+        if (Objects.nonNull(storeId)) {
+            criteria.add(Criteria.where("company.storeId").is(storeId));
+        }
+
+        if (Objects.nonNull(storeName)) {
+            criteria.add(XssUtils.regex("company.storeName", storeName));
+        }
+
+        //店铺类型
+        if(Platform.CUSTOMER != platform && !(Objects.nonNull(rids) && rids.length > 0)) {
+            if (Objects.nonNull(storeType) && storeType.equals(StoreType.O2O)) {
+                criteria.add(Criteria.where("company.storeType").is(storeType));
+            } else {
+                criteria.add(Criteria.where("company.storeType").nin(StoreType.O2O));
+            }
+        }
+
+        if (Objects.nonNull(thirdPlatformType)) {
+            criteria.add(Criteria.where("thirdPlatformType").is(thirdPlatformType));
+        }
+
+        if (Boolean.TRUE.equals(thirdPlatFormApplyFlag)) {
+            criteria.add(Criteria.where("thirdReasonId").exists(true));
+            criteria.add(Criteria.where("thirdReasonId").ne(null));
+        }
+
+        if (StringUtils.isEmpty(tradeOrSkuName)) {
+            // 退单编号
+            if (StringUtils.isNotBlank(rid)) {
+                criteria.add(XssUtils.regex("id", rid));
+            }
+
+            // sku
+            if (StringUtils.isNotBlank(skuName)) {
+                criteria.add(XssUtils.regex("returnItems.skuName", skuName));
+            } else if (StringUtils.isNotBlank(skuNo)) {
+                criteria.add(XssUtils.regex("returnItems.skuNo", skuNo));
+            }
+        } else {
+            // 或条件查询
+            criteria.add(new Criteria().orOperator(XssUtils.regex("id", tradeOrSkuName), XssUtils.regex("returnItems.skuName", tradeOrSkuName)));
+        }
+
+        // createTime
+        if (StringUtils.isNotBlank(beginTime)) {
+            criteria.add(Criteria.where("createTime").gte(DateUtil.parseDay(beginTime)));
+        }
+
+        // 小与传入的结束时间+1天，零点前
+        if (StringUtils.isNotBlank(endTime)) {
+            criteria.add(Criteria.where("createTime").lt(DateUtil.parseDay(endTime).plusDays(1)));
+        }
+
+        //订单完成日期，大于/等于开始时间
+        if (StringUtils.isNotBlank(completionBeginTime)) {
+            criteria.add(Criteria.where("finishTime").gte(DateUtil.parseDay(completionBeginTime)));
+            criteria.add(Criteria.where("returnFlowState").is(ReturnFlowState.COMPLETED.getStateId()));
+        }
+        //小与传入的结束时间+1天，零点前
+        if (StringUtils.isNotBlank(completionEndTime)) {
+            criteria.add(Criteria.where("finishTime").lt(DateUtil.parseDay(completionEndTime).plusDays(1)));
+            criteria.add(Criteria.where("returnFlowState").is(ReturnFlowState.COMPLETED.getStateId()));
+        }
+
+        if (Objects.nonNull(returnFlowState)) {
+            // 页面的待填写物流，传的是AUDIT，这里必须查退货单
+            if (Objects.equals(returnFlowState, ReturnFlowState.AUDIT)) {
+                criteria.add(Criteria.where("returnFlowState").is(returnFlowState.getStateId()));
+                criteria.add(Criteria.where("returnType").is(ReturnType.RETURN.toValue()));
+            }
+            // 页面的待退款，传的是RECEIVED，这里必须查退货单的RECEIVED状态 和 退款单的AUDIT状态
+            else if (Objects.equals(returnFlowState, ReturnFlowState.RECEIVED)) {
+                // 待退款查询条件
+                Criteria waitRefund = new Criteria();
+                // 或条件查询
+                criteria.add(waitRefund.orOperator(
+                        Criteria.where("returnFlowState").is(ReturnFlowState.RECEIVED.getStateId()).and("returnType").is(ReturnType.RETURN.toValue()),// 退货的待退款
+                        Criteria.where("returnFlowState").is(ReturnFlowState.AUDIT.getStateId()).and("returnType").is(ReturnType.REFUND.toValue()),// 退款的待退款
+                        Criteria.where("returnFlowState").is(ReturnFlowState.REFUND_FAILED.getStateId())));// 退款失败
+            } else {
+                criteria.add(Criteria.where("returnFlowState").is(returnFlowState.getStateId()));
+            }
+        }
+
+        // 供应商公司id
+        if (Objects.nonNull(providerCompanyInfoId)) {
+            criteria.add(Criteria.where("providerCompanyInfoId").is(providerCompanyInfoId));
+        }
+
+        // 商品类型，0:实体商品，1：虚拟商品 2：电子卡券
+        if (Objects.nonNull(goodsType)){
+            switch (goodsType) {
+                case 0:
+                    criteria.add(
+                            new Criteria().orOperator(Criteria.where("returnTag").exists(false),
+                                    new Criteria().andOperator(Criteria.where("returnTag.virtualFlag").is(Boolean.FALSE),
+                                            Criteria.where("returnTag.electronicCouponFlag").is(Boolean.FALSE)))
+                    );
+                    break;
+                case 1:
+                    criteria.add(Criteria.where("returnTag.virtualFlag").is(Boolean.TRUE));
+                    break;
+                case 2:
+                    criteria.add(Criteria.where("returnTag.electronicCouponFlag").is(Boolean.TRUE));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        //带货视频号
+        if (StringUtils.isNotBlank(videoName)) {
+            criteria.add(XssUtils.regex("videoUser.videoName", videoName));
+        }
+
+        //场景值
+        if (Objects.nonNull(sceneGroup)){
+            // 特殊处理"直播间"，它有2个值，入参只有1个
+            if (WxSceneGroup.LIVE_ROOM_1.toValue().equals(sceneGroup) || WxSceneGroup.LIVE_ROOM_2.toValue().equals(sceneGroup)) {
+                Criteria orCriteria = new Criteria().orOperator(
+                        Criteria.where("sceneGroup").is(WxSceneGroup.LIVE_ROOM_1.toValue()),
+                        Criteria.where("sceneGroup").is(WxSceneGroup.LIVE_ROOM_2.toValue()));
+                criteria.add(orCriteria);
+            } else {
+                criteria.add(Criteria.where("sceneGroup").is(sceneGroup));
+            }
+        }
+
+        //代销平台标识
+        if (Objects.nonNull(sellPlatformType)){
+            criteria.add(Criteria.where("sellPlatformType").is(sellPlatformType));
+        }
+
+        //过滤周期购退单
+        if (Boolean.TRUE.equals(filterBuyCycle)) {
+            criteria.add(Criteria.where("returnTag.buyCycleFlag").ne(Boolean.TRUE));
+        }
+
+        // 物流号查询
+        if (CollectionUtils.isNotEmpty(this.returnLogisticNos)) {
+            criteria.add(Criteria.where("returnLogistics.no").in(this.returnLogisticNos));
+        }
+
+        if (CollectionUtils.isEmpty(criteria)) {
+            return new Criteria();
+        }
+        return new Criteria().andOperator(criteria.toArray(new Criteria[criteria.size()]));
+
+    }
+
+//    public QueryBuilder buildEs() {
+//
+//        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+//
+//        // ids 用于导出时的查询，如果传了ids，以ids为准
+//        if (rids != null && rids.length > 0) {
+//
+//           // boolQueryBuilder.must(QueryBuilders.idsQuery("return_order").ids(rids));
+//
+//            return boolQueryBuilder;
+//        }
+//
+//        // 退单编号
+//        if (StringUtils.isNoneBlank(rid)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(rid)).defaultField("id"));
+//        }
+//
+//        // 订单编号
+//        if (StringUtils.isNoneBlank(tid)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(tid)).defaultField("tid"));
+//        }
+//
+//        if(Objects.nonNull(customerIds) && customerIds.length > 0){
+//            boolQueryBuilder.must(QueryBuilders.termsQuery("buyer.id",customerIds));
+//        }
+//
+//        if(StringUtils.isNotBlank(employeeId)){
+//            boolQueryBuilder.must(QueryBuilders.termQuery("buyer.employeeId",employeeId));
+//        }
+//
+//        // 客户信息
+//        if (StringUtils.isNotBlank(buyerName)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(buyerName)).defaultField("buyer.name"));
+//        } else if (StringUtils.isNotBlank(buyerAccount)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(buyerAccount)).defaultField("buyer.account"));
+//        }
+//
+//        // 收货人
+//        if (StringUtils.isNotBlank(consigneeName)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(consigneeName)).defaultField("consignee.name"));
+//        } else if (StringUtils.isNotBlank(consigneePhone)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(consigneePhone)).defaultField("consignee.phone"));
+//        }
+//
+//        /**
+//         * 商家名称
+//         */
+//        if (StringUtils.isNotBlank(supplierName)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(supplierName)).defaultField("company.supplierName"));
+//        }
+//
+//        if (StringUtils.isNotBlank(supplierCode)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(supplierCode)).defaultField("company.companyCode"));
+//        }
+//
+//        if (!Objects.isNull(companyInfoId)) {
+//            boolQueryBuilder.must(QueryBuilders.matchQuery("company.companyInfoId",companyInfoId));
+//        }
+//
+//        if (!Objects.isNull(storeId)) {
+//            boolQueryBuilder.must(QueryBuilders.matchQuery("company.storeId",storeId));
+//        }
+//
+//        // sku
+//        if (StringUtils.isNotBlank(skuName)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(skuName)).defaultField("returnItems.skuName"));
+//        } else if (StringUtils.isNotBlank(skuNo)) {
+//            boolQueryBuilder.must(QueryBuilders.queryStringQuery(buildEsFuzzyStr(skuNo)).defaultField("returnItems.skuNo"));
+//        }
+//
+//        // createTime
+//        if (StringUtils.isNotBlank(beginTime) || StringUtils.isNotBlank(endTime)) {
+//            RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery("createTime");
+//            if (StringUtils.isNotBlank(beginTime)) {
+//                rangeQueryBuilder.gte(DateUtil.parseDay(beginTime).format(formatter));
+//            }
+//            if (StringUtils.isNotBlank(endTime)) {
+//                // 小与传入的结束时间+1天，零点前
+//                rangeQueryBuilder.lt(DateUtil.parseDay(endTime).plusDays(1).format(formatter));
+//            }
+//            boolQueryBuilder.must(rangeQueryBuilder);
+//        }
+//
+//        if (returnFlowState != null) {
+//            // 页面的待填写物流，传的是AUDIT，这里必须查退货单
+//            if (Objects.equals(returnFlowState, ReturnFlowState.AUDIT)) {
+//                boolQueryBuilder.must(QueryBuilders.matchQuery("returnFlowState", returnFlowState.getStateId()));
+//                boolQueryBuilder.must(QueryBuilders.matchQuery("returnType", ReturnType.RETURN.toValue()));
+//            }
+//            // 页面的待退款，传的是RECEIVED，这里必须查退货单的RECEIVED状态 和 退款单的AUDIT状态
+//            else if (Objects.equals(returnFlowState, ReturnFlowState.RECEIVED)) {
+//                // 待退款查询条件
+//                BoolQueryBuilder waitRefundBuilder = QueryBuilders.boolQuery();
+//
+//                // 退货的待退款
+//                BoolQueryBuilder returnQueryBuilder = QueryBuilders.boolQuery();
+//                returnQueryBuilder.must(QueryBuilders.matchQuery("returnFlowState", ReturnFlowState.RECEIVED));
+//                returnQueryBuilder.must(QueryBuilders.matchQuery("returnType", ReturnType.RETURN.toValue()));
+//
+//                // 退款的待退款
+//                BoolQueryBuilder refundQueryBuilder = QueryBuilders.boolQuery();
+//                refundQueryBuilder.must(QueryBuilders.matchQuery("returnFlowState", ReturnFlowState.AUDIT));
+//                refundQueryBuilder.must(QueryBuilders.matchQuery("returnType", ReturnType.REFUND.toValue()));
+//
+//                // 退款失败
+//                BoolQueryBuilder refundFailedBuilder = QueryBuilders.boolQuery();
+//                refundFailedBuilder.must(QueryBuilders.matchQuery("returnFlowState", ReturnFlowState.REFUND_FAILED));
+//
+//                // 或条件查询
+//                waitRefundBuilder.should(returnQueryBuilder).should(refundQueryBuilder).should(refundFailedBuilder);
+//                boolQueryBuilder.must(waitRefundBuilder);
+//            } else {
+//                boolQueryBuilder.must(QueryBuilders.matchQuery("returnFlowState", returnFlowState.getStateId()));
+//            }
+//        }
+//
+//        return boolQueryBuilder;
+//
+//    }
+
+
+    @Override
+    public Integer getPageNum() {
+        return super.getPageNum();
+    }
+
+    @Override
+    public String getSortColumn() {
+        return "createTime";
+    }
+
+    @Override
+    public String getSortRole() {
+        return "desc";
+    }
+
+    @Override
+    public String getSortType() {
+        return "Date";
+    }
+
+//    private String buildEsFuzzyStr(String str) {
+//        return String.format("\"*%s*\" OR *%s*", str, str);
+//    }
+}

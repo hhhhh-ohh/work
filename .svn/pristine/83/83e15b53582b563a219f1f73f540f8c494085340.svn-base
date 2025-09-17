@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.marketing.suits.dao.SuitsStatisticsMapper">
+
+    <resultMap id="MarketingOverviewMap" type="com.wanmi.ares.response.SuitsReport">
+        <result property="payROI" column="pay_roi"/>
+        <result property="payMoney" column="pay_money"/>
+        <result property="discountMoney" column="discount_money"/>
+        <result property="payGoodsCount" column="pay_goods_count"/>
+        <result property="payTradeCount" column="pay_trade_count"/>
+        <result property="jointRate" column="joint_rate"/>
+        <result property="newCustomerCount" column="new_customer"/>
+        <result property="oldCustomerCount" column="old_customer"/>
+        <result property="payCustomerCount" column="pay_customer_count"/>
+        <result property="customerPrice" column="customer_price"/>
+        <result property="day" column="day"/>
+        <result property="week" column="week"/>
+        <result property="goodsInfoName" column="goods_info_name"/>
+        <result property="goodsInfoNo" column="goods_info_no"/>
+        <result property="goodsInfoId" column="goods_info_id"/>
+        <result property="pv" column="pv"/>
+        <result property="uv" column="uv"/>
+        <result property="uvPayRate" column="uVPayRate"/>
+        <result property="supplyPrice" column="supply_price"/>
+    </resultMap>
+
+    <!-- 按订单与营销维度每日统计:营销支付金额 + 营销优惠金额 + 营销支付订单数 + 营销支付人数 + 营销支付件数 + 新老客户(平台/商家) -->
+    <insert id="insertMarketingStatisticsDay"
+            parameterType="com.wanmi.ares.request.marketing.MarketingAnalysisJobRequest">
+        INSERT INTO marketing_statistics_day(`tid`, `store_id`, `customer_id`, `marketing_id`,`marketing_type`, `total_pay_cash`, `discounts_pay_amount`,
+        `order_pay_sum`, `customer_pay_num`, `goods_pay_num`, `boss_customer_flag`, `boss_customer_flag_week`, `store_customer_flag`,
+        `store_customer_flag_week`, `create_time`)
+        SELECT
+        a.tid,
+        a.store_id,
+        a.customer_id,
+        a.marketing_id,
+        6 as marketing_type,
+        a.totalPayCash,
+        b.discountsPayAmount,
+        b.orderPaySum,
+        b.customerPayNum,
+        c.goodsPayNum,
+        d.boss_customer_flag,
+        d.boss_customer_flag_week,
+        d.store_customer_flag,
+        d.store_customer_flag_week,
+        a.pay_time
+        FROM
+        (
+        SELECT
+        t.tid,
+        min(t.store_id) store_id,
+        min(t.customer_id) customer_id,
+        t.suits_id as marketing_id,
+        min(t.pay_time) pay_time,
+        COALESCE ( SUM( t.total_pay_cash ), 0 ) AS totalPayCash
+        FROM
+        replay_trade t
+        where  t.pay_state = 2 and t.suit_marketing_flag=1
+        <if test="initDate != null and initDate != ''">
+            AND date_format(t.pay_time, '%Y-%m-%d') = #{initDate}
+        </if>
+        <if test="initDate == null || initDate == ''">
+            AND date_format(t.pay_time, '%Y-%m-%d') = date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)
+        </if>
+        GROUP BY
+        t.tid,
+        t.suits_id
+        ) a
+
+        LEFT JOIN
+        (
+        SELECT
+        m.tid tid,
+        min(m.store_id) store_id,
+        m.suits_id AS marketing_id,
+        TRUNCATE ( COALESCE ( sum(ti.original_price*num)-SUM( ti.price*num ), 0 ), 2 ) AS discountsPayAmount,
+        COUNT(DISTINCT ( m.tid )) AS orderPaySum,
+        COUNT(DISTINCT ( m.customer_id )) AS customerPayNum
+        FROM
+        replay_trade m
+        LEFT JOIN replay_trade_item ti on ti.tid=m.tid
+        WHERE
+        m.pay_state = 2 and m.suit_marketing_flag=1
+        <if test="initDate != null and initDate != ''">
+            AND date_format(m.pay_time, '%Y-%m-%d') = #{initDate}
+        </if>
+        <if test="initDate == null || initDate == ''">
+            AND date_format(m.pay_time, '%Y-%m-%d') = date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)
+        </if>
+        GROUP BY
+        m.tid,
+        m.suits_id
+        ) b on a.tid = b.tid and a.marketing_id = b.marketing_id
+
+        LEFT JOIN
+        (
+        SELECT
+        t.tid tid,
+        min(t.store_id) store_id,
+        t.suits_id marketing_id,
+        COALESCE ( SUM( item.num ), 0 ) AS goodsPayNum
+        FROM
+        replay_trade t
+        LEFT JOIN
+        replay_trade_item item
+        ON
+        t.tid = item.tid
+        WHERE
+        t.pay_state = 2 and t.suit_marketing_flag=1
+        <if test="initDate != null and initDate != ''">
+            AND date_format(t.pay_time, '%Y-%m-%d') = #{initDate}
+        </if>
+        <if test="initDate == null || initDate == ''">
+            AND date_format(t.pay_time, '%Y-%m-%d') = date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)
+        </if>
+        GROUP BY
+        t.tid,
+        t.suits_id
+        ) c on a.tid = c.tid and a.marketing_id = c.marketing_id
+
+        LEFT JOIN
+        (
+        SELECT
+        t.tid,
+        t.store_id,
+        t.marketing_id,
+        <![CDATA[
+                            CASE
+                            WHEN date_format(d.first_pay_time,'%Y-%m-%d') < date_format(t.pay_time,'%Y-%m-%d') THEN
+                            1 ELSE 0
+                            END AS boss_customer_flag,
+                            CASE
+                            WHEN d.first_pay_time_week < date_format( t.pay_time, '%x%v' ) THEN
+                            1 ELSE 0
+                            END AS boss_customer_flag_week,
+                            CASE
+                            WHEN date_format(e.first_pay_time,'%Y-%m-%d') < date_format(t.pay_time,'%Y-%m-%d') THEN
+                            1 ELSE 0
+                            END AS store_customer_flag,
+                            CASE
+
+                            WHEN t.pay_state = 3 THEN
+                            NULL
+                            WHEN e.first_pay_time_week < date_format( t.pay_time, '%x%v' ) THEN
+                            1 ELSE 0
+                            END AS store_customer_flag_week,
+                        ]]>
+        t.pay_time
+        FROM
+        (
+        SELECT
+        m.tid tid,
+        m.suits_id marketing_id,
+        min(m.store_id) store_id,
+        m.pay_state,
+        min(m.pay_time) pay_time,
+        min(m.customer_id) customer_id
+        FROM
+        replay_trade m
+        WHERE
+        m.pay_state = 2 and m.suit_marketing_flag=1
+        <if test="initDate != null and initDate != ''">
+            AND date_format(m.pay_time, '%Y-%m-%d') = #{initDate}
+        </if>
+        <if test="initDate == null || initDate == ''">
+            AND date_format(m.pay_time, '%Y-%m-%d') = date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)
+        </if>
+        GROUP BY
+        tid,
+        suits_id
+        ) t
+        LEFT JOIN
+        (
+        SELECT
+        min( first_pay_time ) AS first_pay_time,
+        min( date_format( first_pay_time, '%x%v' )) AS first_pay_time_week,
+        customer_id
+        FROM
+        customer_first_pay
+        GROUP BY
+        customer_id
+        ) d ON t.customer_id = d.customer_id
+        LEFT JOIN
+        (
+        SELECT
+        min( first_pay_time ) AS first_pay_time,
+        min( date_format( first_pay_time, '%x%v' )) AS first_pay_time_week,
+        customer_id,
+        store_id
+        FROM
+        customer_first_pay
+        GROUP BY
+        store_id,
+        customer_id
+        ) e ON t.customer_id = e.customer_id AND e.store_id = t.store_id
+        ) d on a.tid = d.tid and a.marketing_id = d.marketing_id
+    </insert>
+
+
+    <!-- 按订单与SKU编号维度每日统计:会员ID + 店铺ID + 营销ID + 购买数量 + 订单实际支付金额 + 优惠金额 + 支付时间 -->
+    <insert id="insertTradeMarketingSkuDetailDay"
+            parameterType="com.wanmi.ares.request.marketing.MarketingAnalysisJobRequest">
+        INSERT INTO
+        trade_marketing_sku_detail_day(`tid`, `sku_id`, `customer_id`,
+        `store_id`, `marketing_id`,`marketing_type`,
+        `total_pay_cash`, `discounts_amount`, `create_time`)
+        SELECT
+        sku.tid,
+        sku.sku_id,
+        t.customer_id,
+        sku.store_id,
+        sku.suits_id,
+        6,
+        t.total_pay_cash,
+        COALESCE(im.discounts_amount,0),
+        t.pay_time
+        FROM
+        replay_trade_item sku
+        LEFT JOIN
+        replay_trade t
+        ON
+        t.tid = sku.tid
+        LEFT JOIN
+        replay_trade_item_marketing im
+        ON
+        im.tid = sku.tid AND sku.sku_id = im.sku_id
+        WHERE
+        t.pay_state = 2 and t.suit_marketing_flag=1
+        <if test="initDate != null and initDate != ''">
+            AND date_format(t.pay_time, '%Y-%m-%d') = #{initDate}
+        </if>
+        <if test="initDate == null || initDate == ''">
+            AND date_format(t.pay_time, '%Y-%m-%d') =
+            date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)
+        </if>
+    </insert>
+
+    <!-- 按商品维度统计：SKU编码 + ROI + 营销支付件数 + 营销支付人数 + 营销支付金额 + 营销优惠金额 + 新老客户(平台/商家) + 连带率 + 客单价-->
+    <select id="pageActivityEffect" parameterType="com.wanmi.ares.request.marketing.EffectPageRequest" resultMap="MarketingOverviewMap">
+        SELECT
+        s.sku_id as goods_info_id,
+        min(g.goods_info_name) as goods_info_name,
+        min(g.goods_info_no) as goods_info_no,
+        g.supply_price AS supply_price,
+        truncate(sum(b.totalPayCash) / sum(b.discountsPayAmount), 2) as pay_roi,
+        min(COALESCE(b.goodsPayNum,0)) as pay_goods_count,
+        min(COALESCE(b.customerPayNum,0)) as pay_customer_count,
+        min(COALESCE(b.discountsPayAmount,0)) as discount_money,
+        count( DISTINCT CASE WHEN c.customerId IS NULL THEN c.d_customer_id END ) AS new_customer,
+        count( DISTINCT CASE WHEN c.customerId IS NOT NULL THEN c.d_customer_id END ) AS old_customer,
+        min(COALESCE(b.totalPayCash,0)) as pay_money,
+        min(COALESCE(b.payTradeCount,0)) AS pay_trade_count,
+        truncate(sum(b.goodsPayNum) / sum(b.payTradeCount), 2) as joint_rate,
+        truncate(sum(b.totalPayCash) / sum(b.customerPayNum), 2) as customer_price,
+        min(d.pv) pv,
+        min(e.uv) uv,
+        truncate(min(b.customerPayNum)  / min(e.uv),4)         as uVPayRate
+        FROM
+        (
+        SELECT
+        s.sku_id
+        FROM
+        replay_marketing_suits_sku s
+        where s.marketing_id in
+        (
+        SELECT marketing_id FROM replay_marketing m
+        WHERE m.marketing_type=6
+        <![CDATA[
+                               and date_format(m.begin_time, '%Y-%m-%d') >= #{queryDate}
+                                and date_format(m.begin_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)
+                            ]]>
+        <if test="storeId != null and storeId != ''">
+            and m.store_id = #{storeId}
+        </if>
+        <if test="marketingIds != null and marketingIds.size() != 0">
+            and m.marketing_id in
+            <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        AND m.del_flag = 0
+        )
+        GROUP BY
+        s.sku_id
+        ) s
+        INNER JOIN replay_goods_info g ON g.goods_info_id = s.sku_id
+        LEFT JOIN
+        (
+        SELECT
+        d.sku_id,
+        SUM(i.num ) AS goodsPayNum,
+        COUNT( DISTINCT d.customer_id ) AS customerPayNum,
+        SUM( d.total_pay_cash ) AS totalPayCash,
+        SUM( d.discounts_amount ) AS discountsPayAmount,
+        COUNT(DISTINCT d.tid ) AS payTradeCount
+        FROM
+        trade_marketing_sku_detail_day d
+        left join
+        replay_trade_item i on d.tid = i.tid and d.sku_id = i.sku_id
+        <where>
+            d.marketing_type =6
+            <![CDATA[
+                        and date_format(d.create_time, '%Y-%m-%d') >= #{queryDate}
+                    ]]>
+            <if test="storeId != null and storeId != ''">
+                and d.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size() != 0">
+                and d.marketing_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        GROUP BY
+        d.sku_id
+        ) b ON s.sku_id = b.sku_id
+        LEFT JOIN
+        (
+        SELECT
+        d.sku_id,
+        d.customer_id as d_customer_id,
+        min(e.customer_id) as customerId
+        FROM
+        trade_marketing_sku_detail_day d
+        <if test="storeId == null || storeId == ''">
+            left join (select distinct customer_id from customer_first_pay
+            where <![CDATA[date_format(first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+            ) e
+            on d.customer_id = e.customer_id
+        </if>
+        <if test="storeId != null and storeId != ''">
+            left join customer_first_pay e on d.customer_id = e.customer_id and e.store_id = d.store_id
+            and
+            <![CDATA[date_format(e.first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+        </if>
+        <where>
+            d.marketing_type = 6
+            <![CDATA[
+                        and date_format(d.create_time, '%Y-%m-%d') >= #{queryDate}
+                    ]]>
+            <if test="storeId != null and storeId != ''">
+                and d.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size() != 0">
+                and d.marketing_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        GROUP BY
+        d.sku_id,
+        d.customer_id
+        ) c ON s.sku_id = c.sku_id
+
+        left join
+        (
+        SELECT
+        sku_id as sku_id,
+        SUM( p.pv ) as pv
+        FROM
+        replay_marketing_sku_pv p
+        <if test="storeId != null ">
+            LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+        </if>
+        <where>
+            p.marketing_type = 6
+            <![CDATA[
+                    and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and p.marketing_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by sku_id
+        ) d on s.sku_id =  d.sku_id
+
+        left join
+        (
+        SELECT
+        sku_id as sku_id,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        <if test="storeId != null ">
+            LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        </if>
+        <where>
+            u.marketing_type = 6
+            <![CDATA[
+                    and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and u.marketing_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by sku_id
+        ) e on s.sku_id =  e.sku_id
+
+
+        <where>
+            <if test="goodsInfoName != null and goodsInfoName != ''">
+                g.goods_info_name like CONCAT('%',#{goodsInfoName},'%')
+            </if>
+        </where>
+        GROUP BY s.sku_id
+        <if test="sortName != null and sortName != '' and sortOrder != null and sortOrder != ''  ">
+            ORDER BY ${sortName} ${sortOrder}
+        </if>
+    </select>
+</mapper>

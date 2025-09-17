@@ -1,0 +1,57 @@
+{
+  "properties": {
+    "supplierName": {
+      "type": "keyword"
+    },
+    "orderInvoiceId": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "orderNo": {
+      "type": "keyword"
+    },
+    "invoiceTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "invoiceState": {
+      "type": "integer"
+    },
+    "delFlag": {
+      "type": "keyword"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "customerName": {
+      "type": "keyword"
+    },
+    "payOrderStatus": {
+      "type": "integer"
+    },
+    "flowState": {
+      "type": "keyword"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "customerId": {
+      "type": "keyword"
+    },
+    "invoiceType": {
+      "type": "integer"
+    },
+    "orderPrice": {
+      "type": "double"
+    },
+    "invoiceTitle": {
+      "type": "keyword"
+    }
+  }
+}

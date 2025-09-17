@@ -1,0 +1,36 @@
+db.getCollection("common_bar_infos").insert({
+  "_id": "62872cbdad37ec410e0265a3",
+  "envCode": "test1",
+  "key": "@wanmi/wechat-recommendFooter",
+  "__v": 0,
+  "addible": false,
+  "createdAt": "2022-05-20T05:53:02.034Z",
+  "deletable": false,
+  "deleted": false,
+  "dependencies": [
+    "@wanmi/wechat-recommendFooter"
+  ],
+  "img": "",
+  "isAdvanced": true,
+  "packageName": "@wanmi/wechat-recommendFooter",
+  "platform": "weixin",
+  "props": {
+    "props": {
+      "title": "请输入标题内容",
+      "showTypes": [
+        "readTimes",
+        "pointTimes",
+        "broadTimes"
+      ],
+      "version": "0.0.1"
+    },
+    "widgetNameSpace": "@wanmi/wechat-recommendFooter"
+  },
+  "replicable": false,
+  "title": "种草页底部",
+  "updatedAt": "2022-05-20T05:53:34.818Z",
+  "version": "0.0.1",
+  "refs": [
+    "d2cStore"
+  ]
+})

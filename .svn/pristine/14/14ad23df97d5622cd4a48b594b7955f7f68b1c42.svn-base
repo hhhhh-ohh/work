@@ -1,0 +1,38 @@
+package com.wanmi.sbc.order.orderperformance.repository;
+
+import com.wanmi.sbc.order.orderperformance.model.root.OrderPerformance;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+
+@Repository
+public interface OrderPerformanceRepository extends JpaRepository<OrderPerformance,String>, JpaSpecificationExecutor<OrderPerformance> {
+
+    /**
+     * 根据订单ID查询
+     * @param orderId
+     * @return
+     */
+    OrderPerformance findByOrderId(String orderId);
+
+
+    /**
+     * 根据代理唯一码查询订单业绩列表
+     * @param agentUniqueCode 代理唯一码
+     * @return 订单业绩列表
+     */
+    List<OrderPerformance> findByAgentUniqueCode(String agentUniqueCode);
+
+    /**
+     * 根据代理唯一码分页查询订单业绩
+     * @param agentUniqueCode 代理唯一码
+     * @param pageable 分页参数
+     * @return 订单业绩分页数据
+     */
+    Page<OrderPerformance> findByAgentUniqueCodeOrderByIdDesc(String agentUniqueCode, Pageable pageable);
+}

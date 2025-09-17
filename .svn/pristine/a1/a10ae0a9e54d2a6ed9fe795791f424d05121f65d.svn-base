@@ -1,0 +1,42 @@
+{
+  "properties": {
+    "brandId": {
+      "type": "long"
+    },
+    "pinYin": {
+      "type": "keyword"
+    },
+    "brandName": {
+      "type": "keyword"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "nickName": {
+      "type": "keyword"
+    },
+    "sPinYin": {
+      "type": "keyword"
+    },
+    "logo": {
+      "type": "keyword"
+    },
+    "updateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "delFlag": {
+      "type": "keyword"
+    },
+    "storeId": {
+      "type": "keyword"
+    },
+    "recommendFlag": {
+      "type": "integer"
+    },
+    "brandSort": {
+      "type": "long"
+    }
+  }
+}

@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: pc
+    name: pc-deployment
+  name: pc
+  namespace: sbc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pc
+  template:
+    metadata:
+      labels:
+        app: pc
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - image: {{IMAGE_NAME}}
+          imagePullPolicy: Always
+          name: pc
+          ports:
+            - containerPort: 8090
+              name: tomcat-port
+          livenessProbe:
+            httpGet:
+              path: /act/health
+              port: 8091
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 30
+          env:
+            - name: JAVA_OPTS
+              value: {{JAVA_ENV_PARAMS}}
+            - name: NACOS_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: sbc-config
+                  key: nacosAddress
+            - name: RESTART_
+              value: {{DATE}}
+#          resources:
+#            limits:
+#              cpu: '1'
+#              memory: 3Gi
+#            requests:
+#              cpu: '1'JAVA_ENV_PARAMS
+#              memory: 3Gi
+          volumeMounts:
+            - mountPath: /data/server/log
+              name: pc-logs
+      volumes:
+        - name: pc-logs
+          hostPath:
+            path: /data/sbc/logs/pc
+      hostNetwork: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pc-svc
+  namespace: sbc
+  labels:
+    k8s-app: pc-svc
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8090
+      targetPort: 8090
+      protocol: TCP
+      name: http
+  selector:
+    app: pc

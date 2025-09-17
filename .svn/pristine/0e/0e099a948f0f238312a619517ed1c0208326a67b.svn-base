@@ -1,0 +1,12 @@
+@startuml
+start
+:签约类目查询;
+:根据请求头AppKey获取所对应的商户;
+:根据商户的StoreId调用goods服务的已签约类目查询接口;
+if(返回是否成功) then(Y)
+    :封装数据返回结果;
+else
+    :返回空数据;
+endif;
+stop
+@enduml

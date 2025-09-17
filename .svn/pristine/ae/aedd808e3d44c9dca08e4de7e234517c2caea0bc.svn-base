@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.report.paymember.dao.PayMemberMapper">
+
+    <select id="queryTotal" resultType="java.lang.Long">
+        SELECT
+            count(1) AS num
+        FROM
+            replay_paying_member_customer_rel rpmcr
+        WHERE
+        <![CDATA[
+            rpmcr.del_flag = 0
+          AND DATE_FORMAT( rpmcr.open_time, '%Y-%m-%d' ) <= #{date}
+        ]]>
+    </select>
+
+    <select id="queryGrowthCount" resultType="java.lang.Long">
+        SELECT
+            count(1) AS num
+        FROM
+            replay_paying_member_customer_rel rpmcr
+        WHERE
+        <![CDATA[
+            rpmcr.del_flag = 0
+          AND DATE_FORMAT( rpmcr.open_time, '%Y-%m-%d' ) = #{date}
+        ]]>
+    </select>
+
+    <select id="queryOverTimeCount" resultType="java.lang.Long">
+        SELECT count(1) AS num
+        FROM replay_paying_member_customer_rel
+        WHERE del_flag = 0
+          AND DATE_FORMAT( expiration_date, '%Y-%m-%d' ) <![CDATA[ < ]]> #{date}
+    </select>
+
+</mapper>

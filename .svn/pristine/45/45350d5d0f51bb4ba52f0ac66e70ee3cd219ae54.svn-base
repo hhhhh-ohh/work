@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wanmi.sbc.vas.recommend.goodsrelatedrecommend.mapper.GoodsRelatedRecommendMapper">
+    <resultMap id="BaseResultMap" type="com.wanmi.sbc.vas.bean.vo.recommend.GoodsRelatedRecommendInfoVO">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="weight" jdbcType="INTEGER" property="weight" />
+        <result column="lift" jdbcType="INTEGER" property="lift" />
+        <result column="related_num" jdbcType="BIGINT" property="relatedNum" />
+        <result column="goods_id" jdbcType="VARCHAR" property="goodsId" />
+        <result column="goods_name" jdbcType="VARCHAR" property="goodsName" />
+        <result column="goods_img" jdbcType="VARCHAR" property="goodsImage" />
+        <result column="goods_no" jdbcType="VARCHAR" property="goodsNo" />
+        <result column="cate_name" jdbcType="VARCHAR" property="goodsCate" />
+        <result column="brand_name" jdbcType="VARCHAR" property="goodsBrand" />
+        <result column="store_name" jdbcType="VARCHAR" property="storeName" />
+        <result column="market_price" jdbcType="DECIMAL" property="marketPrice" />
+        <result column="buy_point" jdbcType="BIGINT" property="buyPoint" />
+        <result column="stock" jdbcType="BIGINT" property="stock" />
+        <result column="goods_sales_num" jdbcType="BIGINT" property="goodsSalesNum" />
+        <result column="related_goods_id" jdbcType="VARCHAR" property="relatedGoodsId"/>
+        <result column="r_goods_name" jdbcType="VARCHAR" property="relatedGoodsName" />
+        <result column="r_goods_img" jdbcType="VARCHAR" property="relatedGoodsImage" />
+        <result column="r_store_name" jdbcType="VARCHAR" property="relatedStoreName" />
+    </resultMap>
+
+    <select id="getGoodsRelatedRecommendNum" resultType="java.lang.Long" parameterType="com.wanmi.sbc.vas.api.request.recommend.goodsrelatedrecommend.GoodsRelatedRecommendInfoListRequest">
+        SELECT
+          count(1) relatedNum
+        from (
+            SELECT
+              g.goods_id
+            FROM
+              `s2b_statistics`.`replay_goods` g
+            LEFT JOIN (
+                SELECT
+                min( gi.market_price ) market_price,
+                g.goods_id
+                FROM
+                `s2b_statistics`.`replay_goods` g
+                LEFT JOIN `s2b_statistics`.`replay_goods_info` gi ON gi.goods_id = g.goods_id
+                GROUP BY
+                g.goods_id
+            ) res ON res.goods_id = g.goods_id
+            LEFT JOIN `s2b_statistics`.`replay_goods_cate` gc ON gc.cate_id = g.cate_id
+            LEFT JOIN `s2b_statistics`.`replay_goods_brand` gb ON gb.brand_id = g.brand_id
+            LEFT JOIN `s2b_statistics`.`replay_store` s ON s.store_id = g.store_id
+            LEFT JOIN goods_related_recommend gr ON gr.goods_id = g.goods_id
+            WHERE
+              g.audit_status = 1 and g.del_flag = 0 and g.goods_source = 1
+            <if  test="goodsName != null and goodsName != ''">
+                and g.goods_name like concat('%',#{goodsName},'%')
+            </if>
+            <if  test="storeName != null and storeName != ''">
+                and s.store_name like concat('%',#{storeName},'%')
+            </if>
+            <if  test="goodsNo != null and goodsNo != ''">
+                and g.goods_no like concat('%',#{goodsNo},'%')
+            </if>
+            <if  test="goodsCateId != null">
+                and g.cate_id = #{goodsCateId}
+            </if>
+            <if test="goodsCateIds!=null and goodsCateIds.size()>0 ">
+                and g.cate_id in
+                <foreach collection="goodsCateIds" item="item"
+                         separator="," open="(" close=")" index="">
+                    #{item,jdbcType=BIGINT}
+                </foreach>
+            </if>
+            <if  test="goodsBrandId != null">
+                and g.brand_id = #{goodsBrandId}
+            </if>
+            GROUP BY g.goods_id
+        ) res
+    </select>
+
+    <select id="getGoodsRelatedRecommendInfoList" resultMap="BaseResultMap" parameterType="com.wanmi.sbc.vas.api.request.recommend.goodsrelatedrecommend.GoodsRelatedRecommendInfoListRequest">
+        select * from (
+            SELECT
+            g.goods_id,
+            count(gr.goods_id) related_num,
+            sum(gr.lift) lift,
+            g.goods_name,
+            g.goods_img,
+            g.goods_no,
+            gc.cate_name,
+            gb.brand_name,
+            s.store_name,
+            res.market_price,
+            res.buy_point,
+            g.stock,
+            g.goods_sales_num,
+            min(gr.create_time) create_time
+            FROM
+            `s2b_statistics`.`replay_goods` g
+            LEFT JOIN (
+            SELECT
+            min(gi.buy_point) buy_point,
+            min( gi.market_price ) market_price,
+            g.goods_id
+            FROM
+            `s2b_statistics`.`replay_goods` g
+            LEFT JOIN `s2b_statistics`.`replay_goods_info` gi ON gi.goods_id = g.goods_id
+            GROUP BY
+            g.goods_id
+            ) res ON res.goods_id = g.goods_id
+            LEFT JOIN `s2b_statistics`.`replay_goods_cate` gc ON gc.cate_id = g.cate_id
+            LEFT JOIN `s2b_statistics`.`replay_goods_brand` gb ON gb.brand_id = g.brand_id
+            LEFT JOIN `s2b_statistics`.`replay_store` s ON s.store_id = g.store_id
+            LEFT JOIN goods_related_recommend gr ON gr.goods_id = g.goods_id
+            WHERE
+            g.audit_status = 1 and g.del_flag = 0 and g.goods_source = 1
+            <if  test="goodsName != null and goodsName != ''">
+                and g.goods_name like concat('%',#{goodsName},'%')
+            </if>
+            <if  test="storeName != null and storeName != ''">
+                and s.store_name like concat('%',#{storeName},'%')
+            </if>
+            <if  test="goodsNo != null and goodsNo != ''">
+                and g.goods_no like concat('%',#{goodsNo},'%')
+            </if>
+            <if  test="goodsCateId != null">
+                and g.cate_id = #{goodsCateId}
+            </if>
+            <if test="goodsCateIds!=null and goodsCateIds.size()>0 ">
+                and g.cate_id in
+                <foreach collection="goodsCateIds" item="item" separator="," open="(" close=")" index="">
+                    #{item,jdbcType=BIGINT}
+                </foreach>
+            </if>
+            <if  test="goodsBrandId != null">
+                and g.brand_id = #{goodsBrandId}
+            </if>
+            GROUP BY g.goods_id
+            ORDER BY g.create_time DESC) res
+        <if  test="sortColumn != null and sortRole != null">
+            ORDER BY ${sortColumn} ${sortRole},res.create_time desc
+        </if>
+    </select>
+
+    <select id="getGoodsRelatedRecommendDetailNum" resultType="java.lang.Long" parameterType="com.wanmi.sbc.vas.api.request.recommend.goodsrelatedrecommend.GoodsRelatedRecommendInfoListRequest">
+        SELECT
+                count(1)
+        from (
+            select
+                gr.goods_id,
+                ugr.related_goods_id
+            FROM
+                    goods_related_recommend gr
+            LEFT JOIN  `s2b_statistics`.`replay_goods` g ON gr.goods_id = g.goods_id
+            LEFT JOIN (
+                SELECT
+                    min( gi.market_price ) market_price,
+                    g.goods_id
+                FROM
+                `s2b_statistics`.`replay_goods` g
+                LEFT JOIN `s2b_statistics`.`replay_goods_info` gi ON gi.goods_id = g.goods_id
+                GROUP BY g.goods_id
+            ) res ON res.goods_id = g.goods_id
+            LEFT JOIN `s2b_statistics`.`replay_goods_cate` gc ON gc.cate_id = g.cate_id
+            LEFT JOIN `s2b_statistics`.`replay_goods_brand` gb ON gb.brand_id = g.brand_id
+            LEFT JOIN `s2b_statistics`.`replay_store` s ON s.store_id = g.store_id
+            inner join goods_related_recommend ugr on ugr.goods_id = gr.goods_id
+            LEFT JOIN  `s2b_statistics`.`replay_goods` g1 ON ugr.related_goods_id = g1.goods_id
+            LEFT JOIN `s2b_statistics`.`replay_store` s1 ON s1.store_id = g1.store_id
+            WHERE g.audit_status = 1 and g.del_flag = 0
+            <if test="goodsId != null and goodsId != ''">
+                and g.goods_id = #{goodsId}
+            </if>
+            <if  test="goodsName != null and goodsName != ''">
+                and g.goods_name like concat('%',#{goodsName},'%')
+            </if>
+            <if  test="storeName != null and storeName != ''">
+                and s.store_name like concat('%',#{storeName},'%')
+            </if>
+            <if  test="goodsNo != null and goodsNo != ''">
+                and g.goods_no like concat('%',#{goodsNo},'%')
+            </if>
+            <if  test="goodsCateId != null">
+                and g.cate_id = #{goodsCateId}
+            </if>
+            <if  test="goodsBrandId != null">
+                and g.brand_id = #{goodsBrandId}
+            </if>
+                group by gr.goods_id,ugr.related_goods_id ) res
+    </select>
+
+    <select id="getGoodsRelatedRecommendInfoDetailList" resultMap="BaseResultMap" parameterType="com.wanmi.sbc.vas.api.request.recommend.goodsrelatedrecommend.GoodsRelatedRecommendInfoListRequest">
+        SELECT
+                min(ugr.id) id,
+                g.goods_id,
+                min(ugr.lift) lift,
+                min(ugr.weight) weight,
+                g.goods_name,
+                g.goods_img,
+                g.goods_no,
+                gc.cate_name,
+                gb.brand_name,
+                s.store_name,
+                res.market_price,
+                res.buy_point,
+                g.stock,
+                g.goods_sales_num,
+				ugr.related_goods_id,
+				g1.goods_name r_goods_name,
+                g1.goods_img r_goods_img,
+				s1.store_name r_store_name
+        FROM
+				goods_related_recommend gr
+        LEFT JOIN  `s2b_statistics`.`replay_goods` g ON gr.goods_id = g.goods_id
+        LEFT JOIN (
+        SELECT
+        min(gi.buy_point) buy_point,
+        min( gi.market_price ) market_price,
+        g.goods_id
+        FROM
+        `s2b_statistics`.`replay_goods` g
+        LEFT JOIN `s2b_statistics`.`replay_goods_info` gi ON gi.goods_id = g.goods_id
+        GROUP BY
+        g.goods_id
+        ) res ON res.goods_id = g.goods_id
+        LEFT JOIN `s2b_statistics`.`replay_goods_cate` gc ON gc.cate_id = g.cate_id
+        LEFT JOIN `s2b_statistics`.`replay_goods_brand` gb ON gb.brand_id = g.brand_id
+        LEFT JOIN `s2b_statistics`.`replay_store` s ON s.store_id = g.store_id
+				inner join goods_related_recommend ugr on ugr.goods_id = gr.goods_id
+				LEFT JOIN  `s2b_statistics`.`replay_goods` g1 ON ugr.related_goods_id = g1.goods_id
+				LEFT JOIN `s2b_statistics`.`replay_store` s1 ON s1.store_id = g1.store_id
+        WHERE g.audit_status = 1 and g.del_flag = 0
+        <if test="goodsId != null and goodsId != ''">
+          and g.goods_id = #{goodsId}
+        </if>
+        <if  test="goodsName != null and goodsName != ''">
+            and g.goods_name like concat('%',#{goodsName},'%')
+        </if>
+        <if  test="storeName != null and storeName != ''">
+            and s.store_name like concat('%',#{storeName},'%')
+        </if>
+        <if  test="goodsNo != null and goodsNo != ''">
+            and g.goods_no like concat('%',#{goodsNo},'%')
+        </if>
+        <if  test="goodsCateId != null">
+            and g.cate_id = #{goodsCateId}
+        </if>
+        <if  test="goodsBrandId != null">
+            and g.brand_id = #{goodsBrandId}
+        </if>
+		group by gr.goods_id,ugr.related_goods_id
+        <if  test="sortColumn != null and sortRole != null">
+            ORDER BY ${sortColumn} ${sortRole},g.create_time desc
+        </if>
+    </select>
+
+    <select id="getGoodsRelatedRecommendDataDetailNum" resultType="java.lang.Long" parameterType="com.wanmi.sbc.vas.api.request.recommend.goodsrelatedrecommend.GoodsRelatedRecommendInfoListRequest">
+        SELECT
+          count(1)
+        FROM
+        goods_related_recommend ugr
+        LEFT JOIN  `s2b_statistics`.`replay_goods` g ON ugr.related_goods_id = g.goods_id
+        LEFT JOIN (
+        SELECT
+        min( gi.market_price ) market_price,
+        g.goods_id
+        FROM
+        `s2b_statistics`.`replay_goods` g
+        LEFT JOIN `s2b_statistics`.`replay_goods_info` gi ON gi.goods_id = g.goods_id
+        GROUP BY
+        g.goods_id
+        ) res ON res.goods_id = g.goods_id
+        LEFT JOIN `s2b_statistics`.`replay_goods_cate` gc ON gc.cate_id = g.cate_id
+        LEFT JOIN `s2b_statistics`.`replay_goods_brand` gb ON gb.brand_id = g.brand_id
+        LEFT JOIN `s2b_statistics`.`replay_store` s ON s.store_id = g.store_id
+        WHERE g.audit_status = 1 and g.del_flag = 0
+        <if test="goodsId != null and goodsId != ''">
+            and ugr.goods_id = #{goodsId}
+        </if>
+    </select>
+
+    <select id="getGoodsRelatedRecommendDataDetailList" resultMap="BaseResultMap" parameterType="com.wanmi.sbc.vas.api.request.recommend.goodsrelatedrecommend.GoodsRelatedRecommendInfoListRequest">
+        SELECT
+                ugr.id,
+				ugr.goods_id,
+				ugr.related_goods_id,
+                ugr.lift,
+                ugr.weight,
+                g.goods_name,
+                g.goods_img,
+                g.goods_no,
+                gc.cate_name,
+                gb.brand_name,
+                s.store_name,
+                res.market_price,
+                res.buy_point,
+                g.stock,
+                g.goods_sales_num
+        FROM
+				goods_related_recommend ugr
+        LEFT JOIN  `s2b_statistics`.`replay_goods` g ON ugr.related_goods_id = g.goods_id
+        LEFT JOIN (
+        SELECT
+        min(gi.buy_point) buy_point,
+        min( gi.market_price ) market_price,
+        g.goods_id
+        FROM
+        `s2b_statistics`.`replay_goods` g
+        LEFT JOIN `s2b_statistics`.`replay_goods_info` gi ON gi.goods_id = g.goods_id
+        GROUP BY
+        g.goods_id
+        ) res ON res.goods_id = g.goods_id
+        LEFT JOIN `s2b_statistics`.`replay_goods_cate` gc ON gc.cate_id = g.cate_id
+        LEFT JOIN `s2b_statistics`.`replay_goods_brand` gb ON gb.brand_id = g.brand_id
+        LEFT JOIN `s2b_statistics`.`replay_store` s ON s.store_id = g.store_id
+        WHERE g.audit_status = 1 and g.del_flag = 0
+        <if test="goodsId != null and goodsId != ''">
+            and ugr.goods_id = #{goodsId}
+        </if>
+        <if  test="sortColumn != null and sortRole != null">
+            ORDER BY ${sortColumn} ${sortRole},g.create_time desc
+        </if>
+    </select>
+
+    <select id="getGoodsRelatedRecommendChooseNum" resultType="java.lang.Long" parameterType="com.wanmi.sbc.vas.api.request.recommend.goodsrelatedrecommend.GoodsRelatedRecommendInfoListRequest">
+        SELECT
+        count(DISTINCT(g.goods_id))
+        FROM
+        `s2b_statistics`.`replay_goods` g
+        LEFT JOIN goods_related_recommend ugr ON ugr.related_goods_id = g.goods_id and ugr.goods_id = #{goodsId}
+        LEFT JOIN (
+        SELECT
+        min( gi.market_price ) market_price,
+        g.goods_id
+        FROM
+        `s2b_statistics`.`replay_goods` g
+        LEFT JOIN `s2b_statistics`.`replay_goods_info` gi ON gi.goods_id = g.goods_id
+        GROUP BY
+        g.goods_id
+        ) res ON res.goods_id = g.goods_id
+        <if test="goodsInfoNo != null and goodsInfoNo != ''">
+            inner join
+            (select DISTINCT goods_id from `s2b_statistics`.`replay_goods_info`
+            WHERE  goods_info_no like CONCAT('%',#{goodsInfoNo},'%') )  gin
+            on gin.goods_id = g.goods_id
+        </if>
+        LEFT JOIN `s2b_statistics`.`replay_goods_cate` gc ON gc.cate_id = g.cate_id
+        LEFT JOIN `s2b_statistics`.`replay_goods_brand` gb ON gb.brand_id = g.brand_id
+        LEFT JOIN `s2b_statistics`.`replay_store` s ON s.store_id = g.store_id
+        WHERE g.audit_status = 1  and g.del_flag = 0 and ugr.related_goods_id is null and g.goods_source = 1
+        <if  test="goodsName != null and goodsName != ''">
+            and g.goods_name like concat('%',#{goodsName},'%')
+        </if>
+        <if  test="storeName != null and storeName != ''">
+            and s.store_name like concat('%',#{storeName},'%')
+        </if>
+        <if  test="goodsNo != null and goodsNo != ''">
+            and g.goods_no like concat('%',#{goodsNo},'%')
+        </if>
+        <if  test="goodsCateId != null">
+            and g.cate_id = #{goodsCateId}
+        </if>
+        <if test="goodsCateIds!=null and goodsCateIds.size()>0 ">
+            and g.cate_id in
+            <foreach collection="goodsCateIds" item="item" separator="," open="(" close=")" index="">
+                #{item,jdbcType=BIGINT}
+            </foreach>
+        </if>
+        <if  test="addedFlag != null">
+            and g.added_flag = #{addedFlag}
+        </if>
+        <if  test="vendibility != null">
+            and g.vendibility = #{vendibility}
+        </if>
+        <if  test="goodsBrandId != null">
+            and g.brand_id = #{goodsBrandId}
+        </if>
+        <if  test="minMarketPrice != null">
+            and g.sku_min_market_price >= #{minMarketPrice}
+        </if>
+        <if  test="maxMarketPrice != null">
+            and g.sku_min_market_price &lt;= #{maxMarketPrice}
+        </if>
+        <if  test="minGoodsSalesNum != null">
+            and g.goods_sales_num >= #{minGoodsSalesNum}
+        </if>
+        <if  test="maxGoodsSalesNum != null">
+            and g.goods_sales_num &lt;= #{maxGoodsSalesNum}
+        </if>
+        <if  test="minStock != null">
+            and g.stock >= #{minStock}
+        </if>
+        <if  test="maxStock != null">
+            and g.stock &lt;= #{maxStock}
+        </if>
+        <if  test="labelId != null">
+            and FIND_IN_SET(#{labelId}, g.label_id_str)
+        </if>
+    </select>
+
+    <select id="getGoodsRelatedRecommendChooseList" resultMap="BaseResultMap" parameterType="com.wanmi.sbc.vas.api.request.recommend.goodsrelatedrecommend.GoodsRelatedRecommendInfoListRequest">
+        SELECT
+        g.goods_id,
+        g.goods_name,
+        g.goods_img,
+        g.goods_no,
+        gc.cate_name,
+        gb.brand_name,
+        s.store_name,
+        res.market_price,
+        res.buy_point,
+        g.stock,
+        g.goods_sales_num
+        FROM
+        `s2b_statistics`.`replay_goods` g
+        LEFT JOIN goods_related_recommend ugr ON ugr.related_goods_id = g.goods_id and ugr.goods_id = #{goodsId}
+        LEFT JOIN (
+        SELECT
+        min(gi.buy_point) buy_point,
+        min( gi.market_price ) market_price,
+        g.goods_id
+        FROM
+        `s2b_statistics`.`replay_goods` g
+        LEFT JOIN `s2b_statistics`.`replay_goods_info` gi ON gi.goods_id = g.goods_id
+        GROUP BY
+        g.goods_id
+        ) res ON res.goods_id = g.goods_id
+        <if test="goodsInfoNo != null and goodsInfoNo != ''">
+            inner join
+            (select DISTINCT goods_id from `s2b_statistics`.`replay_goods_info`
+            WHERE  goods_info_no like CONCAT('%',#{goodsInfoNo},'%') )  gin
+            on gin.goods_id = g.goods_id
+        </if>
+        LEFT JOIN `s2b_statistics`.`replay_goods_cate` gc ON gc.cate_id = g.cate_id
+        LEFT JOIN `s2b_statistics`.`replay_goods_brand` gb ON gb.brand_id = g.brand_id
+        LEFT JOIN `s2b_statistics`.`replay_store` s ON s.store_id = g.store_id
+        WHERE g.audit_status = 1  and g.del_flag = 0 and ugr.related_goods_id is null and g.goods_source = 1
+        <if  test="goodsName != null and goodsName != ''">
+            and g.goods_name like concat('%',#{goodsName},'%')
+        </if>
+        <if  test="storeName != null and storeName != ''">
+            and s.store_name like concat('%',#{storeName},'%')
+        </if>
+        <if  test="goodsNo != null and goodsNo != ''">
+            and g.goods_no like concat('%',#{goodsNo},'%')
+        </if>
+        <if  test="goodsCateId != null">
+            and g.cate_id = #{goodsCateId}
+        </if>
+        <if test="goodsCateIds!=null and goodsCateIds.size()>0 ">
+            and g.cate_id in
+            <foreach collection="goodsCateIds" item="item" separator="," open="(" close=")" index="">
+                #{item,jdbcType=BIGINT}
+            </foreach>
+        </if>
+        <if  test="addedFlag != null">
+            and g.added_flag = #{addedFlag}
+        </if>
+        <if  test="vendibility != null">
+            and g.vendibility = #{vendibility}
+        </if>
+        <if  test="goodsBrandId != null">
+            and g.brand_id = #{goodsBrandId}
+        </if>
+        <if  test="minMarketPrice != null">
+            and g.sku_min_market_price >= #{minMarketPrice}
+        </if>
+        <if  test="maxMarketPrice != null">
+            and g.sku_min_market_price &lt;= #{maxMarketPrice}
+        </if>
+        <if  test="minGoodsSalesNum != null">
+            and g.goods_sales_num >= #{minGoodsSalesNum}
+        </if>
+        <if  test="maxGoodsSalesNum != null">
+            and g.goods_sales_num &lt;= #{maxGoodsSalesNum}
+        </if>
+        <if  test="minStock != null">
+            and g.stock >= #{minStock}
+        </if>
+        <if  test="maxStock != null">
+            and g.stock &lt;= #{maxStock}
+        </if>
+        <if  test="labelId != null">
+            and FIND_IN_SET(#{labelId}, g.label_id_str)
+        </if>
+        group by g.goods_id
+        <if  test="sortColumn != null and sortRole != null">
+            ORDER BY ${sortColumn} ${sortRole},g.create_time desc
+        </if>
+    </select>
+
+
+</mapper>

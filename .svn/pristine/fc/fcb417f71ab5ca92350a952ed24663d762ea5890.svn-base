@@ -1,0 +1,2 @@
+1. jwt存储到redis的key重新设计，加入了前缀(JSON_WEB_TOKEN)，改动了micro-service项目,jar包版本4.0.5-RELEASE
+2. 执行 curl -XDELETE http://localhost:9200/es_goods_brand，重新去/es-init初始化品牌

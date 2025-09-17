@@ -1,0 +1,79 @@
+{
+  "properties": {
+    "settleId": {
+      "type": "long"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "startTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "endTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "storeName": {
+      "type": "keyword"
+    },
+    "totalAmount": {
+      "type": "double"
+    },
+    "totalProviderPrice": {
+      "type": "double"
+    },
+    "totalStorePrice": {
+      "type": "double"
+    },
+    "totalCommissionPrice": {
+      "type": "double"
+    },
+    "totalPlatformPrice": {
+      "type": "double"
+    },
+    "totalSplitPayPrice": {
+      "type": "double"
+    },
+    "totalCommonCouponPrice": {
+      "type": "double"
+    },
+    "totalPoints": {
+      "type": "double"
+    },
+    "providerGoodsTotalPrice": {
+      "type": "double"
+    },
+    "providerDeliveryTotalPrice": {
+      "type": "double"
+    },
+    "deliveryPrice": {
+      "type": "double"
+    },
+    "lakalaLedgerStatus": {
+      "type": "integer"
+    },
+    "settlementCode": {
+      "type": "keyword"
+    },
+    "companyCode": {
+      "type": "keyword"
+    },
+    "id": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "settleUuid": {
+      "type": "keyword"
+    }
+  }
+}

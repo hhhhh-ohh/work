@@ -1,0 +1,8 @@
+@startuml
+start
+:编辑店铺分类;
+:根据请求头AppKey获取所对应的商户;
+:调用goods服务的编辑店铺分类接口;
+:MQ记录操作日志;
+stop
+@enduml

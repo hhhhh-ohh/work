@@ -1,0 +1,31 @@
+{
+  "properties": {
+    "sumId": {
+      "type": "long"
+    },
+    "storeId": {
+      "type": "keyword"
+    },
+    "storeName": {
+      "type": "keyword"
+    },
+    "sumServerScore": {
+      "type": "keyword"
+    },
+    "sumGoodsScore": {
+      "type": "keyword"
+    },
+    "sumLogisticsScoreScore": {
+      "type": "keyword"
+    },
+    "orderNum": {
+      "type": "keyword"
+    },
+    "scoreCycle": {
+      "type": "keyword"
+    },
+    "sumCompositeScore": {
+      "type": "keyword"
+    }
+  }
+}

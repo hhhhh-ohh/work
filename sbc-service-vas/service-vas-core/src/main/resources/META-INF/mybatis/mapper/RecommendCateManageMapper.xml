@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wanmi.sbc.vas.recommend.recommendcatemanage.mapper.RecommendCateManageMapper">
+    <!--<resultMap id="BaseResultMap" type="com.wanmi.sbc.crm.bean.vo.RecommendCateManageInfoVO">
+        <id column="firstCateId" jdbcType="VARCHAR" property="parenId" />
+        <result column="recommendFirstCateId" jdbcType="BIGINT" property="recommendCateId" />
+        <result column="firstCateWeight" jdbcType="INTEGER" property="weight" />
+        <result column="firstCateNoPushType" jdbcType="TINYINT" property="noPushType" />
+        <result column="firstCateId" jdbcType="VARCHAR" property="cateId" />
+        <result column="firstCateName" jdbcType="VARCHAR" property="cateName" />
+        <collection property="children" ofType="com.wanmi.sbc.crm.bean.vo.RecommendCateManageInfoVO">
+            <id column="secondParenId" jdbcType="BIGINT" property="parenId" />
+            <result column="recommendSecondCateId" jdbcType="BIGINT" property="recommendCateId" />
+            <result column="secondCateWeight" jdbcType="INTEGER" property="weight" />
+            <result column="secondCateNoPushType" jdbcType="TINYINT" property="noPushType" />
+            <result column="secondCateId" jdbcType="VARCHAR" property="cateId" />
+            <result column="secondCateName" jdbcType="VARCHAR" property="cateName" />
+            <collection property="children" ofType="com.wanmi.sbc.crm.bean.vo.RecommendCateManageInfoVO">
+                <id column="thirdParenId" jdbcType="BIGINT" property="parenId" />
+                <result column="recommendThirdCateId" jdbcType="BIGINT" property="recommendCateId" />
+                <result column="thirdCateWeight" jdbcType="INTEGER" property="weight" />
+                <result column="thirdCateNoPushType" jdbcType="TINYINT" property="noPushType" />
+                <result column="thirdCateId" jdbcType="VARCHAR" property="cateId" />
+                <result column="thirdCateName" jdbcType="VARCHAR" property="cateName" />
+            </collection>
+        </collection>
+    </resultMap>-->
+
+    <resultMap id="BaseResultMap" type="com.wanmi.sbc.vas.bean.vo.recommend.RecommendCateManageInfoVO">
+        <id column="firstCateId" jdbcType="VARCHAR" property="cateId" />
+        <result column="firstCateId" jdbcType="VARCHAR" property="key" />
+        <result column="firstCateName" jdbcType="VARCHAR" property="cateName" />
+        <result column="recommendFirstCateId" jdbcType="BIGINT" property="recommendCateId" />
+        <result column="firstCateWeight" jdbcType="INTEGER" property="weight" />
+        <result column="firstCateNoPushType" jdbcType="TINYINT" property="noPushType" />
+        <collection property="children"
+                    javaType="ArrayList"
+                    ofType="com.wanmi.sbc.vas.bean.vo.recommend.RecommendCateManageInfoVO"
+                    resultMap="BaseResultSecondCateMap">
+        </collection>
+    </resultMap>
+    <resultMap id="BaseResultSecondCateMap" type="com.wanmi.sbc.vas.bean.vo.recommend.RecommendCateManageInfoVO">
+        <id column="secondCateId" jdbcType="VARCHAR" property="cateId" />
+        <result column="secondCateId" jdbcType="VARCHAR" property="key" />
+        <result column="secondCateName" jdbcType="VARCHAR" property="cateName" />
+        <result column="secondParenId" jdbcType="VARCHAR" property="parenId" />
+        <result column="recommendSecondCateId" jdbcType="BIGINT" property="recommendCateId" />
+        <result column="secondCateWeight" jdbcType="INTEGER" property="weight" />
+        <result column="secondCateNoPushType" jdbcType="TINYINT" property="noPushType" />
+        <collection property="children"
+                    javaType="ArrayList"
+                    ofType="com.wanmi.sbc.vas.bean.vo.recommend.RecommendCateManageInfoVO"
+                    resultMap="BaseResultThirdCateMap">
+        </collection>
+    </resultMap>
+    <resultMap id="BaseResultThirdCateMap" type="com.wanmi.sbc.vas.bean.vo.recommend.RecommendCateManageInfoVO">
+        <id column="thirdCateId" jdbcType="VARCHAR" property="cateId" />
+        <result column="thirdCateId" jdbcType="VARCHAR" property="key" />
+        <result column="thirdCateName" jdbcType="VARCHAR" property="cateName" />
+        <result column="thirdParenId" jdbcType="VARCHAR" property="parenId" />
+        <result column="recommendThirdCateId" jdbcType="BIGINT" property="recommendCateId" />
+        <result column="thirdCateWeight" jdbcType="INTEGER" property="weight" />
+        <result column="thirdCateNoPushType" jdbcType="TINYINT" property="noPushType" />
+    </resultMap>
+
+    <!--<select id="getRecommendCateInfoList" resultMap="BaseResultMap" parameterType="com.wanmi.sbc.crm.api.request.recommendcatemanage.RecommendCateManageInfoListRequest">
+        SELECT
+        gc1.cate_id firstCateId,
+        gc1.cate_name firstCateName,
+        gc1.cate_parent_id firstParenId ,
+        cm1.id recommendFirstCateId,
+        cm1.weight firstCateWeight,
+        cm1.no_push_type firstCateNoPushType,
+        gc2.cate_id secondCateId,
+        gc2.cate_name secondCateName,
+        gc2.cate_parent_id secondParenId,
+        cm2.id recommendSecondCateId,
+        cm2.weight secondCateWeight,
+        cm2.no_push_type secondCateNoPushType,
+        gc3.cate_id thirdCateId,
+        gc3.cate_name thirdCateName,
+        gc3.cate_parent_id thirdParenId,
+        cm3.id recommendThirdCateId,
+        cm3.weight thirdCateWeight,
+        cm3.no_push_type thirdCateNoPushType
+        FROM
+        `s2b_statistics`.`replay_goods_cate` gc1
+        left join recommend_cate_manage cm1 on cm1.cate_id = gc1.cate_id
+        INNER JOIN `s2b_statistics`.`replay_goods_cate` gc2 ON gc2.cate_parent_id = gc1.cate_id
+        left join recommend_cate_manage cm2 on cm2.cate_id = gc2.cate_id
+        INNER JOIN `s2b_statistics`.`replay_goods_cate` gc3 ON gc3.cate_parent_id = gc2.cate_id
+        left join recommend_cate_manage cm3 on cm3.cate_id = gc3.cate_id
+        where gc1.cate_grade>0 and gc3.del_flag = 0
+        <if  test="cateId != null">
+            and gc3.cate_id = #{cateId}
+        </if>
+        order by
+        <if  test="sortRole != null and sortRole != ''">
+            cm3.weight ${sortRole},
+        </if>
+        gc1.cate_id desc,gc2.cate_id desc,gc3.cate_id desc
+    </select>-->
+
+    <select id="getRecommendCateInfoList" resultMap="BaseResultMap" parameterType="com.wanmi.sbc.vas.api.request.recommend.recommendcatemanage.RecommendCateManageInfoListRequest">
+        SELECT
+        gc1.cate_id firstCateId,
+        gc1.cate_name firstCateName,
+        gc1.cate_parent_id firstParenId ,
+        IFNULL(rcm1.id,-1) recommendFirstCateId,
+        res1.weight firstCateWeight,
+        rcm1.no_push_type firstCateNoPushType,
+        gc2.cate_id secondCateId,
+        gc2.cate_name secondCateName,
+        gc2.cate_parent_id secondParenId,
+        IFNULL(rcm2.id,-1) recommendSecondCateId,
+        res2.weight secondCateWeight,
+        rcm2.no_push_type secondCateNoPushType,
+        gc3.cate_id thirdCateId,
+        gc3.cate_name thirdCateName,
+        gc3.cate_parent_id thirdParenId,
+        res3.id recommendThirdCateId,
+        res3.weight thirdCateWeight,
+        res3.no_push_type thirdCateNoPushType
+        FROM
+        `s2b_statistics`.`replay_goods_cate` gc1
+        left join recommend_cate_manage rcm1 on rcm1.cate_id = gc1.cate_id
+        left join (
+        SELECT
+        gc2.cate_parent_id cate_id,
+        sum(res2.weight) weight,
+        min( res2.no_push_type ) no_push_type,
+        min( res2.id ) id
+        from`s2b_statistics`.`replay_goods_cate` gc2
+        LEFT JOIN (SELECT
+        gc3.cate_parent_id cate_id,
+        sum(res3.weight) weight,
+        min( res3.no_push_type ) no_push_type,
+        min( res3.id ) id
+        FROM
+        `s2b_statistics`.`replay_goods_cate` gc3
+        LEFT JOIN (select
+        min( id ) id,
+        cate_id,
+        sum(weight) weight,
+        min( no_push_type ) no_push_type
+        from recommend_cate_manage cm3 GROUP BY cate_id
+        ) res3 ON res3.cate_id = gc3.cate_id
+        where gc3.del_flag = 0
+        GROUP BY gc3.cate_parent_id ) res2 ON res2.cate_id = gc2.cate_id
+        GROUP BY gc2.cate_parent_id
+        )res1 ON res1.cate_id = gc1.cate_id
+        INNER JOIN `s2b_statistics`.`replay_goods_cate` gc2 ON gc2.cate_parent_id = gc1.cate_id
+        left join recommend_cate_manage rcm2 on rcm2.cate_id = gc2.cate_id
+        left join (SELECT
+        gc3.cate_parent_id cate_id,
+        sum(res3.weight) weight,
+        min( res3.no_push_type ) no_push_type,
+        min( res3.id ) id
+        FROM
+        `s2b_statistics`.`replay_goods_cate` gc3
+        LEFT JOIN (select
+        min( id ) id,
+        cate_id,
+        sum( weight ) weight,
+        min( no_push_type ) no_push_type
+        from recommend_cate_manage cm3 GROUP BY cate_id
+        ) res3 ON res3.cate_id = gc3.cate_id
+        where gc3.del_flag = 0
+        GROUP BY gc3.cate_parent_id ) res2 ON res2.cate_id = gc2.cate_id
+        INNER JOIN `s2b_statistics`.`replay_goods_cate` gc3 ON gc3.cate_parent_id = gc2.cate_id
+        left join (
+        select
+        min( id ) id,
+        cate_id,
+        sum( weight ) weight,
+        min( no_push_type ) no_push_type
+        from recommend_cate_manage cm3 GROUP BY cate_id) res3 on res3.cate_id = gc3.cate_id
+        where gc1.cate_grade>0 and gc3.del_flag = 0
+        <if  test="cateId != null">
+            and gc3.cate_id = #{cateId}
+        </if>
+        <if test="cateIds!=null and cateIds.size()>0 ">
+            and gc3.cate_id in
+            <foreach collection="cateIds" item="item" separator="," open="(" close=")" index="">
+                #{item,jdbcType=BIGINT}
+            </foreach>
+        </if>
+        order by
+        <if  test="sortRole != null and sortRole != ''">
+            res1.weight ${sortRole},res2.weight ${sortRole},res3.weight ${sortRole},
+        </if>
+        res1.cate_id desc,res2.cate_id desc,res3.cate_id desc
+    </select>
+
+</mapper>

@@ -1,0 +1,16 @@
+## 1 清除营销插件配置缓存
+```
+redis-cli keys "marketing_plugin_cache*" | xargs redis-cli del
+```
+## 2 刷新是否是新人的状态
+```
+调用初始化接口 /customer/isNewInit   例如：https://wmdev1.kstore.shop/bossbff/customer/isNewInit
+```
+
+##  3    nacos 的 boss  supplier  provide 分别添加以下配置
+```
+# 敏感词黑名单 全部路径标识  不配置或者 false 则使用：api.badWords.addPath-rest-urls
+api.badWords.allPath-flag = true
+# 敏感词白名单  结合api.badWords.allPath-flag = true 才生效
+api.badWords.excludePath-rest-urls = {"/sensitiveWords/valid":"POST"}
+```

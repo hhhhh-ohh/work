@@ -1,0 +1,120 @@
+{
+  "replayTable" : "replay_return_order",
+  "dispatch" : null,
+  "pk": [],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "rid",
+        "dataType": 12
+      },
+      {
+        "field": "tid",
+        "replayField": "tid",
+        "dataType": 12
+      },
+      {
+        "field": "buyer._id",
+        "replayField": "customer_id",
+        "dataType": 12
+      },
+      {
+        "field": "company.companyInfoId",
+        "replayField": "company_id",
+        "dataType": -5
+      },
+      {
+        "field": "company.storeId",
+        "replayField": "store_id",
+        "dataType": -5
+      },
+      {
+        "field": "returnPrice.applyPrice",
+        "replayField": "apply_price",
+        "dataType": 3
+      },
+      {
+        "field": "returnPrice.totalPrice",
+        "replayField": "total_price",
+        "dataType": 3
+      },
+      {
+        "field": "returnPrice.actualReturnPrice",
+        "replayField": "actual_return_price",
+        "dataType": 3
+      },
+      {
+        "field": "returnFlowState",
+        "replayField": "return_flow_state",
+        "dataType": 4,
+        "enumType": {
+          "INIT": 0,
+          "AUDIT": 1,
+          "DELIVERED": 2,
+          "RECEIVED": 3,
+          "REFUNDED": 4,
+          "COMPLETED": 5,
+          "REJECT_REFUND": 6,
+          "REJECT_RECEIVE": 7,
+          "VOID": 8,
+          "REFUND_FAILED": 9
+        }
+      },
+      {
+        "field": "refundStatus",
+        "replayField": "refund_status",
+        "dataType": 4,
+        "enumType": {
+          "TODO": 0,
+          "REFUSE": 1,
+          "FINISH": 2,
+          "APPLY": 3
+        }
+      },
+      {
+        "field": "returnType",
+        "replayField": "return_type",
+        "dataType": 4,
+        "enumType": {
+          "RETURN": 0,
+          "REFUND": 1
+        }
+      },
+      {
+        "field": "createTime",
+        "replayField": "create_time",
+        "dataType": 93
+      },
+      {
+        "field": "finishTime",
+        "replayField": "finish_time",
+        "dataType": 93
+      },
+      {
+       "field": "videoUser.videoName",
+       "replayField": "video_name",
+       "dataType": 12
+      },
+      {
+       "field": "videoUser.videoAccount",
+       "replayField": "video_account",
+       "dataType": 12
+      },
+      {
+       "field": "sellPlatformType",
+       "replayField": "sell_platform_type",
+       "dataType": 4,
+       "enumType": {
+                   "WECHAT_VIDEO": 0
+                   }
+      },
+      {
+       "field": "sceneGroup",
+       "replayField": "scene_group",
+       "dataType": -5
+     }
+    ],
+    "arrayData": {}
+  }
+}

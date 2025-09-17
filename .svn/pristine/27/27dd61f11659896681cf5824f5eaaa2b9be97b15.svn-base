@@ -1,0 +1,583 @@
+{
+  "properties": {
+    "lowGoodsName": {
+      "type": "text"
+    },
+    "addedFlag": {
+      "type": "integer"
+    },
+    "goodsEvaluateNum": {
+      "index": false,
+      "type": "long"
+    },
+    "goodsSubtitle": {
+      "analyzer": "wm_standard",
+      "norms": false,
+      "type": "text"
+    },
+    "companyInfoId": {
+      "type": "long"
+    },
+    "specDetails": {
+      "type": "nested",
+      "properties": {
+        "allDetailName": {
+          "type": "text"
+        },
+        "pinyinName": {
+          "analyzer": "pinyin",
+          "type": "text"
+        },
+        "detailName": {
+          "analyzer": "wm_standard",
+          "norms": false,
+          "type": "text"
+        },
+        "specName": {
+          "index": false,
+          "type": "text"
+        },
+        "goodsInfoId": {
+          "index": false,
+          "type": "text"
+        }
+      }
+    },
+    "goodsSource": {
+      "type": "integer"
+    },
+    "goodsBrand": {
+      "properties": {
+        "pinYin": {
+          "analyzer": "pinyin",
+          "type": "text"
+        },
+        "brandName": {
+          "analyzer": "wm_standard",
+          "norms": false,
+          "type": "text"
+        },
+        "brandId": {
+          "type": "long"
+        },
+        "sPinYin": {
+          "index": false,
+          "type": "text"
+        }
+      }
+    },
+    "goodsCate": {
+      "properties": {
+        "pinYin": {
+          "analyzer": "pinyin",
+          "type": "text"
+        },
+        "cateId": {
+          "type": "long"
+        },
+        "sPinYin": {
+          "index": false,
+          "type": "text"
+        },
+        "cateName": {
+          "analyzer": "wm_standard",
+          "norms": false,
+          "type": "text"
+        }
+      }
+    },
+    "propDetailIds": {
+      "type": "long"
+    },
+    "goodsPropRelNests": {
+      "type": "nested",
+      "properties":{
+        "goodsId":{
+          "index": false,
+          "type": "text"
+        },
+        "propId": {
+          "type": "long"
+        },
+        "propName": {
+          "type": "keyword"
+        },
+        "propType": {
+          "type": "long"
+        },
+        "goodsPropDetailNest": {
+          "type": "nested",
+          "properties":{
+            "detailId":{
+              "type": "long"
+            },
+            "propId":{
+              "index": false,
+              "type": "long"
+            },
+            "detailName":{
+              "analyzer": "wm_standard",
+              "norms": false,
+              "type": "text"
+            },
+            "detailSort":{
+              "type": "integer"
+            },
+            "detailPinYin":{
+              "analyzer": "pinyin",
+              "type": "text"
+            },
+            "detailNameValue":{
+              "type": "keyword"
+            }
+          }
+        },
+        "indexFlag":{
+          "type": "integer"
+        },
+        "propCharacter":{
+          "type": "integer"
+        },
+        "propSort":{
+          "type": "long"
+        },
+        "catePropSort":{
+          "type": "integer"
+        }
+      }
+    },
+    "providerId": {
+      "type": "long"
+    },
+    "vendibilityStatus": {
+      "type": "integer"
+    },
+    "goodsCollectNum": {
+      "index": false,
+      "type": "long"
+    },
+    "goodsUnit": {
+      "index": false,
+      "type": "text"
+    },
+    "storeName": {
+      "type": "keyword"
+    },
+    "id": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "stock": {
+      "type": "long"
+    },
+    "esSortPrice": {
+      "index": false,
+      "type": "double"
+    },
+    "goodsName": {
+      "type": "keyword"
+    },
+    "goodsFavorableCommentNum": {
+      "index": false,
+      "type": "long"
+    },
+    "goodsFeedbackRate": {
+      "index": false,
+      "type": "long"
+    },
+    "providerName": {
+      "type": "keyword"
+    },
+    "goodsNo": {
+      "type": "keyword"
+    },
+    "supplierName": {
+      "type": "keyword"
+    },
+    "contractStartDate": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "goodsLabelList": {
+      "type": "nested",
+      "properties": {
+        "labelSort": {
+          "type": "integer"
+        },
+        "goodsLabelId": {
+          "type": "long"
+        },
+        "labelName": {
+          "analyzer": "wm_standard",
+          "norms": false,
+          "type": "text"
+        },
+        "labelVisible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "providerGoodsId": {
+      "type": "keyword"
+    },
+    "storeCateIds": {
+      "type": "long"
+    },
+    "buyPoint": {
+      "type": "long"
+    },
+    "contractEndDate": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "linePrice": {
+      "index": false,
+      "type": "double"
+    },
+    "thirdPlatformType": {
+      "type": "integer"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "goodsType": {
+      "type": "integer"
+    },
+    "isBuyCycle": {
+      "type": "integer"
+    },
+    "goodsInfos": {
+      "properties": {
+        "intervalMinPrice": {
+          "index": false,
+          "type": "double"
+        },
+        "distributionGoodsAudit": {
+          "type": "integer"
+        },
+        "goodsInfoName": {
+          "analyzer": "wm_standard",
+          "norms": false,
+          "type": "text"
+        },
+        "goodsSubtitle": {
+          "type": "text"
+        },
+        "enterPriseAuditStatus": {
+          "type": "integer"
+        },
+        "goodsCollectNum": {
+          "type": "long"
+        },
+        "goodsCubage": {
+          "index": false,
+          "type": "double"
+        },
+        "checked": {
+          "type": "boolean"
+        },
+        "distributionGoodsAuditReason": {
+          "index": false,
+          "type": "keyword"
+        },
+        "stock": {
+          "type": "long"
+        },
+        "esSortPrice": {
+          "type": "double"
+        },
+        "distributionCommission": {
+          "type": "double"
+        },
+        "buyPoint": {
+          "type": "long"
+        },
+        "count": {
+          "index": false,
+          "type": "long"
+        },
+        "freightTempId": {
+          "type": "long"
+        },
+        "intervalPriceIds": {
+          "index": false,
+          "type": "long"
+        },
+        "grouponLabel": {
+          "type": "object"
+        },
+        "allowPriceSet": {
+          "index": false,
+          "type": "integer"
+        },
+        "joinDistributior": {
+          "index": false,
+          "type": "integer"
+        },
+        "cateId": {
+          "type": "long"
+        },
+        "brandId": {
+          "type": "long"
+        },
+        "addedTime": {
+          "format": "yyyy-MM-dd HH:mm:ss.SSS",
+          "index": false,
+          "type": "date"
+        },
+        "enterPriseGoodsAuditReason": {
+          "index": false,
+          "type": "text"
+        },
+        "goodsInfoNo": {
+          "type": "keyword"
+        },
+        "goodsInfoBarcode": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "ignore_above": 256,
+              "type": "keyword"
+            }
+          }
+        },
+        "aloneFlag": {
+          "index": false,
+          "type": "boolean"
+        },
+        "addedFlag": {
+          "type": "long"
+        },
+        "commissionRate": {
+          "type": "double"
+        },
+        "goodsEvaluateNum": {
+          "type": "integer"
+        },
+        "marketPrice": {
+          "type": "double"
+        },
+        "companyInfoId": {
+          "type": "long"
+        },
+        "validFlag": {
+          "index": false,
+          "type": "integer"
+        },
+        "goodsId": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "ignore_above": 256,
+              "type": "keyword"
+            }
+          }
+        },
+        "saleType": {
+          "type": "long"
+        },
+        "delFlag": {
+          "type": "long"
+        },
+        "maxCount": {
+          "index": false,
+          "type": "long"
+        },
+        "goodsWeight": {
+          "index": false,
+          "type": "double"
+        },
+        "customFlag": {
+          "index": false,
+          "type": "integer"
+        },
+        "levelDiscountFlag": {
+          "index": false,
+          "type": "integer"
+        },
+        "providerId": {
+          "index": false,
+          "type": "text"
+        },
+        "thirdPlatformSpuId": {
+          "index": false,
+          "type": "text"
+        },
+        "vendibilityStatus": {
+          "type": "integer"
+        },
+        "smallProgramCode": {
+          "index": false,
+          "type": "text"
+        },
+        "distributionSalesCount": {
+          "index": false,
+          "type": "integer"
+        },
+        "providerGoodsInfoId": {
+          "index": false,
+          "type": "text"
+        },
+        "goodsUnit": {
+          "index": false,
+          "type": "text"
+        },
+        "storeName": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "ignore_above": 256,
+              "type": "keyword"
+            }
+          }
+        },
+        "enterPrisePrice": {
+          "type": "double"
+        },
+        "specText": {
+          "analyzer": "wm_standard",
+          "norms": false,
+          "type": "text"
+        },
+        "goodsFavorableCommentNum": {
+          "type": "long"
+        },
+        "goodsFeedbackRate": {
+          "type": "long"
+        },
+        "buyCount": {
+          "index": false,
+          "type": "long"
+        },
+        "supplyPrice": {
+          "type": "float"
+        },
+        "companyType": {
+          "type": "integer"
+        },
+        "storeType": {
+          "type": "integer"
+        },
+        "goodsInfoId": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "ignore_above": 256,
+              "type": "keyword"
+            }
+          }
+        },
+        "salePrice": {
+          "index": false,
+          "type": "double"
+        },
+        "couponLabels": {
+          "type": "object"
+        },
+        "costPrice": {
+          "index": false,
+          "type": "double"
+        },
+        "priceType": {
+          "index": false,
+          "type": "integer"
+        },
+        "thirdPlatformType": {
+          "type": "integer"
+        },
+        "updateTime": {
+          "format": "yyyy-MM-dd HH:mm:ss.SSS",
+          "index": false,
+          "type": "date"
+        },
+        "storeId": {
+          "type": "long"
+        },
+        "thirdPlatformSkuId": {
+          "index": false,
+          "type": "text"
+        },
+        "goodsSalesNum": {
+          "type": "long"
+        },
+        "goodsStatus": {
+          "index": false,
+          "type": "long"
+        },
+        "intervalMaxPrice": {
+          "index": false,
+          "type": "double"
+        },
+        "createTime": {
+          "format": "yyyy-MM-dd HH:mm:ss.SSS",
+          "index": false,
+          "type": "date"
+        },
+        "goodsInfoImg": {
+          "index": false,
+          "type": "text"
+        },
+        "auditStatus": {
+          "index": false,
+          "type": "integer"
+        },
+        "marketingLabels": {
+          "type": "object"
+        },
+        "providerStatus": {
+          "type": "integer"
+        },
+        "distributionCreateTime": {
+          "format": "yyyy-MM-dd HH:mm:ss.SSS",
+          "type": "date"
+        },
+        "extendedAttributes": {
+          "properties": {
+            "createTime": {
+              "type": "date"
+            }
+          }
+        }
+      }
+    },
+    "sortNo": {
+      "type": "long"
+    },
+    "forbidStatus": {
+      "type": "integer"
+    },
+    "goodsSalesNum": {
+      "type": "long"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "addedTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "index": false,
+      "type": "date"
+    },
+    "auditStatus": {
+      "type": "integer"
+    },
+    "realGoodsSalesNum": {
+      "type": "long"
+    },
+    "storeState": {
+      "type": "integer"
+    },
+    "pinyinGoodsName": {
+      "analyzer": "pinyin",
+      "type": "text"
+    },
+    "distributionGoodsStatus": {
+      "type": "integer"
+    }
+  }
+}

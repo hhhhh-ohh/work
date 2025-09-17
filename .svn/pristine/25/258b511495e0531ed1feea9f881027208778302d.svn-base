@@ -1,0 +1,14 @@
+jwt.excluded-urls增加配置：/tradegetaway/modifyDeclaredStatus/**
+
+boss配置文件增加配置：
+server.maxPostSize=-1
+server.maxHttpHeaderSize=102400
+
+
+脚本执行注意事项：
+1、如果是标品环境，只要执行标品脚本.sql即可；
+
+2、如果是跨境环境：
+首先执行跨境脚本.sql和标品脚本.sql；然后在执行跨境数据初始化脚本.sql和跨境权限脚本.sql
+
+

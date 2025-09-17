@@ -1,0 +1,23 @@
+@startuml
+start
+partition 小程序/APP {
+        :拼团下单;
+        :查看团详情;
+        :邀请拼团;
+        :保存拼团发起分享记录;
+}
+partition 小程序 {
+        :扫码查看团详情;
+        :保存拼团分享访问记录;
+        :下单参团;
+        :订单里保存分享人id;
+}
+partition 定时任务 {
+        :凌晨执行定时任务(appointmentAnalysisJobHandler);
+        :扫描前一天的拼团订单，每个订单汇总一条拼团订单\n明细数据(groupon_trade_detail);
+}
+partition 活动分析概况、趋势图、活动效果列表 {
+        :90天内活动数据汇总(\n活动商品replay_groupon_goods_info，\n拼团订单明细groupon_trade_detail，\n首次支付记录customer_first_pay，\n分享访问记录replay_groupon_share_record\n);
+}
+stop
+@enduml

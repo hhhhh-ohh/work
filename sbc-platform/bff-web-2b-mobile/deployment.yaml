@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mobile
+    name: mobile-deployment
+  name: mobile
+  namespace: sbc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mobile
+  template:
+    metadata:
+      labels:
+        app: mobile
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - image: {{IMAGE_NAME}}
+          imagePullPolicy: Always
+          name: mobile
+          ports:
+            - containerPort: 8190
+              name: tomcat-port
+          livenessProbe:
+            httpGet:
+              path: /act/health
+              port: 8191
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 30
+          env:
+            - name: JAVA_OPTS
+              value: {{JAVA_ENV_PARAMS}}
+            - name: NACOS_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: sbc-config
+                  key: nacosAddress
+            - name: RESTART_
+              value: {{DATE}}
+#          resources:
+#            limits:
+#              cpu: '1'
+#              memory: 3Gi
+#            requests:
+#              cpu: '1'JAVA_ENV_PARAMS
+#              memory: 3Gi
+          volumeMounts:
+            - mountPath: /data/server/log
+              name: mobile-logs
+      volumes:
+        - name: mobile-logs
+          hostPath:
+            path: /data/sbc/logs/mobile
+      hostNetwork: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mobile-svc
+  namespace: sbc
+  labels:
+    k8s-app: mobile-svc
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8190
+      targetPort: 8190
+      protocol: TCP
+      name: http
+  selector:
+    app: mobile

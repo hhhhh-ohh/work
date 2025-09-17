@@ -1,0 +1,18 @@
+@startuml
+start
+partition 小程序/APP {
+        :进入秒杀频道;
+        :下单;
+}
+partition 定时任务 {
+        :凌晨执行定时任务(appointmentAnalysisJobHandler);
+        :扫描前一天的秒杀订单，每个订单汇总一条秒杀订单\n明细数据(flash_sale),作为统计的基础表;
+}
+partition 活动分析概况、趋势图 {
+        :90（可配置）天内活动数据汇总(\n秒杀订单明细flash_sale，\n首次支付记录customer_first_pay\n);
+}
+partition 活动效果列表 {
+        :90（可配置）天内活动数据汇总(\n活动商品replay_flash_sale_goods，\n拼团订单明细flash_sale，\n首次支付记录customer_first_pay\n);
+}
+stop
+@enduml

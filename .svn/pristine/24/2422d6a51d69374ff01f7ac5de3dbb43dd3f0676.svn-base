@@ -1,0 +1,24 @@
+package com.wanmi.sbc.elastic.api.request.goods;
+
+import com.wanmi.sbc.common.base.BaseRequest;
+import com.wanmi.sbc.goods.bean.vo.GoodsLabelVO;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Schema
+public class EsGoodsLabelUpdateVisibleRequest extends BaseRequest {
+
+    @Schema(description = "商品标签VO")
+    private GoodsLabelVO goodsLabelVO;
+
+}

@@ -1,0 +1,1638 @@
+package com.wanmi.sbc.order;
+
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+import com.wanmi.ares.enums.ReportType;
+import com.wanmi.ares.request.export.ExportDataRequest;
+import com.wanmi.sbc.account.bean.enums.AccountErrorCodeEnum;
+import com.wanmi.sbc.account.bean.enums.PayType;
+import com.wanmi.sbc.account.bean.enums.PayWay;
+import com.wanmi.sbc.aop.EmployeeCheck;
+import com.wanmi.sbc.common.annotation.MultiSubmit;
+import com.wanmi.sbc.common.annotation.MultiSubmitWithToken;
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.base.MicroServicePage;
+import com.wanmi.sbc.common.base.Operator;
+import com.wanmi.sbc.common.enums.*;
+import com.wanmi.sbc.common.exception.SbcRuntimeException;
+import com.wanmi.sbc.common.sensitiveword.annotation.ReturnSensitiveWords;
+import com.wanmi.sbc.common.util.*;
+import com.wanmi.sbc.customer.api.provider.company.CompanyInfoQueryProvider;
+import com.wanmi.sbc.customer.api.provider.customer.CustomerQueryProvider;
+import com.wanmi.sbc.customer.api.provider.store.StoreQueryProvider;
+import com.wanmi.sbc.customer.api.request.company.CompanyInfoByIdRequest;
+import com.wanmi.sbc.customer.api.request.customer.CustomerGetByIdRequest;
+import com.wanmi.sbc.customer.api.request.store.StoreByIdRequest;
+import com.wanmi.sbc.customer.api.request.store.StoreInfoByIdRequest;
+import com.wanmi.sbc.customer.api.request.store.ValidStoreByIdRequest;
+import com.wanmi.sbc.customer.api.response.customer.CustomerGetByIdResponse;
+import com.wanmi.sbc.customer.api.response.store.StoreByIdResponse;
+import com.wanmi.sbc.customer.api.response.store.StoreInfoResponse;
+import com.wanmi.sbc.customer.bean.dto.CompanyInfoDTO;
+import com.wanmi.sbc.customer.bean.dto.StoreInfoDTO;
+import com.wanmi.sbc.customer.bean.enums.CustomerErrorCodeEnum;
+import com.wanmi.sbc.customer.bean.vo.CompanyInfoVO;
+import com.wanmi.sbc.customer.bean.vo.CustomerVO;
+import com.wanmi.sbc.customer.bean.vo.StoreVO;
+import com.wanmi.sbc.customer.service.CustomerCacheService;
+import com.wanmi.sbc.empower.api.provider.channel.linkedmall.order.LinkedMallOrderProvider;
+import com.wanmi.sbc.empower.api.provider.channel.logistics.ChannelLogisticsQueryProvider;
+import com.wanmi.sbc.empower.api.provider.logisticssetting.ExpressQueryProvider;
+import com.wanmi.sbc.empower.api.request.channel.linkedmall.LinkedMallLogisticsQueryRequest;
+import com.wanmi.sbc.empower.api.request.channel.logistics.ChannelLogisticsQueryRequest;
+import com.wanmi.sbc.empower.api.request.logisticssetting.DeliveryQueryRequest;
+import com.wanmi.sbc.empower.api.response.channel.linkedmall.LinkedMallLogisticsQueryResponse;
+import com.wanmi.sbc.empower.api.response.channel.logistics.ChannelLogisticsQueryResponse;
+import com.wanmi.sbc.empower.api.response.channel.logistics.LogisticsLinkedMallResponse;
+import com.wanmi.sbc.empower.bean.vo.channel.logistics.DataItemVO;
+import com.wanmi.sbc.empower.bean.vo.channel.logistics.LogisticsDetailListItemVO;
+import com.wanmi.sbc.goods.api.provider.goodsrestrictedsale.GoodsRestrictedSaleQueryProvider;
+import com.wanmi.sbc.goods.api.provider.info.GoodsInfoQueryProvider;
+import com.wanmi.sbc.goods.api.request.goodsrestrictedsale.GoodsRestrictedBatchValidateRequest;
+import com.wanmi.sbc.goods.api.request.info.GoodsInfoListByIdsRequest;
+import com.wanmi.sbc.goods.api.response.info.GoodsInfoListByIdsResponse;
+import com.wanmi.sbc.goods.bean.enums.GoodsErrorCodeEnum;
+import com.wanmi.sbc.goods.bean.vo.GoodsRestrictedValidateVO;
+import com.wanmi.sbc.marketing.bean.enums.BookingType;
+import com.wanmi.sbc.marketing.bean.enums.GiftCardType;
+import com.wanmi.sbc.miniprogramsubscribe.MiniProgramSubscribeService;
+import com.wanmi.sbc.order.api.provider.payorder.PayOrderQueryProvider;
+import com.wanmi.sbc.order.api.provider.returnorder.ReturnOrderQueryProvider;
+import com.wanmi.sbc.order.api.provider.trade.ProviderTradeProvider;
+import com.wanmi.sbc.order.api.provider.trade.ProviderTradeQueryProvider;
+import com.wanmi.sbc.order.api.provider.trade.TradeProvider;
+import com.wanmi.sbc.order.api.provider.trade.TradeQueryProvider;
+import com.wanmi.sbc.order.api.request.payorder.FindPayOrderRequest;
+import com.wanmi.sbc.order.api.request.payorder.FindPayOrdersRequest;
+import com.wanmi.sbc.order.api.request.returnorder.ReturnOrderPageRequest;
+import com.wanmi.sbc.order.api.request.trade.*;
+import com.wanmi.sbc.order.api.response.payorder.FindPayOrderResponse;
+import com.wanmi.sbc.order.api.response.trade.TradeGetFreightResponse;
+import com.wanmi.sbc.order.bean.dto.*;
+import com.wanmi.sbc.order.bean.enums.FlowState;
+import com.wanmi.sbc.order.bean.enums.PayState;
+import com.wanmi.sbc.order.bean.enums.*;
+import com.wanmi.sbc.order.bean.vo.*;
+import com.wanmi.sbc.order.request.TradeAuditBatchRequest;
+import com.wanmi.sbc.order.request.TradeAuditRequest;
+import com.wanmi.sbc.order.request.TradeExportRequest;
+import com.wanmi.sbc.report.ExportCenter;
+import com.wanmi.sbc.setting.api.provider.expresscompany.ExpressCompanyQueryProvider;
+import com.wanmi.sbc.setting.api.provider.pickupsetting.PickupSettingQueryProvider;
+import com.wanmi.sbc.setting.api.provider.platformaddress.PlatformAddressQueryProvider;
+import com.wanmi.sbc.setting.api.request.expresscompany.ExpressCompanyByCodeRequest;
+import com.wanmi.sbc.setting.api.request.expresscompany.ExpressCompanyByIdRequest;
+import com.wanmi.sbc.setting.api.request.pickupsetting.PickupSettingIdsRequest;
+import com.wanmi.sbc.setting.api.request.platformaddress.PlatformAddressListRequest;
+import com.wanmi.sbc.setting.api.response.pickupsetting.PickupSettingIdsResponse;
+import com.wanmi.sbc.setting.bean.vo.ExpressCompanyVO;
+import com.wanmi.sbc.setting.bean.vo.PlatformAddressVO;
+import com.wanmi.sbc.system.service.SystemConfigService;
+import com.wanmi.sbc.util.CommonUtil;
+import com.wanmi.sbc.util.OperateLogMQUtil;
+import io.seata.spring.annotation.GlobalTransactional;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * Created by Administrator on 2017/4/19.
+ */
+@Tag(name = "TradeController", description = "订单服务 Api")
+@RestController
+@Validated
+@RequestMapping("/trade")
+@Slf4j
+public class TradeController {
+
+    @Autowired
+    private TradeProvider tradeProvider;
+
+    @Autowired
+    private ProviderTradeProvider providerTradeProvider;
+
+    @Autowired
+    private ProviderTradeQueryProvider providerTradeQueryProvider;
+
+    @Autowired
+    private TradeQueryProvider tradeQueryProvider;
+
+    @Autowired
+    private OsUtil osUtil;
+
+    @Autowired
+    private CompanyInfoQueryProvider companyInfoQueryProvider;
+
+    @Autowired
+    private CommonUtil commonUtil;
+
+    @Autowired
+    private StoreQueryProvider storeQueryProvider;
+
+    @Autowired
+    private PayOrderQueryProvider payOrderQueryProvider;
+
+    @Autowired
+    private ExpressQueryProvider expressQueryProvider;
+
+    @Autowired
+    private ExpressCompanyQueryProvider expressCompanyQueryProvider;
+
+    @Autowired
+    private GoodsRestrictedSaleQueryProvider goodsRestrictedSaleQueryProvider;
+
+    @Autowired
+    private CustomerQueryProvider customerQueryProvider;
+
+    @Autowired
+    private LinkedMallOrderProvider linkedMallOrderProvider;
+
+    @Autowired
+    private GoodsInfoQueryProvider goodsInfoQueryProvider;
+
+    @Autowired
+    private SystemConfigService systemConfigService;
+
+    @Autowired
+    private ChannelLogisticsQueryProvider channelLogisticsQueryProvider;
+
+    @Autowired
+    private ExportCenter exportCenter;
+
+    @Autowired
+    private PlatformAddressQueryProvider platformAddressQueryProvider;
+
+    @Autowired
+    private PickupSettingQueryProvider pickupSettingQueryProvider;
+
+    @Autowired
+    private OperateLogMQUtil operateLogMqUtil;
+
+    @Autowired
+    private CustomerCacheService customerCacheService;
+
+    @Autowired
+    private MiniProgramSubscribeService miniProgramSubscribeService;
+
+    @Autowired
+    private ReturnOrderQueryProvider returnOrderQueryProvider;
+
+    /**
+     * 分页查询
+     *
+     * @param tradeQueryRequest
+     * @return
+     */
+    @Operation(summary = "分页查询")
+    @EmployeeCheck
+    @RequestMapping(method = RequestMethod.POST)
+    public BaseResponse<MicroServicePage<TradeVO>> page(@RequestBody TradeQueryDTO tradeQueryRequest) {
+        Long companyInfoId = commonUtil.getCompanyInfoId();
+        if (companyInfoId != null) {
+            tradeQueryRequest.setSupplierId(companyInfoId);
+        }
+
+        if (!tradeQueryRequest.getIsBoss()) {
+            if (Objects.nonNull(tradeQueryRequest.getTradeState()) && Objects.nonNull(tradeQueryRequest.getTradeState
+                    ().getPayState())) {
+                tradeQueryRequest.setNotFlowStates(Arrays.asList(FlowState.VOID, FlowState.INIT));
+            }
+        }
+
+        //查询当前登录人关联自提点
+        getPickupSetting(tradeQueryRequest);
+
+        //设定状态条件逻辑,已审核状态需筛选出已审核与部分发货
+        tradeQueryRequest.makeAllAuditFlow();
+
+        TradePageCriteriaRequest build = TradePageCriteriaRequest.builder().tradePageDTO(tradeQueryRequest).build();
+        System.out.println(JSON.toJSONString(build));
+        return BaseResponse.success(tradeQueryProvider.pageCriteria(build).getContext().getTradePage());
+    }
+
+    /**
+     * 分页查询supplier
+     *
+     * @param tradeQueryRequest
+     * @return
+     */
+    @Operation(summary = "分页查询")
+    @EmployeeCheck
+    @PostMapping(value = "/supplierPage")
+    @ReturnSensitiveWords(functionName = "f_supplier_order_page_sign_word")
+    public BaseResponse<MicroServicePage<TradeVO>> supplierPage(@RequestBody TradeQueryDTO tradeQueryRequest) {
+        tradeQueryRequest.setStoreType(commonUtil.getStoreType());
+        Long companyInfoId = commonUtil.getCompanyInfoId();
+        if (companyInfoId != null) {
+            tradeQueryRequest.setSupplierId(companyInfoId);
+        }
+
+        if (!tradeQueryRequest.getIsBoss()) {
+            if (Objects.nonNull(tradeQueryRequest.getTradeState()) && Objects.nonNull(tradeQueryRequest.getTradeState
+                    ().getPayState())) {
+                tradeQueryRequest.setNotFlowStates(Arrays.asList(FlowState.VOID, FlowState.INIT));
+            }
+        }
+
+        //查询当前登录人关联自提点
+        getPickupSetting(tradeQueryRequest);
+
+        //设定状态条件逻辑,已审核状态需筛选出已审核与部分发货
+        tradeQueryRequest.makeAllAuditFlow();
+        tradeQueryRequest.setCrossBorderFlag(false);
+        MicroServicePage<TradeVO> tradePage =
+                tradeQueryProvider.supplierPageCriteria(TradePageCriteriaRequest.builder().tradePageDTO(tradeQueryRequest).build()).getContext().getTradePage();
+        if (CollectionUtils.isNotEmpty(tradePage.getContent())) {
+            List<TradeVO> tradeVOList = tradePage.getContent();
+            //获取会员注销状态
+            List<String> customerIds = tradeVOList.stream().map(v -> v.getBuyer().getId()).collect(Collectors.toList());
+            Map<String, LogOutStatus> map = customerCacheService.getLogOutStatus(customerIds);
+            //扭转预售商品支付尾款状态为已作废
+            tradeVOList.forEach(tradeVO -> {
+                tradeVO.setLogOutStatus(map.get(tradeVO.getBuyer().getId()));
+                fillTradeBookingTimeOut(tradeVO);
+            });
+        }
+
+        return BaseResponse.success(tradePage);
+    }
+
+
+    /**
+     * 分页查询supplier,且填充payOrder的信息
+     *
+     * @param tradeQueryRequest
+     * @return
+     */
+    @Operation(summary = "分页查询")
+    @EmployeeCheck
+    @PostMapping(value = "/supplierPrintPage")
+    @ReturnSensitiveWords(functionName = "f_supplier_print_page_sign_word")
+    public BaseResponse<MicroServicePage<TradeVO>> supplierPrintPage(@RequestBody TradeQueryDTO tradeQueryRequest) {
+        if (tradeQueryRequest.getIds() == null){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+
+        MicroServicePage<TradeVO> context = this.supplierPage(tradeQueryRequest).getContext();
+        List<TradeVO> content = context.getContent();
+
+        //查询订单
+        List<String> ids = Arrays.asList(tradeQueryRequest.getIds());
+        FindPayOrdersRequest request = FindPayOrdersRequest.builder()
+                .orderNoList(ids)
+                .build();
+        request.setPageNum(Constants.ZERO);
+        request.setPageSize(Constants.NUM_50);
+        List<PayOrderResponseVO> payOrderResponses = payOrderQueryProvider.findPayOrders(request).getContext().getPayOrderResponses();
+
+        // 转换成map
+        Map<String, List<PayOrderResponseVO>> payOrderMap =
+                payOrderResponses.stream().collect(Collectors.groupingBy(PayOrderResponseVO::getOrderCode));
+
+        for (TradeVO tradeVO : content){
+            String id = tradeVO.getId();
+            List<PayOrderResponseVO> payOrderResponseVOS = payOrderMap.get(id);
+            tradeVO.setPayOrderResponses(payOrderResponseVOS);
+            this.payWayValue(tradeVO);
+        }
+
+        return BaseResponse.success(context);
+
+    }
+
+    /**
+     * @description   封装订单 支付方式描述
+     * @author  wur
+     * @date: 2022/9/7 16:55
+     * @param tradeVO
+     * @return
+     **/
+    private void payWayValue(TradeVO tradeVO ) {
+        //设置支付方式
+        if (Objects.nonNull(tradeVO.getPayWay())) {
+            Long points = tradeVO.getTradePrice().getPoints();
+            PayState payState = tradeVO.getTradeState().getPayState();
+            BigDecimal totalPrice = tradeVO.getTradePrice().getTotalPrice();
+
+            StringBuilder sb = new StringBuilder();
+
+            //积分大于0且金额大于0 都是积分+支付
+//            if (Objects.nonNull(points) && points > 0
+//                    && !tradeVO.getPayWay().equals(PayWay.POINT)
+//                    && totalPrice.compareTo(BigDecimal.ZERO) > 0) {
+//                sb.append("积分+");
+//            }
+
+            sb.append(tradeVO.getPayWay().getDesc());
+
+            //积分支付
+            if (Objects.nonNull(points) && points > 0
+                    && totalPrice.compareTo(BigDecimal.ZERO) == 0) {
+                sb = new StringBuilder();
+                sb.append("积分");
+            }
+
+            tradeVO.setPayWayValue(sb.toString());
+
+            if (payState.equals(PayState.NOT_PAID)
+                    || (totalPrice.compareTo(BigDecimal.ZERO) == 0
+                    && (Objects.isNull(points) || points == 0))) {
+                tradeVO.setPayWayValue("-");
+            }
+        }
+
+        //线下支付
+        if (Objects.nonNull(tradeVO.getPayInfo())
+                && tradeVO.getPayInfo().getPayTypeId().equals(String.valueOf(PayType.OFFLINE.toValue()))) {
+            Long points = tradeVO.getTradePrice().getPoints();
+            tradeVO.setPayWayValue("线下支付");
+//            if (Objects.nonNull(points) && points > 0) {
+//                tradeVO.setPayWayValue("积分+线下支付");
+//            } else {
+//                tradeVO.setPayWayValue("线下支付");
+//            }
+        }
+    }
+
+    /**
+     * 查询当前登录人关联自提点
+     *
+     * @param tradeQueryRequest
+     */
+    private void getPickupSetting(TradeQueryDTO tradeQueryRequest) {
+        //查询当前登录人关联自提点
+        Operator operator = commonUtil.getOperator();
+
+        PickupSettingIdsResponse response = pickupSettingQueryProvider
+                .getPickupIdsByEmployeeId(PickupSettingIdsRequest.builder().employeeId(operator.getUserId()).build()).getContext();
+        if (Objects.nonNull(response) && CollectionUtils.isNotEmpty(response.getPickupIds())) {
+            tradeQueryRequest.setPickupIds(response.getPickupIds());
+        }
+    }
+
+    /**
+     * boss分页查询
+     *
+     * @param tradeQueryRequest
+     * @return
+     */
+    @Operation(summary = "分页查询")
+    @EmployeeCheck
+    @RequestMapping(value = "/bossPage", method = RequestMethod.POST)
+    @ReturnSensitiveWords(functionName = "f_boss_order_page_sign_word")
+    public BaseResponse<MicroServicePage<TradeVO>> bossPage(@RequestBody TradeQueryDTO tradeQueryRequest) {
+        Long companyInfoId = commonUtil.getCompanyInfoId();
+        if (companyInfoId != null) {
+            tradeQueryRequest.setSupplierId(companyInfoId);
+        }
+
+        if (!tradeQueryRequest.getIsBoss()) {
+            if (Objects.nonNull(tradeQueryRequest.getTradeState()) && Objects.nonNull(tradeQueryRequest.getTradeState
+                    ().getPayState())) {
+                tradeQueryRequest.setNotFlowStates(Arrays.asList(FlowState.VOID, FlowState.INIT));
+            }
+        }
+        //设定状态条件逻辑,已审核状态需筛选出已审核与部分发货
+        tradeQueryRequest.makeAllAuditFlow();
+        tradeQueryRequest.setCrossBorderFlag(false);
+        MicroServicePage<TradeVO> tradePage =
+                tradeQueryProvider.pageBossCriteria(TradePageCriteriaRequest.builder()
+                        .tradePageDTO(tradeQueryRequest).build()).getContext().getTradePage();
+        if (CollectionUtils.isNotEmpty(tradePage.getContent())) {
+            List<TradeVO> tradeVOList = tradePage.getContent();
+
+            List<String> customerIds = tradeVOList.stream().map(vo -> vo.getBuyer().getId()).collect(Collectors.toList());
+            Map<String, LogOutStatus> map = customerCacheService.getLogOutStatus(customerIds);
+
+            tradeVOList.forEach(tradeVO -> {
+                //扭转预售商品支付尾款状态为已作废
+                fillTradeBookingTimeOut(tradeVO);
+                //判断订单会员是否注销
+                tradeVO.setLogOutStatus(map.get(tradeVO.getBuyer().getId()));
+                if(Objects.nonNull(tradeVO.getTradePrice().getGiftCardType())
+                        && tradeVO.getTradePrice().getGiftCardType() == GiftCardType.PICKUP_CARD){
+                    tradeVO.getTradePrice().setBuyPoints(0L);
+                    tradeVO.getTradePrice().setPoints(0L);
+                    tradeVO.getTradePrice().setPointsPrice(BigDecimal.ZERO);
+                }
+            });
+        }
+        return BaseResponse.success(tradePage);
+    }
+
+
+    /**
+     * 根据参数查询某订单的运费
+     *
+     * @param tradeParams
+     * @return
+     */
+    @Operation(summary = "根据参数查询某订单的运费")
+    @RequestMapping(value = "/getFreight", method = RequestMethod.POST)
+    public BaseResponse<TradeGetFreightResponse> getFreight(@RequestBody TradeParamsRequest tradeParams) {
+        if(CollectionUtils.isEmpty(tradeParams.getOldTradeItems())){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+        Operator operator = commonUtil.getOperator();
+        StoreVO store = storeQueryProvider.getValidStoreById(new ValidStoreByIdRequest(Long.valueOf(operator
+                .getStoreId()))).getContext().getStoreVO();
+        tradeParams.setSupplier(SupplierDTO.builder().storeId(store.getStoreId()).freightTemplateType(store
+                .getFreightTemplateType()).storeType(store.getStoreType()).build());
+
+        return BaseResponse.success(tradeQueryProvider.getFreight(tradeParams).getContext());
+    }
+
+
+    /**
+     * 创建订单
+     *
+     * @param tradeCreateRequest
+     * @return
+     */
+    @Operation(summary = "创建订单")
+    @RequestMapping(value = "/create", method = RequestMethod.PUT)
+    @GlobalTransactional
+    @MultiSubmit
+    public ResponseEntity<BaseResponse> create(@RequestBody @Valid TradeCreateDTO tradeCreateRequest) {
+        log.info("商家开始代客下单......");
+        List<String> customerIdList = Collections.singletonList(tradeCreateRequest.getCustom());
+        Map<String, LogOutStatus> logOutStatusMap = customerCacheService.getLogOutStatus(customerIdList);
+        LogOutStatus logOutStatus = logOutStatusMap.get(tradeCreateRequest.getCustom());
+        if(Objects.nonNull(logOutStatus) && !Objects.equals(logOutStatus,LogOutStatus.NORMAL)){
+            throw new SbcRuntimeException(CustomerErrorCodeEnum.K010037);
+        }
+        // 校验线下支付方式是否关闭
+        systemConfigService.validOfflinePayType(tradeCreateRequest.getPayType());
+
+        Operator operator = commonUtil.getOperator();
+        CompanyInfoVO companyInfo = companyInfoQueryProvider.getCompanyInfoById(
+                CompanyInfoByIdRequest.builder().companyInfoId(commonUtil.getCompanyInfoId()).build()
+        ).getContext();
+        Long storeId = commonUtil.getStoreId();
+        StoreInfoResponse storeInfoResponse = storeQueryProvider.getStoreInfoById(new StoreInfoByIdRequest(storeId))
+                .getContext();
+
+        boolean isOpen = commonUtil.findVASBuyOrNot(VASConstants.THIRD_PLATFORM_LINKED_MALL);
+        //1.校验与包装订单信息-与业务员app代客下单公用
+        log.info("开始校验与包装订单信息......");
+        TradeVO trade = tradeQueryProvider.wrapperBackendCommit(TradeWrapperBackendCommitRequest.builder()
+                .operator(operator)
+                .companyInfo(KsBeanUtil.convert(companyInfo, CompanyInfoDTO.class))
+                .storeInfo(KsBeanUtil.convert(storeInfoResponse, StoreInfoDTO.class))
+                .tradeCreate(tradeCreateRequest)
+                .isOpen(isOpen).build()).getContext().getTradeVO();
+
+        //2.订单入库(转换成list,传入批量创建订单的service方法,同一套逻辑,能够回滚)
+        TradeAddBatchRequest tradeAddBatchRequest = TradeAddBatchRequest.builder().tradeDTOList(Collections.singletonList(KsBeanUtil.convert(trade, TradeAddDTO.class)))
+                .operator(operator)
+                .build();
+
+
+        // 3.限售校验
+        log.info("校验与包装订单信息结束，开始校验订单中的限售商品......");
+        List<TradeItemDTO> tradeItems = tradeCreateRequest.getTradeItems().stream().map(
+                o -> TradeItemDTO.builder().skuId(o.getSkuId()).num(o.getNum())
+                        .isAppointmentSaleGoods(o.getIsAppointmentSaleGoods()).appointmentSaleId(o.getAppointmentSaleId())
+                        .isBookingSaleGoods(o.getIsBookingSaleGoods()).bookingSaleId(o.getBookingSaleId())
+                        .build()
+        ).collect(Collectors.toList());
+        TradeItemGroupVO tradeItemGroupVOS = new TradeItemGroupVO();
+        tradeItemGroupVOS.setTradeItems(KsBeanUtil.convert(tradeItems, TradeItemVO.class));
+        CustomerGetByIdResponse customerGetByIdResponse =
+                customerQueryProvider.getCustomerById(new CustomerGetByIdRequest(tradeCreateRequest.getCustom()))
+                        .getContext();
+        this.validateRestrictedGoods(tradeItemGroupVOS, customerGetByIdResponse, tradeCreateRequest.getAddressId());
+
+        // 4.校验积分价商品
+        log.info("限售校验结束，开始校验订单中的积分价商品......");
+        List<String> goodsInfoIds =
+                tradeCreateRequest.getTradeItems().stream().map(TradeItemDTO::getSkuId).collect(Collectors.toList());
+        GoodsInfoListByIdsResponse byIdsResponse =
+                goodsInfoQueryProvider.listIntegralPriceGoodsByIds(GoodsInfoListByIdsRequest.builder().goodsInfoIds(goodsInfoIds).build()).getContext();
+        if (CollectionUtils.isNotEmpty(byIdsResponse.getGoodsInfos())) {
+            return ResponseEntity.ok(BaseResponse.info(GoodsErrorCodeEnum.K030082.getCode(),
+                    "不可购买积分价格商品", byIdsResponse.getGoodsInfos()));
+        }
+
+        log.info("积分价商品校验结束，开始创建订单......");
+        tradeAddBatchRequest.setCustomerVO(customerGetByIdResponse);
+        tradeAddBatchRequest.setGoodsInfoIds(goodsInfoIds);
+        tradeProvider.supplierAddBatch(tradeAddBatchRequest);
+
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+
+    }
+
+    /**
+     * 用于修改订单前的展示订单信息
+     *
+     * @param tid 订单id
+     * @return 返回信息 {@link TradeRemedyDetailsVO}
+     */
+    @Operation(summary = "用于修改订单前的展示订单信息")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/remedy/{tid}", method = RequestMethod.GET)
+    public BaseResponse<TradeRemedyDetailsVO> remedy(@PathVariable String tid) {
+        checkOperatorByTrade(tid);
+        return BaseResponse.success(tradeQueryProvider.getRemedyByTid(TradeGetRemedyByTidRequest.builder().tid(tid).build()).getContext().getTradeRemedyDetailsVO());
+    }
+
+    /**
+     * 修改订单
+     *
+     * @param tradeRemedyRequest
+     * @return
+     */
+    @Operation(summary = "修改订单")
+    @RequestMapping(value = "/remedy", method = RequestMethod.PUT)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> remedy(@RequestBody @Valid TradeRemedyDTO tradeRemedyRequest) {
+        Operator operator = commonUtil.getOperator();
+        if ((osUtil.isS2b() && operator.getPlatform() != Platform.SUPPLIER
+                && operator.getPlatform() != Platform.STOREFRONT)
+                || (osUtil.isB2b() && operator.getPlatform() != Platform.BOSS)) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000018);
+        }
+        Long storeId = commonUtil.getStoreId();
+        StoreInfoResponse storeInfoResponse = storeQueryProvider.getStoreInfoById(new StoreInfoByIdRequest(storeId))
+                .getContext();
+
+        boolean isOpen = commonUtil.findVASBuyOrNot(VASConstants.THIRD_PLATFORM_LINKED_MALL);
+        TradeModifyRemedyRequest tradeModifyRemedyRequest = TradeModifyRemedyRequest.builder()
+                .tradeRemedyDTO(KsBeanUtil.convert(tradeRemedyRequest, TradeRemedyDTO.class))
+                .operator(operator)
+                .storeInfoDTO(KsBeanUtil.convert(storeInfoResponse, StoreInfoDTO.class))
+                .isOpen(isOpen)
+                .build();
+        tradeProvider.remedy(tradeModifyRemedyRequest);
+
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 修改订单（不修改商品、营销相关信息）
+     *
+     * @param tradeRemedyRequest
+     * @return
+     */
+    @Operation(summary = "修改订单（不修改商品、营销相关信息）")
+    @RequestMapping(value = "/remedy-part", method = RequestMethod.PUT)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> remedyPart(@RequestBody @Valid TradeRemedyDTO tradeRemedyRequest) {
+        Operator operator = commonUtil.getOperator();
+        if ((osUtil.isS2b() && operator.getPlatform() != Platform.SUPPLIER && operator.getPlatform() != Platform.STOREFRONT) || (osUtil.isB2b() && operator.getPlatform()
+                != Platform.BOSS)) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000018);
+        }
+        TradeVO tradeVO = checkOperatorByTrade(tradeRemedyRequest.getTradeId());
+        // 提货卡订单不校验
+        if (Objects.nonNull(tradeVO) && (Objects.isNull(tradeVO.getOrderTag()) || !tradeVO.getOrderTag().getPickupCardFlag())){
+            // 限售校验
+            log.info("校验与包装订单信息结束，开始校验订单中的限售商品......");
+            List<TradeItemDTO> tradeItems = tradeRemedyRequest.getTradeItems().stream().map(
+                    o -> TradeItemDTO.builder().skuId(o.getSkuId()).num(o.getNum())
+                            .isAppointmentSaleGoods(o.getIsAppointmentSaleGoods()).appointmentSaleId(o.getAppointmentSaleId())
+                            .isBookingSaleGoods(o.getIsBookingSaleGoods()).bookingSaleId(o.getBookingSaleId())
+                            .build()
+            ).collect(Collectors.toList());
+            TradeItemGroupVO tradeItemGroupVOS = new TradeItemGroupVO();
+            tradeItemGroupVOS.setTradeItems(KsBeanUtil.convert(tradeItems, TradeItemVO.class));
+            CustomerGetByIdResponse customerGetByIdResponse =
+                    customerQueryProvider.getCustomerById(new CustomerGetByIdRequest(tradeRemedyRequest.getCustom()))
+                            .getContext();
+            this.validateRestrictedGoods(tradeItemGroupVOS, customerGetByIdResponse, tradeRemedyRequest.getAddressId());
+        }
+        Long storeId = commonUtil.getStoreId();
+        StoreInfoResponse storeInfoResponse = storeQueryProvider.getStoreInfoById(new StoreInfoByIdRequest(storeId))
+                .getContext();
+
+        TradeRemedyPartRequest tradeRemedyPartRequest = TradeRemedyPartRequest.builder()
+                .tradeRemedyDTO(tradeRemedyRequest)
+                .operator(operator)
+                .storeInfoDTO(KsBeanUtil.convert(storeInfoResponse, StoreInfoDTO.class))
+                .build();
+
+        tradeProvider.remedyPart(tradeRemedyPartRequest);
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 周期购延迟顺延配送
+     * @param request
+     * @return
+     */
+    @Operation(summary = "周期购延迟顺延配送")
+    @RequestMapping(value = "/buy-cycle-defer", method = RequestMethod.PUT)
+    @GlobalTransactional
+    @MultiSubmitWithToken
+    public BaseResponse buyCycleDefer(@RequestBody @Valid TradeBuyCycleModifyRequest request){
+        Platform platform = commonUtil.getOperator().getPlatform();
+        if (!(Objects.equals(platform,Platform.SUPPLIER) || Objects.equals(platform,Platform.PROVIDER))) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000014);
+        }
+        request.setIsDefer(Boolean.TRUE);
+        request.setStoreId(commonUtil.getStoreId());
+        request.setIsUpdate(Boolean.FALSE);
+        tradeProvider.buyCycleDeferOrCancel(request);
+        return BaseResponse.SUCCESSFUL();
+    }
+
+    /**
+     * 周期购延迟取消顺延配送
+     * @param request
+     * @return
+     */
+    @Operation(summary = "周期购取消顺延配送")
+    @RequestMapping(value = "/buy-cycle-defer-cancel", method = RequestMethod.PUT)
+    @GlobalTransactional
+    @MultiSubmitWithToken
+    public BaseResponse buyCycleDeferCancel(@RequestBody @Valid TradeBuyCycleModifyRequest request){
+        Platform platform = commonUtil.getOperator().getPlatform();
+        if (!(Objects.equals(platform,Platform.SUPPLIER) || Objects.equals(platform,Platform.PROVIDER))) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000014);
+        }
+        request.setIsDefer(Boolean.FALSE);
+        request.setStoreId(commonUtil.getStoreId());
+        request.setIsUpdate(Boolean.FALSE);
+        tradeProvider.buyCycleDeferOrCancel(request);
+        return BaseResponse.SUCCESSFUL();
+    }
+
+    /**
+     * 周期购修改配送时间
+     * @param request
+     * @return
+     */
+    @Operation(summary = "周期购修改配送时间")
+    @RequestMapping(value = "/buy-cycle-update-deliveryDate", method = RequestMethod.POST)
+    @GlobalTransactional
+    @MultiSubmitWithToken
+    public BaseResponse buyCycleUpdateDeliveryDate(@RequestBody @Valid TradeBuyCycleModifyRequest request){
+        Platform platform = commonUtil.getOperator().getPlatform();
+
+        if(Objects.isNull(request.getDeliveryDate()) || Objects.isNull(request.getNewDeliveryDate())) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+        if (!(Objects.equals(platform,Platform.SUPPLIER) || Objects.equals(platform,Platform.PROVIDER))) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000014);
+        }
+        request.setIsDefer(Boolean.FALSE);
+        request.setStoreId(commonUtil.getStoreId());
+        request.setIsUpdate(Boolean.TRUE);
+        tradeProvider.buyCycleDeferOrCancel(request);
+        return BaseResponse.SUCCESSFUL();
+    }
+
+    /**
+     * 校验商品限售信息
+     *
+     * @param tradeItemGroupVO
+     * @param customerVO
+     */
+    private void validateRestrictedGoods(TradeItemGroupVO tradeItemGroupVO, CustomerVO customerVO, String addressId) {
+        //组装请求的数据
+        List<TradeItemVO> tradeItemVOS = tradeItemGroupVO.getTradeItems();
+        List<GoodsRestrictedValidateVO> list = KsBeanUtil.convert(tradeItemVOS, GoodsRestrictedValidateVO.class);
+        Boolean openGroup = Boolean.FALSE;
+        if (Objects.nonNull(tradeItemGroupVO.getGrouponForm()) && Objects.nonNull(tradeItemGroupVO.getGrouponForm().getOpenGroupon())) {
+            openGroup = tradeItemGroupVO.getGrouponForm().getOpenGroupon();
+        }
+        SupplierVO supplier = tradeItemGroupVO.getSupplier();
+        Long storeId = null;
+        if (Objects.nonNull(supplier) && StoreType.O2O == supplier.getStoreType()) {
+            storeId = supplier.getStoreId();
+        }
+        goodsRestrictedSaleQueryProvider.validateOrderRestricted(GoodsRestrictedBatchValidateRequest.builder()
+                .goodsRestrictedValidateVOS(list)
+                .snapshotType(tradeItemGroupVO.getSnapshotType())
+                .customerVO(customerVO)
+                .openGroupon(openGroup)
+                .storeId(storeId)
+                .addressId(addressId)
+                .supplierUpdate(Boolean.TRUE)
+                .build());
+    }
+
+    /**
+     * 描述：    订单改价
+     * 场景：    业务员助手|商家端针对订单运费和总金额重新设价
+     *
+     * @param request 改价参数结构
+     * @return
+     */
+    @Operation(summary = "订单改价")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/price/{tid}", method = RequestMethod.PUT)
+    @GlobalTransactional
+    public BaseResponse changePrice(@PathVariable String tid, @RequestBody @Valid TradePriceChangeDTO request) {
+        Operator operator = commonUtil.getOperator();
+        if ((osUtil.isS2b() && operator.getPlatform() != Platform.SUPPLIER
+                && operator.getPlatform() != Platform.STOREFRONT)
+                || (osUtil.isB2b() && operator.getPlatform()
+                != Platform.BOSS)) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000018);
+        }
+        checkOperatorByTrade(tid);
+        TradeModifyPriceRequest tradeModifyPriceRequest = TradeModifyPriceRequest.builder()
+                .tradePriceChangeDTO(request)
+                .tid(tid)
+                .operator(operator)
+                .build();
+
+        tradeProvider.modifyPrice(tradeModifyPriceRequest);
+        return BaseResponse.SUCCESSFUL();
+    }
+
+    /**
+     * 查询订单付款记录
+     */
+    @Operation(summary = "查询订单付款记录")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/payOrder/{tid}", method = RequestMethod.GET)
+    public BaseResponse<FindPayOrderResponse> payOrder(@PathVariable String tid) {
+        TradeVO trade;
+        if (commonUtil.getOperator().getPlatform().equals(Platform.SUPPLIER)) {
+            trade = checkOperatorByTrade(tid);
+        } else {
+            trade = tradeQueryProvider.getById(TradeGetByIdRequest.builder().tid(tid).build()).getContext().getTradeVO();
+        }
+
+        if (Objects.isNull(trade)) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000003);
+        }
+        FindPayOrderResponse payOrderResponse = null;
+        try {
+            BaseResponse<FindPayOrderResponse> response = payOrderQueryProvider.findPayOrder(FindPayOrderRequest.builder().value(trade.getId()).build());
+
+            payOrderResponse = response.getContext();
+
+        } catch (SbcRuntimeException e) {
+            if (AccountErrorCodeEnum.K020032.getCode().equals(e.getErrorCode())) {
+                payOrderResponse = new FindPayOrderResponse();
+                payOrderResponse.setPayType(PayType.fromValue(Integer.parseInt(trade.getPayInfo().getPayTypeId())));
+                payOrderResponse.setTotalPrice(trade.getTradePrice().getTotalPrice());
+            }
+        }
+        return BaseResponse.success(payOrderResponse);
+    }
+
+    /**
+     * 修改卖家备注
+     *
+     * @param tid
+     * @param tradeRemedyRequest
+     * @return
+     */
+    @Operation(summary = "修改卖家备注")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/remark/{tid}", method = RequestMethod.POST)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> sellerRemark(@PathVariable String tid, @RequestBody TradeRemedyDTO
+            tradeRemedyRequest) {
+        checkOperatorByTrade(tid);
+        TradeRemedySellerRemarkRequest tradeRemedySellerRemarkRequest = TradeRemedySellerRemarkRequest.builder()
+                .sellerRemark(tradeRemedyRequest.getSellerRemark())
+                .tid(tid)
+                .operator(commonUtil.getOperator())
+                .build();
+
+        tradeProvider.remedySellerRemark(tradeRemedySellerRemarkRequest);
+
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 修改子单备注(供应商订单)
+     *
+     * @param tid
+     * @param tradeRemedyRequest
+     * @return
+     */
+    @Operation(summary = "修改子单备注(供应商订单)")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/provider/remark/{tid}", method = RequestMethod.POST)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> sellerProviderTradeRemark(@PathVariable String tid, @RequestBody ProviderTradeRemedyDTO
+            tradeRemedyRequest) {
+        checkOperatorByTrade(tid);
+        ProviderTradeRemedyBuyerRemarkRequest tradeRemedySellerRemarkRequest = ProviderTradeRemedyBuyerRemarkRequest.builder()
+                .sellerRemark(tradeRemedyRequest.getSellerRemark())
+                .tid(tid)
+                .operator(commonUtil.getOperator())
+                .build();
+
+        providerTradeProvider.remedySellerRemark(tradeRemedySellerRemarkRequest);
+
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 审核订单
+     *
+     * @param tid
+     * @param request 订单审核参数结构
+     * @return
+     */
+    @Operation(summary = "审核订单")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/audit/{tid}", method = RequestMethod.POST)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> audit(@PathVariable String tid, @RequestBody TradeAuditRequest request) {
+        checkOperatorByTrade(tid);
+        com.wanmi.sbc.order.api.request.trade.TradeAuditRequest tradeAuditRequest
+                = com.wanmi.sbc.order.api.request.trade.TradeAuditRequest.builder()
+                .tid(tid)
+                .auditState(request.getAuditState())
+                .reason(request.getReason())
+                .operator(commonUtil.getOperator())
+                .build();
+        tradeProvider.audit(tradeAuditRequest);
+
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 批量审核订单
+     *
+     * @param request 批量审核请求参数结构
+     * @return
+     */
+    @Operation(summary = "批量审核订单")
+    @RequestMapping(value = "/audit", method = RequestMethod.POST)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> batchAudit(@RequestBody TradeAuditBatchRequest request) {
+
+
+        com.wanmi.sbc.order.api.request.trade.TradeAuditBatchRequest tradeAuditBatchRequest =
+
+                com.wanmi.sbc.order.api.request.trade.TradeAuditBatchRequest.builder()
+                        .auditState(request.getAuditState())
+                        .ids(request.getIds())
+                        .reason(request.getReason())
+                        .operator(commonUtil.getOperator())
+                        .build();
+
+        tradeProvider.auditBatch(tradeAuditBatchRequest);
+
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 导出订单
+     *
+     * @return
+     */
+    @Operation(summary = "导出订单")
+    @EmployeeCheck
+    @Parameter(name = "encrypted", description = "解密", required = true)
+    @RequestMapping(value = "/export/params/{encrypted}/{encryptedable}", method = RequestMethod.GET)
+    public BaseResponse export(@PathVariable String encrypted,
+                               @PathVariable String encryptedable, TradeQueryDTO request) {
+
+        String decrypted = new String(Base64.getUrlDecoder().decode(encrypted.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
+        String decryptedable = new String(Base64.getUrlDecoder().decode(encryptedable.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
+        if (CollectionUtils.isNotEmpty(request.getEmployeeIds())) {
+            JSONObject jsonObject = JSONObject.parseObject(decrypted);
+            jsonObject.put("employeeIds", request.getEmployeeIds());
+            decrypted = jsonObject.toString();
+        }
+
+        Operator operator = commonUtil.getOperator();
+        ExportDataRequest exportDataRequest = new ExportDataRequest();
+        exportDataRequest.setAdminId(operator.getAdminId());
+        exportDataRequest.setPlatform(commonUtil.getOperator().getPlatform());
+        exportDataRequest.setParam(decrypted);
+        exportDataRequest.setDisabled(decryptedable);
+        exportDataRequest.setTypeCd(ReportType.BUSINESS_TRADE);
+        exportDataRequest.setBuyAnyThirdChannelOrNot(commonUtil.buyAnyThirdChannelOrNot());
+        exportDataRequest.setOperator(commonUtil.getOperator());
+        exportCenter.sendExport(exportDataRequest);
+        return BaseResponse.SUCCESSFUL();
+    }
+
+
+    /**
+     * 查看订单详情
+     *
+     * @param tid
+     * @return
+     */
+    @Operation(summary = "查看订单详情")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/{tid}", method = RequestMethod.GET)
+    @ReturnSensitiveWords(functionName = "f_order_detail_sign_word")
+    public BaseResponse<TradeVO> detail(@PathVariable String tid) {
+        TradeVO trade =
+                tradeQueryProvider.getById(TradeGetByIdRequest.builder().tid(tid).needLmOrder(Boolean.TRUE).build()).getContext().getTradeVO();
+        getAddressInfo(trade.getPickSettingInfo());
+        //获取自提点地址信息
+        Operator operator = commonUtil.getOperator();
+        if (operator.getPlatform() == Platform.SUPPLIER && Objects.nonNull(trade.getId()) && !Objects.equals(commonUtil.getStoreId(), trade.getSupplier().getStoreId())) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000003);
+        }
+
+        //判断用户是否注销
+        trade.setLogOutStatus(
+                customerCacheService.getCustomerLogOutStatus(trade.getBuyer().getId())
+        );
+
+        if (CollectionUtils.isNotEmpty(trade.getTradeEventLogs())){
+            trade.getTradeEventLogs().forEach(tradeEventLogVO -> {
+                if (Objects.equals(Platform.CUSTOMER,tradeEventLogVO.getOperator().getPlatform())){
+                    tradeEventLogVO.setLogOutStatus(
+                        customerCacheService
+                                .getCustomerLogOutStatus(tradeEventLogVO.getOperator().getUserId())
+                    );
+                }
+            });
+        }
+        if(Objects.nonNull(trade.getTradePrice().getGiftCardType()) && trade.getTradePrice().getGiftCardType() == GiftCardType.PICKUP_CARD){
+            trade.getTradePrice().setBuyPoints(0L);
+            trade.getTradePrice().setPoints(0L);
+            trade.getTradePrice().setPointsPrice(BigDecimal.ZERO);
+        }
+        return BaseResponse.success(trade);
+    }
+
+    private void getAddressInfo(PickSettingInfoVO pickSettingInfoVo) {
+        if (Objects.nonNull(pickSettingInfoVo)) {
+            List<String> addrIds = new ArrayList<>();
+            addrIds.add(Objects.toString(pickSettingInfoVo.getProvinceId()));
+            addrIds.add(Objects.toString(pickSettingInfoVo.getCityId()));
+            addrIds.add(Objects.toString(pickSettingInfoVo.getAreaId()));
+            addrIds.add(Objects.toString(pickSettingInfoVo.getStreetId()));
+            //根据Id获取地址信息
+            List<PlatformAddressVO> voList = platformAddressQueryProvider.list(PlatformAddressListRequest.builder()
+                    .addrIdList(addrIds).build()).getContext().getPlatformAddressVOList();
+            Map<String, String> addrMap = new HashMap<>();
+            if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(voList)) {
+                addrMap = voList.stream().collect(Collectors.toMap(PlatformAddressVO::getAddrId, PlatformAddressVO::getAddrName));
+            }
+            pickSettingInfoVo.setProvinceName(addrMap.get(Objects.toString(pickSettingInfoVo.getProvinceId())));
+            pickSettingInfoVo.setCityName(addrMap.get(Objects.toString(pickSettingInfoVo.getCityId())));
+            pickSettingInfoVo.setAreaName(addrMap.get(Objects.toString(pickSettingInfoVo.getAreaId())));
+            pickSettingInfoVo.setStreetName(addrMap.get(Objects.toString(pickSettingInfoVo.getStreetId())));
+            try {
+                StoreByIdResponse context = storeQueryProvider.getById(new StoreByIdRequest(pickSettingInfoVo.getStoreId())).getContext();
+                pickSettingInfoVo.setStoreName(context.getStoreVO() == null ? null : context.getStoreVO().getStoreName());
+            } catch (Exception e) {
+                pickSettingInfoVo.setStoreName(null);
+            }
+        }
+    }
+
+
+    /**
+     * 发货
+     *
+     * @param tid
+     * @return
+     */
+    @Operation(summary = "发货")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/deliver/{tid}", method = RequestMethod.PUT)
+    @MultiSubmit
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> deliver(@PathVariable String tid, @Valid @RequestBody TradeDeliverRequestDTO
+            tradeDeliverRequest) {
+        //子单应该走子单发货接口
+        if(tid.startsWith("S")){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000003);
+        }
+        TradeVO tradeVO = checkOperatorByTrade(tid);
+
+        //有子单应该走子单发货接口
+        if(CollectionUtils.isNotEmpty(tradeVO.getTradeVOList())){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000003);
+        }
+        if (Objects.isNull(tradeVO)) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000003);
+        }
+        OrderTagVO orderTag = tradeVO.getOrderTag();
+        //是否是虚拟订单或者卡券订单
+        boolean isVirtual = Objects.nonNull(orderTag) && (orderTag.getVirtualFlag() || orderTag.getElectronicCouponFlag());
+        if(isVirtual) {
+            throw new SbcRuntimeException(OrderErrorCodeEnum.K050155);
+        }
+        if (tradeDeliverRequest.getShippingItemList().isEmpty() && tradeDeliverRequest.getGiftItemList().isEmpty()
+            && tradeDeliverRequest.getPreferentialItemList().isEmpty()) {
+            throw new SbcRuntimeException(OrderErrorCodeEnum.K050086);
+        }
+
+        TradeDeliveryCheckRequest tradeDeliveryCheckRequest = TradeDeliveryCheckRequest.builder()
+                .tid(tid)
+                .tradeDeliver(tradeDeliverRequest)
+                .build();
+
+        tradeQueryProvider.deliveryCheck(tradeDeliveryCheckRequest);
+
+        //发货校验
+        ExpressCompanyVO expressCompanyVO;
+        if (Boolean.TRUE.equals(tradeVO.getPickupFlag())) {
+            expressCompanyVO = null;
+        } else {
+            // 校验物流单号
+            if (StringUtils.isBlank(tradeDeliverRequest.getDeliverNo())) {
+                throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+            }
+            ExpressCompanyByIdRequest request = new ExpressCompanyByIdRequest();
+            request.setExpressCompanyId(Long.valueOf(tradeDeliverRequest.getDeliverId()));
+            expressCompanyVO = expressCompanyQueryProvider.getById(request).getContext().getExpressCompanyVO();
+            if (Objects.isNull(expressCompanyVO)) {
+                throw new SbcRuntimeException(OrderErrorCodeEnum.K050163);
+            }
+        }
+
+        TradeDeliverVO tradeDeliver = tradeDeliverRequest.toTradeDevlier(expressCompanyVO);
+        tradeDeliver.setShipperType(ShipperType.SUPPLIER);
+
+        TradeDeliverRequest tradeDeliverRequest1 = TradeDeliverRequest.builder()
+                .tradeDeliver(KsBeanUtil.convert(tradeDeliver, TradeDeliverDTO.class))
+                .tid(tid)
+                .operator(commonUtil.getOperator())
+                .build();
+        //周期购
+        if(Objects.nonNull(orderTag) && orderTag.getBuyCycleFlag()) {
+            TradeBuyCycleVO tradeBuyCycle = tradeVO.getTradeBuyCycle();
+            List<CycleDeliveryPlanVO> deliveryPlanS = tradeBuyCycle.getDeliveryPlanS();
+            long count = deliveryPlanS.parallelStream().filter(cycleDeliveryPlanVO ->
+                    Objects.equals(CycleDeliveryState.NOT_SHIP, cycleDeliveryPlanVO.getCycleDeliveryState())).count();
+            //如果不是最后一期，必须要传周期购提前几天提醒发货
+            if (count > Constants.ONE && Objects.isNull(tradeDeliverRequest.getRemindShipping())) {
+                throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+            }
+            tradeDeliverRequest1.setRemindShipping(tradeDeliverRequest.getRemindShipping());
+        }
+        String deliverId = tradeProvider.deliver(tradeDeliverRequest1).getContext().getDeliverId();
+        return ResponseEntity.ok(BaseResponse.success(deliverId));
+    }
+
+    /**
+     * SMALL推送发货
+     *
+     * @param tradeDeliverSmallRequest
+     * @return
+     */
+    @Operation(summary = "SMALL推送发货")
+    @RequestMapping(value = "/small/deliver", method = RequestMethod.POST)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> deliver(@Valid @RequestBody TradeDeliverSmallRequestDTO
+                                                        tradeDeliverSmallRequest) {
+
+
+        // 获取物流信息
+        if (StringUtils.isBlank(tradeDeliverSmallRequest.getDeliverNo())) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+        // 默认顺丰
+        ExpressCompanyByCodeRequest expressCompanyByCodeRequest = ExpressCompanyByCodeRequest.builder().expressCode("shunfeng").build();
+        ExpressCompanyVO expressCompanyVO = expressCompanyQueryProvider.getByCode(expressCompanyByCodeRequest).getContext().getExpressCompanyVO();
+        if (Objects.isNull(expressCompanyVO)) {
+            throw new SbcRuntimeException(OrderErrorCodeEnum.K050163);
+        }
+
+        // 获取商品信息
+        TradeDeliverVO tradeDeliver = tradeQueryProvider.getByIdForDeliver(TradeGetByIdRequest.builder().tid(tradeDeliverSmallRequest.getTid()).build()).getContext().getTradeDeliverVO();
+        if (Objects.isNull(tradeDeliver)) {
+            throw new SbcRuntimeException(OrderErrorCodeEnum.K050189);
+        }
+
+        // 组装物流信息
+        assembleTradeDeliver(tradeDeliver, expressCompanyVO, tradeDeliverSmallRequest);
+
+        // 组装操作人信息
+        Operator operator = Operator.builder().ip(HttpUtil.getIpAddr()).adminId("1").name("SYSTEM").platform
+                (Platform.BOSS).build();
+
+        TradeDeliverRequest tradeDeliverRequest1 = TradeDeliverRequest.builder()
+                .tradeDeliver(KsBeanUtil.convert(tradeDeliver, TradeDeliverDTO.class))
+                .tid(tradeDeliverSmallRequest.getTid())
+                .operator(operator)
+                .build();
+
+        // 调用发货
+        String deliverId = tradeProvider.deliver(tradeDeliverRequest1).getContext().getDeliverId();
+        return ResponseEntity.ok(BaseResponse.success(deliverId));
+    }
+
+    private void assembleTradeDeliver(TradeDeliverVO tradeDeliver, ExpressCompanyVO expressCompanyVO,
+                    TradeDeliverSmallRequestDTO tradeDeliverSmallRequest) {
+        String deliverNo = tradeDeliverSmallRequest.getDeliverNo();
+        String deliverTime = tradeDeliverSmallRequest.getDeliverTime();
+        LogisticsVO logistics = null;
+        if (Objects.nonNull(expressCompanyVO)) {
+            logistics = LogisticsVO.builder()
+                    .logisticCompanyId(expressCompanyVO.getExpressCompanyId().toString())
+                    .logisticCompanyName(expressCompanyVO.getExpressName())
+                    .logisticNo(deliverNo)
+                    .logisticStandardCode(expressCompanyVO.getExpressCode())
+                    .build();
+
+            logistics.setLogisticNo(deliverNo);
+        }
+        tradeDeliver.setLogistics(logistics);
+        tradeDeliver.setDeliverTime(DateUtil.parseDay(deliverTime));
+        tradeDeliver.setShipperType(ShipperType.SUPPLIER);
+    }
+
+
+    /**
+     * 子单(子单是商家的)发货
+     *
+     * @param tid
+     * @return
+     */
+    @Operation(summary = "子单发货")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/provider/deliver/{tid}", method = RequestMethod.PUT)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> providerTradedeliver(@PathVariable String tid, @Valid @RequestBody TradeDeliverRequestDTO
+            tradeDeliverRequest) {
+        TradeVO tradeVO = checkOperatorByTrade(tid);
+        if (Objects.isNull(tradeVO)) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000003);
+        }
+        if (tradeDeliverRequest.getShippingItemList().isEmpty() && tradeDeliverRequest.getGiftItemList().isEmpty()
+            && tradeDeliverRequest.getPreferentialItemList().isEmpty()) {
+            throw new SbcRuntimeException(OrderErrorCodeEnum.K050086);
+        }
+
+        TradeDeliveryCheckRequest tradeDeliveryCheckRequest = TradeDeliveryCheckRequest.builder()
+                .tid(tid)
+                .tradeDeliver(tradeDeliverRequest)
+                .build();
+
+        providerTradeProvider.providerDeliveryCheck(tradeDeliveryCheckRequest);
+
+        //发货校验
+        ExpressCompanyVO expressCompanyVO;
+        if (Boolean.TRUE.equals(tradeVO.getPickupFlag())) {
+            expressCompanyVO = null;
+        } else {
+            ExpressCompanyByIdRequest request = new ExpressCompanyByIdRequest();
+            request.setExpressCompanyId(Long.valueOf(tradeDeliverRequest.getDeliverId()));
+            expressCompanyVO = expressCompanyQueryProvider.getById(request).getContext().getExpressCompanyVO();
+        }
+
+        TradeDeliverVO tradeDeliver = tradeDeliverRequest.toTradeDevlier(expressCompanyVO);
+        tradeDeliver.setShipperType(ShipperType.SUPPLIER);
+
+        TradeDeliverRequest deliverRequest = TradeDeliverRequest.builder()
+                .tradeDeliver(KsBeanUtil.convert(tradeDeliver, TradeDeliverDTO.class))
+                .tid(tid)
+                .operator(commonUtil.getOperator())
+                .build();
+        // 供应商发货处理
+        //周期购
+        OrderTagVO orderTag = tradeVO.getOrderTag();
+        if(Objects.nonNull(orderTag) && orderTag.getBuyCycleFlag()) {
+            TradeBuyCycleVO tradeBuyCycle = tradeVO.getTradeBuyCycle();
+            List<CycleDeliveryPlanVO> deliveryPlanS = tradeBuyCycle.getDeliveryPlanS();
+            long count = deliveryPlanS.parallelStream().filter(cycleDeliveryPlanVO ->
+                    Objects.equals(CycleDeliveryState.NOT_SHIP, cycleDeliveryPlanVO.getCycleDeliveryState())).count();
+            //如果不是最后一期，必须要传周期购提前几天提醒发货
+            if (count > Constants.ONE && Objects.isNull(tradeDeliverRequest.getRemindShipping())) {
+                throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+            }
+            deliverRequest.setRemindShipping(tradeDeliverRequest.getRemindShipping());
+        }
+        String deliverId = providerTradeProvider.providerDeliver(deliverRequest).getContext().getDeliverId();
+        return ResponseEntity.ok(BaseResponse.success(deliverId));
+    }
+
+
+    /**
+     * 验证订单是否存在售后申请
+     *
+     * @param tid
+     * @return
+     */
+    @Operation(summary = "验证订单是否存在售后申请")
+    @Parameter(name = "tid", description = "订单id", required = true)
+    @RequestMapping(value = "/deliver/verify/{tid}", method = RequestMethod.GET)
+    public BaseResponse deliverVerify(@PathVariable String tid) {
+        checkOperatorByTrade(tid);
+        if (tradeQueryProvider.verifyAfterProcessing(TradeVerifyAfterProcessingRequest.builder().tid(tid).build()).getContext().getVerifyResult()) {
+            throw new SbcRuntimeException(OrderErrorCodeEnum.K050046, new Object[]{tid});
+        }
+        return BaseResponse.SUCCESSFUL();
+    }
+
+
+    /**
+     * 验证订单是否存在售后申请
+     *
+     * @param ptid
+     * @return
+     */
+    @Operation(summary = "验证订单是否存在售后申请")
+    @Parameter(name = "ptid", description = "订单id", required = true)
+    @RequestMapping(value = "/provider/deliver/verify/{ptid}", method = RequestMethod.GET)
+    public BaseResponse providerDeliverVerify(@PathVariable String ptid) {
+        if (tradeQueryProvider.providerVerifyAfterProcessing(ProviderTradeVerifyAfterProcessingRequest.builder().ptid(ptid).build()).getContext().getVerifyResult()) {
+            throw new SbcRuntimeException(OrderErrorCodeEnum.K050046, new Object[]{ptid});
+        }
+        return BaseResponse.SUCCESSFUL();
+    }
+
+    /**
+     * 发货作废
+     *
+     * @param tid
+     * @param tdId
+     * @return
+     */
+    @Operation(summary = "发货作废")
+    @Parameters({
+            @Parameter(
+                    name = "tid", description = "订单Id", required = true),
+            @Parameter(
+                    name = "tdId", description = "发货单Id", required = true)
+    })
+    @RequestMapping(value = "/deliver/{tid}/void/{tdId}", method = RequestMethod.GET)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> deliverVoid(@PathVariable String tid, @PathVariable String tdId) {
+        checkOperatorByTrade(tid);
+        tradeProvider.deliverRecordObsolete(TradeDeliverRecordObsoleteRequest.builder()
+                .deliverId(tdId).tid(tid).operator(commonUtil.getOperator()).build());
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 子订单发货作废
+     *
+     * @param tid
+     * @param tdId
+     * @return
+     */
+    @Operation(summary = "子订单发货作废")
+    @Parameters({
+            @Parameter(
+                    name = "tid", description = "订单Id", required = true),
+            @Parameter(
+                    name = "tdId", description = "发货单Id", required = true)
+    })
+    @RequestMapping(value = "/providerTrade/deliver/{tid}/void/{tdId}", method = RequestMethod.GET)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> providerDeliverVoid(@PathVariable String tid, @PathVariable String tdId,
+                                                            HttpServletRequest req) {
+        checkOperatorByTrade(tid);
+        providerTradeProvider.deliverRecordObsolete(TradeDeliverRecordObsoleteRequest.builder()
+                .deliverId(tdId).tid(tid).operator(commonUtil.getOperator()).build());
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 确认收货
+     *
+     * @param tid
+     * @return
+     */
+    @Operation(summary = "确认收货")
+    @Parameter(name = "tid", description = "订单Id", required = true)
+    @RequestMapping(value = "/confirm/{tid}", method = RequestMethod.GET)
+    public ResponseEntity<BaseResponse> confirm(@PathVariable String tid) {
+        checkOperatorByTrade(tid);
+        tradeProvider.confirmReceive(TradeConfirmReceiveRequest.builder().tid(tid).operator(commonUtil.getOperator()).build());
+
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 回审
+     *
+     * @param tid
+     * @return
+     */
+    @Operation(summary = "回审")
+    @Parameter(name = "tid", description = "订单Id", required = true)
+    @RequestMapping(value = "/retrial/{tid}", method = RequestMethod.GET)
+    @GlobalTransactional
+    public ResponseEntity<BaseResponse> retrial(@PathVariable String tid) {
+        checkOperatorByTrade(tid);
+        tradeProvider.retrial(TradeRetrialRequest.builder().tid(tid).operator(commonUtil.getOperator()).build());
+        return ResponseEntity.ok(BaseResponse.SUCCESSFUL());
+    }
+
+    /**
+     * 0元订单默认支付
+     *
+     * @param tid
+     * @return
+     */
+    @Operation(summary = "0元订单默认支付")
+    @Parameter(name = "tid", description = "订单Id", required = true)
+    @RequestMapping(value = "/default/pay/{tid}", method = RequestMethod.GET)
+    @GlobalTransactional
+    public BaseResponse<Boolean> defaultPay(@PathVariable String tid) {
+        checkOperatorByTrade(tid);
+        return BaseResponse.success(tradeProvider.defaultPay(TradeDefaultPayRequest.builder()
+                .tid(tid)
+                .payWay(PayWay.UNIONPAY)
+                .build())
+                .getContext().getPayResult());
+    }
+
+    /**
+     * 验证
+     *
+     * @param tid tid
+     * @return boolean
+     */
+    @Operation(summary = "验证")
+    @Parameter(name = "tid", description = "订单Id", required = true)
+    @RequestMapping(value = "/verifyAfterProcessing/{tid}", method = RequestMethod.GET)
+    public Boolean verifyAfterProcessing(@PathVariable String tid) {
+        checkOperatorByTrade(tid);
+        return tradeQueryProvider.verifyAfterProcessing(TradeVerifyAfterProcessingRequest.builder().tid(tid).build()).getContext().getVerifyResult();
+    }
+
+    /**
+     * 根据快递公司及快递单号查询物流详情
+     */
+    @Operation(summary = "根据快递公司及快递单号查询物流详情，返回: 物流详情")
+    @RequestMapping(value = "/deliveryInfos", method = RequestMethod.POST)
+    public BaseResponse<List<Map<Object, Object>>> logistics(@RequestBody DeliveryQueryRequest queryRequest) {
+        List<Map<Object, Object>> result = expressQueryProvider.expressInfoQuery(queryRequest).getContext().getOrderList();
+        return BaseResponse.success(result);
+    }
+
+    /**
+     * 根据linkedmall订单号及购买用户id查询linkedmall订单的物流详情
+     */
+    @Operation(summary = "根据linkedmall订单号及购买用户id查询物流详情，返回: 物流详情")
+    @RequestMapping(value = "/linkedMall/deliveryInfos", method = RequestMethod.POST)
+    public BaseResponse<LinkedMallLogisticsQueryResponse> logistics4LinkedMall(@RequestBody LinkedMallLogisticsQueryRequest request) {
+        return linkedMallOrderProvider.getOrderLogistics(request);
+    }
+
+    /**
+     * 分页查询拼团订单
+     */
+    @Operation(summary = "分页查询拼团订单")
+    @RequestMapping(value = "/groupon/page", method = RequestMethod.POST)
+    public BaseResponse<Page<TradeVO>> grouponOrderPage(@RequestBody TradeQueryDTO tradeQueryRequest) {
+        Long companyInfoId = commonUtil.getCompanyInfoId();
+        if (companyInfoId != null) {
+            tradeQueryRequest.setSupplierId(companyInfoId);
+        }
+        tradeQueryRequest.setGrouponFlag(Boolean.TRUE);
+        tradeQueryRequest.putSort("grouponSuccessTime", "desc");
+        tradeQueryRequest.putSort("createTime", "desc");
+        Page<TradeVO> tradePage = tradeQueryProvider.pageCriteria(TradePageCriteriaRequest.builder()
+                .tradePageDTO(tradeQueryRequest).build()).getContext().getTradePage();
+        return BaseResponse.success(tradePage);
+    }
+
+
+    /**
+     * 导出订单
+     *
+     * @return
+     */
+    @Operation(summary = "导出订单")
+    @EmployeeCheck
+    @Parameter(name = "encrypted", description = "解密", required = true)
+    @RequestMapping(value = "/export/params/providerTrade/{encrypted}/{encryptedable}", method = RequestMethod.GET)
+    public BaseResponse exportProviderTrade(@PathVariable String encrypted,
+                                            @PathVariable String encryptedable, TradeQueryDTO tradeQueryRequest) {
+        String decrypted = new String(Base64.getUrlDecoder().decode(encrypted.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
+        String decryptedable = new String(Base64.getUrlDecoder().decode(encryptedable.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
+        TradeExportRequest tradeExportRequest = JSON.parseObject(decrypted, TradeExportRequest.class);
+        if (CollectionUtils.isNotEmpty(tradeQueryRequest.getEmployeeIds())) {
+            tradeExportRequest.setEmployeeIds(tradeQueryRequest.getEmployeeIds());
+        }
+        Operator operator = commonUtil.getOperator();
+        ExportDataRequest exportDataRequest = new ExportDataRequest();
+//        exportDataRequest.setUserId(operator.getUserId());
+//        exportDataRequest.setCompanyInfoId(operator.getCompanyInfoId());
+//        exportDataRequest.setCompanyType(operator.getCompanyType());
+//        exportDataRequest.setStoreType(operator.getStoreType());
+
+        exportDataRequest.setAdminId(operator.getAdminId());
+        exportDataRequest.setPlatform(commonUtil.getOperator().getPlatform());
+        exportDataRequest.setParam(JSONObject.toJSONString(tradeExportRequest));
+        exportDataRequest.setDisabled(decryptedable);
+        exportDataRequest.setTypeCd(ReportType.BUSINESS_TRADE);
+        exportDataRequest.setBuyAnyThirdChannelOrNot(commonUtil.buyAnyThirdChannelOrNot());
+        exportDataRequest.setOperator(commonUtil.getOperator());
+        exportCenter.sendExport(exportDataRequest);
+        return BaseResponse.SUCCESSFUL();
+    }
+
+    private TradeVO checkOperatorByTrade(String tid) {
+        TradeVO trade = null;
+        Operator operator = commonUtil.getOperator();
+        if (operator.getPlatform() == Platform.SUPPLIER || operator.getPlatform() == Platform.STOREFRONT) {
+            if (tid.startsWith(GeneratorService._PREFIX_TRADE_ID) || tid.startsWith(GeneratorService.NEW_PREFIX_TRADE_ID)) {
+                trade =
+                        tradeQueryProvider.getById(TradeGetByIdRequest.builder().tid(tid).build()).getContext().getTradeVO();
+            } else if (tid.startsWith("S")) {
+                trade =
+                        providerTradeQueryProvider.providerGetById(TradeGetByIdRequest.builder().tid(tid).build()).getContext().getTradeVO();
+            }
+            if (Objects.nonNull(trade) && !Objects.equals(commonUtil.getStoreId(), trade.getSupplier().getStoreId())) {
+                throw new SbcRuntimeException(CommonErrorCodeEnum.K000003);
+            }
+        }
+        return trade;
+    }
+
+    /**
+     * 未完全支付的定金预售订单状态填充为已作废状态
+     * <p>
+     * （主要订单真实作废比较延迟，计时过后仍然处于待支付尾款情况，前端由订单状态判断来控制支付尾款按钮的展示）
+     *
+     * @param detail 订单
+     */
+    private void fillTradeBookingTimeOut(TradeVO detail) {
+        //未完全支付的定金预售订单
+        if (Boolean.TRUE.equals(detail.getIsBookingSaleGoods())
+                && BookingType.EARNEST_MONEY.equals(detail.getBookingType())
+                && Objects.nonNull(detail.getTradeState())
+                && (!PayState.PAID.equals(detail.getTradeState().getPayState()))) {
+            //尾款时间 < 今天
+            if (Objects.nonNull(detail.getTradeState().getTailEndTime())
+                    && detail.getTradeState().getTailEndTime().isBefore(LocalDateTime.now())) {
+                detail.getTradeState().setFlowState(FlowState.VOID);//作废
+            }
+        }
+    }
+
+    /**
+     * 查询第三方渠道订单的物流详情
+     */
+    @Operation(summary = "查询第三方渠道订单的物流详情，返回: 物流详情")
+    @RequestMapping(value = "/channel/deliveryInfos", method =
+            RequestMethod.POST)
+    public BaseResponse<LogisticsLinkedMallResponse> logistics4Channel(@RequestBody ChannelLogisticsQueryRequest request) {
+        if (!commonUtil.buyAnyThirdChannelOrNot()) {
+            return BaseResponse.FAILED();
+        }
+        ChannelLogisticsQueryResponse channelLogisticsQueryResponse =
+                channelLogisticsQueryProvider.getLogisticsList(request).getContext();
+        DataItemVO dataItem = channelLogisticsQueryResponse.getDataItemVO();
+        LogisticsLinkedMallResponse logisticsLinkedMallResponse = new LogisticsLinkedMallResponse();
+        logisticsLinkedMallResponse.setLogisticCompanyName(dataItem.getLogisticsCompanyName());
+        logisticsLinkedMallResponse.setLogisticNo(dataItem.getMailNo());
+        logisticsLinkedMallResponse.setLogisticStandardCode(dataItem.getLogisticsCompanyCode());
+        List<LogisticsDetailListItemVO> logisticsDetail = dataItem.getLogisticsDetailList();
+        if (logisticsDetail.size()>1) {
+            logisticsLinkedMallResponse.setDeliveryTime(logisticsDetail.get(logisticsDetail.size()-2).getOcurrTimeStr());
+        }else {
+            logisticsLinkedMallResponse.setDeliveryTime("");
+        }
+        ArrayList<Map<String, String>> logisticsDetailList = new ArrayList<>();
+        for (LogisticsDetailListItemVO logisticsDetailListItem : logisticsDetail) {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("time",logisticsDetailListItem.getOcurrTimeStr());
+            map.put("context",logisticsDetailListItem.getStanderdDesc());
+            logisticsDetailList.add(map);
+        }
+        logisticsLinkedMallResponse.setLogisticsDetailList(logisticsDetailList);
+        return BaseResponse.success(logisticsLinkedMallResponse);
+    }
+
+    /**
+     * 订单核销商品信息
+     */
+    @Operation(summary = "订单核销商品信息，返回: 订单详情")
+    @GetMapping(value = "/pickup/details/{code}")
+    public BaseResponse<TradeVO> orderDetailsByWriteOffCode(@PathVariable String code) {
+
+        Operator operator = commonUtil.getOperator();
+
+        if(StringUtils.isNotBlank(code) && code.length() == 8){
+            code = code.toUpperCase(Locale.ROOT);
+        }
+        WriteOffCodeRequest writeOffCodeRequest = checkUser(WriteOffCodeRequest.builder().writeOffCode(code).operator(operator).build());
+
+        TradeVO trade = tradeQueryProvider.orderDetailsByWriteOffCode(writeOffCodeRequest).getContext().getTradeVO();
+
+        return BaseResponse.success(trade);
+    }
+
+    /**
+     * 核销订单
+     */
+    @Operation(summary = "核销订单")
+    @PostMapping(value = "/write/off/order")
+    public BaseResponse writeOffOrder(@RequestBody @Valid WriteOffCodeRequest request) {
+
+        request.setOperator(commonUtil.getOperator());
+        if(StringUtils.isNotBlank(request.getWriteOffCode()) && request.getWriteOffCode().length() == 8){
+            request.setWriteOffCode(request.getWriteOffCode().toUpperCase(Locale.ROOT));
+        }
+        checkUser(request);
+
+        return tradeProvider.writeOffOrder(request);
+    }
+
+    /**
+     * 批量修改订单表中是否有售后状态
+     */
+    @Operation(summary = "批量修改订单表中是否有售后状态")
+    @PostMapping(value = "/update/has/return")
+    public BaseResponse updateHasReturn() {
+        ReturnOrderPageRequest pageRequest = new ReturnOrderPageRequest();
+        pageRequest.setPageNum(0);
+        pageRequest.setPageSize(10);
+        List<ReturnOrderVO> pageList;
+        long total = 0L;
+        List<String> errorDataList = new ArrayList<>();
+        do {
+            // 获取分页数据
+            MicroServicePage<ReturnOrderVO> page = returnOrderQueryProvider.page(pageRequest).getContext().getReturnOrderPage();
+            pageList = Optional.ofNullable(page).map(MicroServicePage::getContent).orElse(Collections.emptyList());
+            // 商家 转为订单id列表并去重
+            List<String> tradeIds = pageList.stream().map(ReturnOrderVO::getTid)
+                    .filter(Objects::nonNull).distinct().collect(Collectors.toList());
+            // 供应商 转为订单id列表并去重
+            List<String> providerTradeIds = pageList.stream().map(ReturnOrderVO::getPtid)
+                    .filter(Objects::nonNull).distinct().collect(Collectors.toList());
+            // 刷新订单数据
+            try {
+                total += tradeIds.size();
+                tradeProvider.updateHasReturn(TradeUpdateHasReturnRequest.builder()
+                        .tids(tradeIds)
+                        .ptids(providerTradeIds)
+                        .build());
+            } catch (Exception e) {
+                errorDataList.addAll(tradeIds);
+                log.info("批量修改订单表中是否有售后状态结束失败，ids: {}，异常：", tradeIds, e);
+            }
+            // 更新分页请求，页数+1
+            pageRequest.setPageNum(pageRequest.getPageNum() + 1);
+        } while(pageList.size() == pageRequest.getPageSize() );
+        log.info("批量修改订单表中是否有售后状态结束，更新总数：{}，失败条数：{}，失败记录：{}", total, errorDataList.size(), errorDataList);
+        return BaseResponse.SUCCESSFUL();
+    }
+
+
+
+
+    private WriteOffCodeRequest checkUser(WriteOffCodeRequest request) {
+
+        request.setUserId(request.getOperator().getUserId());
+        if (!Platform.SUPPLIER.equals(request.getOperator().getPlatform())
+                && !Platform.STOREFRONT.equals(request.getOperator().getPlatform())) {
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000014);
+        }
+
+        PickupSettingIdsResponse pickupSettingIdsResponse = pickupSettingQueryProvider
+                .getPickupIdsByEmployeeId(PickupSettingIdsRequest.builder().employeeId(request.getUserId()).build()).getContext();
+        if (Objects.nonNull(pickupSettingIdsResponse) && CollectionUtils.isNotEmpty(pickupSettingIdsResponse.getPickupIds())) {
+            //关联了自提点的员工
+            request.setPickupIds(pickupSettingIdsResponse.getPickupIds());
+        }
+
+        return request;
+    }
+
+
+    /**
+     * 分页查询团订单
+     *
+     * @param tradeQueryRequest
+     * @return
+     */
+    @Operation(summary = "分页查询")
+    @EmployeeCheck
+    @PostMapping(value = "/community/page")
+    public BaseResponse<MicroServicePage<TradeVO>> communityPage(@RequestBody TradeQueryDTO tradeQueryRequest) {
+        Long companyInfoId = commonUtil.getCompanyInfoId();
+        if (companyInfoId != null) {
+            tradeQueryRequest.setSupplierId(companyInfoId);
+        }
+
+        if (!tradeQueryRequest.getIsBoss()) {
+            if (Objects.nonNull(tradeQueryRequest.getTradeState()) && Objects.nonNull(tradeQueryRequest.getTradeState
+                    ().getPayState())) {
+                tradeQueryRequest.setNotFlowStates(Arrays.asList(FlowState.VOID, FlowState.INIT));
+            }
+        }
+
+        //设定状态条件逻辑,已审核状态需筛选出已审核与部分发货
+        tradeQueryRequest.makeAllAuditFlow();
+        tradeQueryRequest.setFillLeaderNameFlag(Boolean.TRUE);
+        TradePageCriteriaRequest build = TradePageCriteriaRequest.builder().tradePageDTO(tradeQueryRequest).build();
+        return BaseResponse.success(tradeQueryProvider.pageCriteria(build).getContext().getTradePage());
+    }
+}

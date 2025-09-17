@@ -1,0 +1,194 @@
+# ----------------------------------------
+# application info
+# ----------------------------------------
+info.app.name=B2B-PC
+info.app.description=B2B-PC
+info.build.artifact=@project.artifactId@
+info.build.version=@project.version@
+# ----------------------------------------
+# actuator settings
+# ----------------------------------------
+management.server.port=9003
+management.endpoints.enabled-by-default=false
+management.endpoints.web.base-path=/act
+management.endpoint.info.enabled=true
+management.endpoint.health.enabled=true
+management.endpoint.mappings.enabled=true
+management.endpoint.env.enabled=true
+management.endpoints.web.exposure.include=env,health,info,mappings
+management.endpoint.health.show-details=always
+
+# ----------------------------------------
+# log config
+# ----------------------------------------
+logging.level.root=INFO
+logging.level.com.wanmi=DEBUG
+logging.level.org.springframework=WARN
+logging.config=classpath:logback.xml
+
+request.log.enable=true
+request.log.need-result=true
+request.log.log-type=0
+
+# ----------------------------------------
+# server settings
+# ----------------------------------------
+server.port=8089
+server.servlet.session.timeout=1800
+server.tomcat.threads.max=200
+server.error.whitelabel.enabled=false
+server.error.include-stacktrace=ALWAYS
+spring.jpa.show-sql=true
+spring.jpa.open-in-view=true
+# ----------------------------------------
+# spring cloud
+# ----------------------------------------
+wm.nacos.username=nacos
+wm.nacos.password=Nacos@2024
+spring.application.name=sbc-pc
+ribbon.ReadTimeout=60000
+ribbon.ConnectTimeout=60000
+spring.main.allow-circular-references=true
+spring.cloud.nacos.config.enabled = false
+spring.cloud.nacos.discovery.server-addr=172.19.25.53:8848
+#spring.cloud.nacos.username=${wm.nacos.username}
+#spring.cloud.nacos.password=${wm.nacos.password}
+# ----------------------------------------
+# datasource
+# ----------------------------------------
+#spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+wm.mysql.db.name=sbc-bff
+
+spring.datasource.hikari.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.hikari.jdbc-url=jdbc:mysql://172.19.25.53:3306/sbc-bff?characterEncoding=UTF-8&&zeroDateTimeBehavior=convertToNull&autoReconnect=true&failOverReadOnly=false&connectTimeout=0
+spring.datasource.hikari.username=root
+spring.datasource.hikari.password=Wmi@2024
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.maximum-pool-size=15
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.max-lifetime=60000
+spring.datasource.hikari.connection-timeout=30000
+#-----------------------------------------------
+# seata
+#-----------------------------------------------
+#seata.registry.nacos.username=${wm.nacos.username}
+#seata.registry.nacos.password=${wm.nacos.password}
+seata.enabled=true
+seata.application-id=sbc-pc
+#Seata\u4E8B\u52A1\u7EC4\u7F16\u53F7\uFF0C\u7528\u4E8ETC\u96C6\u7FA4\u540DSeata\u670D\u52A1\u914D\u7F6E\u9879\uFF0C\u5BF9\u5E94ServiceProperties\u7C7B
+seata.tx-service-group=sbc-pc-group
+# \u865A\u62DF\u7EC4\u548C\u5206\u7EC4\u7684\u6620\u5C04
+seata.service.vgroup-mapping.sbc-pc-group=default
+seata.enableAutoDataSourceProxy=true
+seata.registry.type=nacos
+seata.registry.nacos.server-addr=172.19.26.12:8848
+seata.registry.nacos.namespace=public
+seata.registry.nacos.cluster=default
+seata.client.rm.lock.retryInterval=10
+seata.client.rm.lock.retryTimes=300
+seata.registry.nacos.group=SEATA_GROUP
+seata.registry.nacos.application=seata-server
+
+# ----------------------------------------
+# mongodb config
+# ----------------------------------------
+spring.data.mongodb.host=172.19.25.53
+spring.data.mongodb.port=27017
+spring.data.mongodb.database=b2b
+spring.data.mongodb.repositories.type=auto
+async.thread-name-prefix=b2b-h5-async-executor-
+async.corePoolSize=5
+async.maxPoolSize=50
+async.queueCapacity=2000
+
+# ----------------------------------------
+# redis config
+# ----------------------------------------spring.redis.database=8
+spring.data.redis.host=172.19.25.53
+spring.data.redis.port=6379
+spring.data.redis.database=0
+spring.data.redis.password=Wmi@2024
+spring.data.redis.timeout=5000
+spring.data.redis.lettuce.pool.max-active=20
+spring.data.redis.lettuce.pool.max-idle=10
+
+### \u63A5\u6536\u6587\u4EF6\u6700\u5927\u5C3A\u5BF8
+spring.servlet.multipart.enabled = true
+spring.servlet.multipart.max-file-size = 50MB
+spring.servlet.multipart.max-request-size = 55MB
+
+# ----------------------------------------
+# json message converter
+# ----------------------------------------
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.serialization.write-enums-using-index=true
+# ----------------------------------------
+# fast DFS
+# ----------------------------------------
+spring.mvc.dispatch-options-request=true
+
+####JWT\u914D\u7F6E
+jwt.secret-key=eda1782204cf41efaca1e051ccc610be62acdcf24c09f011f343583c41cfb941c
+jwt.url-patterns=/**
+jwt.excluded-redis=true
+jwt.excluded-urls=/login,/register,/registerEnterprise,/register/modal,/checkAccount,\
+  /checkSmsByRegister,/getRegisterLimitType,\
+  /checkSmsByRegister/web/modal/*,\
+  /checkSmsByForgot,/validateSmsByForgot,\
+  /passwordByForgot,/system/**,/patchca/**,/customer/customerInfoById/*,/company/verify-code/*,/company/register,\
+  /third/login/wechat/set/detail/*,/third/login/wechat/auth/**,/third/login/wechat/status/*,\
+  /third/login/bind/sendCode/**,/userSetting/isVisitWithLogin,/site/front/**,/goods/skuListFront,/goods/spuListFront,/site/*/calcMarketingByMarketingIdFront,\
+  /goods/props/all/**,/goods/cate/prop-detail/*,/goods/props/**,/goods/unLogin/**,/store/unLogin/**,/goods/parentGoodsCates/**,/goods/goodsBrand/**,/goods/unLogin/skus,/goods/allGoodsCates,\
+  /companyInfo,/store/homeInfoFront/**,/store/storeDocument,/store/storeVipFront,/nonLoginStores,\
+  /customerService/qq/detail/**,/customerService/weChat/detail/**,/config/goodsDisplayDefault,/gift/unLogin/**,/swagger-resources/**, /v2/api-docs,\
+  /storeCate,/marketing/*,/coupon-info/front/**,/coupon-cate/list,/login/verification/**,\
+  /pay/unionB2BPay/*,/pay/pay-success,/config/getPublicQrcode,/goodsEvaluate/spuGoodsEvaluatePage,\
+  /goodsEvaluate/getStoreGoodsEvaluateNum/*,/growthValue/isOpen,/systemGoodsEvaluateConfig/isGoodsEvaluate,\
+  /system/queryServerTime,/goodsEvaluate/getStoreGoodsEvaluateNum/*,/growthValue/isOpen,\
+  /systemGoodsEvaluateConfig/isGoodsEvaluate,/goodsEvaluate/getGoodsEvaluateImg,/store/customer/level,\
+  /store/level/list,/swagger-ui.html/**,/webjars/**,/domain/domain-store,/vas/setting/list,/vas/setting/detail,\
+  /common/uploadResource,/vas/iep/setting/**,/popular_search_terms/list,/search_associational_word/like_associational_word,\
+  /preset_search_terms/list,/distribution-setting/**,/popup_administration/**,/hoverNavMobile/**,/groupon/goods/page,\
+  /platformaddress/**,/platformaddress/*/**,/ruleinfo/getRuleContentAll,\
+  /appointment/goods/page,/flashsale/goodsList,/booking/goods/page,/pointsConfig,\
+  /flashsale/xsite/goodsList,/goods/goodsDetailProper/*,/groupon/goods/page,/intelligent-recommendation/goods-list/get/unLogin,\
+  /intelligent-recommendation/goods/click/unLogin,/goods/brandCenter,\
+  /goods/out-of-stock/flag,/goods/property/list/**,/goods/goodsDetailProper/*/**,/baseconfig/list,/front/cartInfo,/goods/unlogin/new/sku/**,\
+  /flashsalebase/*/promotionIsInProgress,/mobile/config/busyImage,/goodstemplate/goods/*,/site/front/quickOrderGoodsList,/orderConfig/quickOrder,/customerService/qiYu/detail/**,\
+  /customer/communityActivity/unlogin/*,/customer/communityActivity/tradePage,/theme-color/**,/swagger-ui/index.html,/swagger-ui/**,/v3/api-docs/**
+
+########swagger begin###########
+## \u6807\u9898
+swagger.title=SBC PC\u7AEF API\u63A5\u53E3
+## \u63CF\u8FF0
+swagger.description=\u5982\u6709\u63A5\u53E3\u63CF\u8FF0\u4E0D\u6E05\u6670, \u8BF7\u8054\u7CFB\u76F8\u5E94\u5F00\u53D1\u4EBA\u5458\u6DFB\u52A0
+## \u7248\u672C
+swagger.version=1.0.0
+## \u5F00\u542F/\u5173\u95ED
+swagger.enable=true
+
+#\u6B64\u5904\u4E3Aswagger\u6743\u9650\u6821\u9A8C\uFF0C\u5F00\u542F\u5219\u524D\u7AEF\u8BBF\u95EEswagger-ui\u9700\u8981\u7528\u6237\u5BC6\u7801
+swagger.basic.enable=true
+swagger.basic.username=wanmi
+swagger.basic.password=123456
+
+wm.cache.enabled=true
+wm.cache.topic=cache.publish
+wm.cache.default-spec=maximumSize=500,expireTime=300
+# ----------------------------------------
+# lcn\u5206\u5E03\u5F0F\u4E8B\u52A1
+# ----------------------------------------
+#\u7531\u4E8Espringcloud\u9ED8\u8BA4\u662F\u5F00\u542F\u7684\u91CD\u8BD5\u673A\u5236\uFF0C\u5F00\u542F\u6B21\u673A\u5236\u4EE5\u540E\u4F1A\u5BFC\u81F4\u5F53springcloud\u8BF7\u6C42\u8D85\u65F6\u65F6\u4F1A\u91CD\u590D\u8C03\u7528\u4E1A\u52A1\u6A21\u5757\uFF0C\u4ECE\u800C\u4F1A\u5F15\u53D1\u6570\u636E\u6DF7\u4E71
+ribbon.MaxAutoRetriesNextServer=0
+
+#CORS\u914D\u7F6E\u4FE1\u606F
+cors.allowedOrigins=*,file://
+ip= 172.19.25.53
+feign.sentinel.enabled=false
+spring.cloud.sentinel.transport.dashboard=${ip}:7000
+spring.cloud.sentinel.datasource.flow.nacos.server-addr=${ip}:8848
+spring.cloud.sentinel.datasource.flow.nacos.data-id=${spring.application.name}-sentinel-flow
+spring.cloud.sentinel.datasource.flow.nacos.group-id=DEFAULT_GROUP
+spring.cloud.sentinel.datasource.flow.nacos.rule-type=flow
+

@@ -1,0 +1,42 @@
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://172.16.50.131:3306/sbc-marketing?characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&autoReconnect=true&failOverReadOnly=false&connectTimeout=0&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    username: root
+    password: Wmi@2025
+    minPoolSize: 100
+    maxPoolSize: 100
+    idleTimeout: 60000
+    maxLifetime: 30000
+
+
+rules:
+  - !SINGLE
+    tables:
+      - "*.*"
+    defaultDataSource: ds_0
+  - !SHARDING
+    autoTables:
+      coupon_code:
+        actualDataSources: ds_0
+        shardingStrategy:
+          standard:
+            shardingColumn: customer_id
+            shardingAlgorithmName: coupon_code_hash_mod
+    bindingTables:
+      - coupon_code
+    defaultTableStrategy:
+      none:
+    shardingAlgorithms:
+      coupon_code_hash_mod:
+        type: HASH_MOD
+        props:
+          sharding-count: 5
+
+transaction:
+  defaultType: BASE
+  providerType: Seata
+
+props:
+  sql-show: true

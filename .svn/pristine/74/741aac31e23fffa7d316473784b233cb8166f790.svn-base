@@ -1,0 +1,50 @@
+{
+  "properties": {
+    "id": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "ledgerSupplierId": {
+      "type": "keyword"
+    },
+    "supplierId": {
+      "type": "keyword"
+    },
+    "receiverId": {
+      "type": "keyword"
+    },
+    "receiverName": {
+      "type": "keyword"
+    },
+    "receiverCode": {
+      "type": "keyword"
+    },
+    "receiverType": {
+      "type": "keyword"
+    },
+    "accountState": {
+      "type": "keyword"
+    },
+    "bindState": {
+      "type": "keyword"
+    },
+    "bindTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "receiverAccount": {
+      "type": "keyword"
+    },
+    "checkState": {
+      "type": "keyword"
+    },
+    "rejectReason": {
+      "type": "text"
+    }
+  }
+}

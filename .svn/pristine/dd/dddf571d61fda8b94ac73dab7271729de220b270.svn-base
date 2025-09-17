@@ -1,0 +1,12 @@
+
+## 1、千米数谋配置调整
+```
+apiUrl调整
+运营管理后台 -> 应用 -> 深度经营 -> 数谋 ->设置 -> 配置接入信息
+原具体接口地址改为只保留域名，如：https://smgateway-dev.kstore.shop/openapi/dataCollect/collect  改为： https://smgateway-dev.kstore.shop
+```
+
+## 2. datagalaxy
+```
+datagalaxy 项目需要重新打包并上传
+```

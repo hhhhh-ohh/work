@@ -1,0 +1,13 @@
+@startuml
+start
+:订单改价;
+:根据请求头AppKey获取所对应的商户;
+:验证订单的商家ID是否和当前商户一致;
+if(订单存在&&订单的商家ID和当前商户一致) then(Y)
+    :封装请求参数;
+    :调用order服务的订单改价接口;
+else
+    :返回错误;
+endif
+stop
+@enduml

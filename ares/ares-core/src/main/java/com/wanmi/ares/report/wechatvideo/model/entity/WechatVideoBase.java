@@ -1,0 +1,73 @@
+package com.wanmi.ares.report.wechatvideo.model.entity;
+
+import lombok.Data;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * <p>视频号维度自然月统计实体类</p>
+ * @author 
+ * @date 2022-04-24 17:51:25
+ */
+@Data
+public class WechatVideoBase implements Serializable {
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * id
+	 */
+	private Long id;
+
+	/**
+	 * 视频号Id
+	 */
+	private String videoAccount;
+
+	/**
+	 * 视频号名称
+	 */
+	private String videoName;
+
+	/**
+	 * 公司id
+	 */
+	private Long companyInfoId;
+
+	/**
+	 * 视频号销售额
+	 */
+	private BigDecimal videoSaleAmount;
+
+	/**
+	 * 直播间销售额
+	 */
+	private BigDecimal liveSaleAmount;
+
+	/**
+	 * 橱窗销售额
+	 */
+	private BigDecimal shopwindowSaleAmount;
+
+	/**
+	 * 视频号退货额
+	 */
+	private BigDecimal videoReturnAmount;
+
+	/**
+	 * 直播间退货额
+	 */
+	private BigDecimal liveReturnAmount;
+
+	/**
+	 * 橱窗退货额
+	 */
+	private BigDecimal shopwindowReturnAmount;
+
+	/**
+	 * createTime
+	 */
+	private LocalDateTime createTime;
+
+}

@@ -1,0 +1,38 @@
+package com.wanmi.sbc.customer.agent.model.root;
+
+
+import lombok.Data;
+
+import jakarta.persistence.*;
+import java.io.Serializable;
+
+/**
+ * 代理商权限实体类
+ */
+@Entity
+@Table(name = "agent_audit_auth")
+@Data
+public class AgentAuditAuth implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 自增主键
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    /**
+     * 联系电话
+     */
+    @Column(name = "contact_phone")
+    private String contactPhone;
+
+    /**
+     * 区ID
+     */
+    @Column(name = "area_id")
+    private Long areaId;
+}

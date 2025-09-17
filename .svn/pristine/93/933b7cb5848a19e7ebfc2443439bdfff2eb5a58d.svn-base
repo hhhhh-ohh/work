@@ -1,0 +1,33 @@
+package com.wanmi.sbc.marketing.bean.vo;
+
+import com.wanmi.sbc.common.base.BasicResponse;
+import com.wanmi.sbc.goods.bean.vo.BookingSaleGoodsVO;
+import com.wanmi.sbc.goods.bean.vo.BookingSaleVO;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+/**
+ * <p>预售VO</p>
+ *
+ * @author zxd
+ * @date 2020-05-21 10:32:23
+ */
+@Schema
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class BookingVO extends BasicResponse {
+    private static final long serialVersionUID = 1L;
+
+   private BookingSaleVO bookingSale;
+
+   private BookingSaleGoodsVO bookingSaleGoods;
+
+}

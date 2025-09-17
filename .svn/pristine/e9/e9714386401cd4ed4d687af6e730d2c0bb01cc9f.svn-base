@@ -1,0 +1,757 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.marketing.coupon.dao.CouponEffectMapper">
+    <sql id="commonAddColSql">
+        store_id,
+        pay_money,
+        discount_money,
+        pay_trade_count,
+        pay_goods_count,
+        supply_price,
+        old_customer_count,
+        new_customer_count,
+        acquire_count,
+        acquire_customer_count,
+        use_count,
+        use_customer_count,
+        create_time,
+        pay_customer_count,
+        roi,
+        joint_rate,
+        use_rate,
+        customer_price,
+        stat_type
+    </sql>
+    <!-- SQL 中${typeId} 传值不是对外请求传入是代码写死的  -->
+    <sql id="selectColumnCommon">
+        COALESCE
+                (sum(payMoney),0)
+                payMoney,
+        COALESCE(sum(discountMoney),0)        discountMoney,
+        COALESCE(sum(payTradeCount),0)        payTradeCount,
+        COALESCE(sum(payGoodsCount),0)        payGoodsCount,
+        COALESCE(sum(supplyPrice),0)          supplyPrice,
+        COALESCE(sum(oldCustomerCount),0)     oldCustomerCount,
+        COALESCE(sum(newCustomerCount),0)     newCustomerCount,
+        COALESCE(sum(acquireCount),0)         acquireCount,
+        COALESCE(sum(acquireCustomerCount),0) acquireCustomerCount,
+        COALESCE(sum(useCount),0)             useCount,
+        COALESCE(sum(useCustomerCount),0)     useCustomerCount,
+        now(),
+        COALESCE(sum(oldCustomerCount), 0) + COALESCE(sum(newCustomerCount), 0) payCustomerCount
+    </sql>
+
+    <sql id="bossActivityStatisticsQuery">
+        SELECT trP.typeId              typeId,
+               sum(rt1.total_price) payMoney,
+               sum(trP.reducePrice)    discountMoney,
+               0                       payTradeCount,
+               0                       payGoodsCount,
+               0                       supplyPrice,
+               0                       oldCustomerCount,
+               0                       newCustomerCount,
+               0                       acquireCount,
+               0                       acquireCustomerCount,
+               0                       useCount,
+               0                       useCustomerCount
+        FROM replay_trade rt1
+                     JOIN (
+                SELECT rtc.tid               tid,
+                       rcc.${typeId}         typeId,
+                       sum(rtc.reduce_price) reducePrice
+                FROM replay_trade_coupon rtc
+                             JOIN replay_trade rt ON rtc.tid = rt.tid
+                             join replay_coupon_code rcc on rcc.coupon_code_id = rtc.coupon_code_id
+                WHERE rt.pay_state = 2
+                  AND rtc.coupon_type = 0
+                  AND rt.pay_time &gt;= #{beginTime}
+                  AND rt.pay_time &lt; #{endTime}
+                GROUP BY rtc.tid, rcc.${typeId}
+                ) trP ON rt1.tid = trP.tid
+        group by trP.typeId
+
+        union all
+
+        SELECT trP.typeId              typeId,
+               0                       payMoney,
+               0                       discountMoney,
+               count(DISTINCT rti.tid) payTradeCount,
+               sum(rti.num)            payGoodsCount,
+               sum(rti.supply_price)   supplyPrice,
+               0                       oldCustomerCount,
+               0                       newCustomerCount,
+               0                       acquireCount,
+               0                       acquireCustomerCount,
+               0                       useCount,
+               0                       useCustomerCount
+        FROM replay_trade_item rti
+                     JOIN (
+                SELECT rtc.oid oid, rcc.${typeId} typeId
+                FROM replay_trade_coupon rtc
+                             JOIN replay_trade rt ON rtc.tid = rt.tid
+                             join replay_coupon_code rcc on rcc.coupon_code_id = rtc.coupon_code_id
+                WHERE rt.pay_state = 2
+                  AND rtc.coupon_type = 0
+                  AND rt.pay_time &gt;= #{beginTime}
+                  AND rt.pay_time &lt; #{endTime}
+                GROUP BY rtc.oid, rcc.${typeId}
+                ) trP ON rti.oid = trP.oid
+        group by trP.typeId
+
+        union all
+
+        SELECT tmp.typeId       typeId,
+               0                payMoney,
+               0                discountMoney,
+               0                payTradeCount,
+               0                payGoodsCount,
+               0                supplyPrice,
+               sum(oldCustomer) oldCustomerCount,
+               sum(newCustomer) newCustomerCount,
+               0                acquireCount,
+               0                acquireCustomerCount,
+               0                useCount,
+               0                useCustomerCount
+        FROM (
+                     SELECT a.typeId,
+                            CASE
+                                    WHEN
+                                            b.customer_id IS NOT NULL THEN
+                                            1
+                                    ELSE 0
+                                    END AS oldCustomer,
+                            CASE
+                                    WHEN b.customer_id IS NULL THEN
+                                            1
+                                    ELSE 0
+                                    END AS newCustomer
+                     FROM (
+                                  SELECT rt.customer_id,
+                                         rcc.${typeId} typeId
+                                  FROM replay_trade_coupon rtc
+                                               JOIN replay_trade rt ON rtc.tid = rt.tid
+                                               join replay_coupon_code rcc on rcc.coupon_code_id = rtc.coupon_code_id
+                                  WHERE rt.pay_state = 2
+                                    AND rtc.coupon_type = 0
+                                    AND rt.pay_time &gt;= #{beginTime}
+                                    AND rt.pay_time &lt; #{endTime}
+                                  GROUP BY rt.customer_id, rcc.${typeId}
+                                  ) a
+                                  LEFT JOIN (SELECT customer_id
+                                             FROM customer_first_pay cfp
+                                             WHERE cfp.first_pay_time &lt; #{beginTime}
+                                             group by customer_id
+                                  ) b
+                             ON (a.customer_id = b.customer_id)
+                     ) tmp
+        group by tmp.typeId
+
+
+        union all
+
+        SELECT rcc.${typeId}               typeId,
+               0                           payMoney,
+               0                           discountMoney,
+               0                           payTradeCount,
+               0                           payGoodsCount,
+               0                           supplyPrice,
+               0                           oldCustomerCount,
+               0                           newCustomerCount,
+               count(coupon_code)          acquireCount,
+               count(DISTINCT customer_id) acquireCustomerCount,
+               0                           useCount,
+               0                           useCustomerCount
+        FROM replay_coupon_code rcc
+                     JOIN replay_coupon_info rci ON rcc.coupon_id = rci.coupon_id
+        WHERE rci.coupon_type = 0
+          AND acquire_time &gt;= #{beginTime}
+          AND acquire_time &lt; #{endTime}
+        group by rcc.${typeId}
+        union all
+
+        SELECT rcc.${typeId}               typeId,
+               0                           payMoney,
+               0                           discountMoney,
+               0                           payTradeCount,
+               0                           payGoodsCount,
+               0                           supplyPrice,
+               0                           oldCustomerCount,
+               0                           newCustomerCount,
+               0                           acquireCount,
+               0                           acquireCustomerCount,
+               count( DISTINCT rtc.coupon_code ) useCount,
+               count( DISTINCT rt.customer_id ) useCustomerCount
+        FROM
+                replay_trade_coupon rtc
+                        join replay_coupon_code rcc ON rcc.coupon_code_id = rtc.coupon_code_id
+                        JOIN replay_trade rt on rtc.tid = rt.tid
+        WHERE
+                rt.pay_state = 2
+          AND rtc.coupon_type = 0
+          AND rt.pay_time &gt;= #{beginTime}
+          AND rt.pay_time &lt; #{endTime}
+          AND rcc.use_status = 1
+        group by rcc.${typeId}
+    </sql>
+    <sql id="supplierActivityStatisticsQuery">
+        SELECT rt1.store_id            storeId,
+               trP.typeId              typeId,
+               sum(rt1.total_price) payMoney,
+               sum(trP.reducePrice)    discountMoney,
+               0                       payTradeCount,
+               0                       payGoodsCount,
+               0                       supplyPrice,
+               0                       oldCustomerCount,
+               0                       newCustomerCount,
+               0                       acquireCount,
+               0                       acquireCustomerCount,
+               0                       useCount,
+               0                       useCustomerCount
+        FROM replay_trade rt1
+                     JOIN (
+                SELECT rtc.tid               tid,
+                       rcc.${typeId}         typeId,
+                       sum(rtc.reduce_price) reducePrice
+                FROM replay_trade_coupon rtc
+                             JOIN replay_trade rt ON rtc.tid = rt.tid
+                             join replay_coupon_code rcc on rcc.coupon_code_id = rtc.coupon_code_id
+                WHERE rt.pay_state = 2
+                  AND rtc.coupon_type = 1
+                  AND rt.pay_time &gt;= #{beginTime}
+                  AND rt.pay_time &lt; #{endTime}
+                GROUP BY rtc.tid, rcc.${typeId}
+                ) trP ON rt1.tid = trP.tid
+        GROUP BY rt1.store_id, trP.typeId
+
+        union all
+
+        SELECT rti.store_id            storeId,
+               trP.typeId              typeId,
+               0                       payMoney,
+               0                       discountMoney,
+               count(DISTINCT rti.tid) payTradeCount,
+               sum(rti.num)            payGoodsCount,
+               sum(rti.supply_price)   supplyPrice,
+               0                       oldCustomerCount,
+               0                       newCustomerCount,
+               0                       acquireCount,
+               0                       acquireCustomerCount,
+               0                       useCount,
+               0                       useCustomerCount
+        FROM replay_trade_item rti
+                     JOIN (
+                SELECT rtc.oid       oid,
+                       rcc.${typeId} typeId
+                FROM replay_trade_coupon rtc
+                             JOIN replay_trade rt ON rtc.tid = rt.tid
+                             join replay_coupon_code rcc on rcc.coupon_code_id = rtc.coupon_code_id
+                WHERE rt.pay_state = 2
+                  AND rtc.coupon_type = 1
+                  AND rt.pay_time &gt;= #{beginTime}
+                  AND rt.pay_time &lt; #{endTime}
+                GROUP BY rtc.oid, rcc.${typeId}
+                ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+        GROUP BY rti.store_id, trP.typeId
+
+        union all
+
+        SELECT storeId          storeId,
+               typeId           typeId,
+               0                payMoney,
+               0                discountMoney,
+               0                payTradeCount,
+               0                payGoodsCount,
+               0                supplyPrice,
+               sum(oldCustomer) oldCustomerCount,
+               sum(newCustomer) newCustomerCount,
+               0                acquireCount,
+               0                acquireCustomerCount,
+               0                useCount,
+               0                useCustomerCount
+        FROM (
+                     SELECT a.store_id     storeId,
+                            a.${typeId}    typeId,
+                            CASE
+                                    WHEN
+                                            b.customer_id IS NOT NULL THEN
+                                            1
+                                    ELSE 0
+                                    END AS oldCustomer,
+                            CASE
+                                    WHEN b.customer_id IS NULL THEN
+                                            1
+                                    ELSE 0
+                                    END AS newCustomer
+                     FROM (
+                                  SELECT rt.store_id,
+                                         rt.customer_id,
+                                         rcc.${typeId}
+                                  FROM replay_trade_coupon rtc
+                                               JOIN replay_trade rt ON rtc.tid = rt.tid
+                                               join replay_coupon_code rcc on rcc.coupon_code_id = rtc.coupon_code_id
+                                  WHERE rt.pay_state = 2
+                                    AND rtc.coupon_type = 1
+                                    AND rt.pay_time &gt;= #{beginTime}
+                                    AND rt.pay_time &lt; #{endTime}
+                                  GROUP BY rt.store_id, rt.customer_id, rcc.${typeId}
+                                  ) a
+                                  LEFT JOIN (SELECT store_id, customer_id
+                                             FROM customer_first_pay cfp
+                                             WHERE cfp.first_pay_time &lt; #{beginTime}
+                                             group by store_id, customer_id
+                             ) b
+                             ON (a.customer_id = b.customer_id and a.store_id = b.store_id)
+                     ) tmp
+        group by storeId, typeId
+
+        union all
+
+        SELECT rci.store_id                storeId,
+               rcc.${typeId}               typeId,
+               0                           payMoney,
+               0                           discountMoney,
+               0                           payTradeCount,
+               0                           payGoodsCount,
+               0                           supplyPrice,
+               0                           oldCustomerCount,
+               0                           newCustomerCount,
+               count(coupon_code)          acquireCount,
+               count(DISTINCT customer_id) acquireCustomerCount,
+               0                           useCount,
+               0                           useCustomerCount
+        FROM replay_coupon_code rcc
+                     JOIN replay_coupon_info rci ON rcc.coupon_id = rci.coupon_id
+        WHERE rci.coupon_type = 1
+          AND acquire_time &gt;= #{beginTime}
+          AND acquire_time &lt; #{endTime}
+        group by rci.store_id, rcc.${typeId}
+
+        union all
+
+        SELECT rt.store_id                storeId,
+               rcc.${typeId}               typeId,
+               0                           payMoney,
+               0                           discountMoney,
+               0                           payTradeCount,
+               0                           payGoodsCount,
+               0                           supplyPrice,
+               0                           oldCustomerCount,
+               0                           newCustomerCount,
+               0                           acquireCount,
+               0                           acquireCustomerCount,
+               count( DISTINCT rtc.coupon_code ) useCount,
+               count( DISTINCT rt.customer_id ) useCustomerCount
+        FROM
+                replay_trade_coupon rtc
+                        join replay_coupon_code rcc ON rcc.coupon_code_id = rtc.coupon_code_id
+                        JOIN replay_trade rt on rtc.tid = rt.tid
+        WHERE
+                rt.pay_state = 2
+          AND rtc.coupon_type = 1
+          AND rt.pay_time &gt;= #{beginTime}
+          AND rt.pay_time &lt; #{endTime}
+          AND rcc.use_status = 1
+        group by rt.store_id, rcc.${typeId}
+    </sql>
+
+    <delete id="deleteActivityRecent">
+        TRUNCATE TABLE coupon_activity_effect_recent
+    </delete>
+
+    <delete id="deleteCouponRecent">
+        TRUNCATE TABLE coupon_info_effect_recent
+    </delete>
+
+    <delete id="deleteStoreRecent">
+        TRUNCATE TABLE coupon_store_effect_recent
+    </delete>
+
+
+    <insert id="saveBossActivityRecent">
+        insert into coupon_activity_effect_recent (
+        activity_id,
+        <include refid="commonAddColSql"/>
+        )select
+        t.*,
+        case when t.discountMoney != 0 then TRUNCATE(t.payMoney / t.discountMoney, 2) else null end roi,
+        case when t.payTradeCount != 0 then TRUNCATE(t.payGoodsCount / t.payTradeCount, 2) else null end jointRate,
+        case
+        when t.acquireCustomerCount != 0 then TRUNCATE(t.useCustomerCount / t.acquireCustomerCount * 100, 2)
+        else null end useRate,
+        case when t.payCustomerCount != 0 then TRUNCATE(t.payMoney / t.payCustomerCount, 2) else null end
+        customerPrice,
+        #{statType,jdbcType=INTEGER} statType
+        from (
+        select
+        typeId,
+        -1 storeId,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossActivityStatisticsQuery">
+        </include>
+        ) statistics
+        group by statistics.typeId
+        ) t
+    </insert>
+
+    <insert id="saveSupplierActivityRecent">
+        insert into coupon_activity_effect_recent (
+        activity_id,
+        <include refid="commonAddColSql"/>
+        )select
+        t.*,
+        case when t.discountMoney != 0 then TRUNCATE(t.payMoney / t.discountMoney, 2) else null end roi,
+        case when t.payTradeCount != 0 then TRUNCATE(t.payGoodsCount / t.payTradeCount, 2) else null end jointRate,
+        case
+        when t.acquireCustomerCount != 0 then TRUNCATE(t.useCustomerCount / t.acquireCustomerCount * 100, 2)
+        else null end useRate,
+        case when t.payCustomerCount != 0 then TRUNCATE(t.payMoney / t.payCustomerCount, 2) else null end
+        customerPrice,
+        #{statType,jdbcType=INTEGER} statType
+        from (
+
+        select
+        typeId,
+        storeId,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierActivityStatisticsQuery"/>
+        ) statistics
+        where statistics.storeId != -1
+        group by statistics.storeId,statistics.typeId
+        ) t
+    </insert>
+
+    <insert id="saveBossCouponRecent">
+        insert into coupon_info_effect_recent (
+        coupon_id,
+        <include refid="commonAddColSql"/>
+        )select
+        t.*,
+        case when t.discountMoney != 0 then TRUNCATE(t.payMoney / t.discountMoney, 2) else null end roi,
+        case when t.payTradeCount != 0 then TRUNCATE(t.payGoodsCount / t.payTradeCount, 2) else null end jointRate,
+        case
+        when t.acquireCustomerCount != 0 then TRUNCATE(t.useCustomerCount / t.acquireCustomerCount * 100, 2)
+        else null end useRate,
+        case when t.payCustomerCount != 0 then TRUNCATE(t.payMoney / t.payCustomerCount, 2) else null end
+        customerPrice,
+        #{statType,jdbcType=INTEGER} statType
+        from (select
+        typeId,
+        -1 storeId,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="bossActivityStatisticsQuery">
+        </include>
+        ) statistics
+        group by statistics.typeId
+        )t
+    </insert>
+
+    <insert id="saveSupplierCouponRecent">
+        insert into coupon_info_effect_recent (
+        coupon_id,
+        <include refid="commonAddColSql"/>
+        )select
+        t.*,
+        case when t.discountMoney != 0 then TRUNCATE(t.payMoney / t.discountMoney, 2) else null end roi,
+        case when t.payTradeCount != 0 then TRUNCATE(t.payGoodsCount / t.payTradeCount, 2) else null end jointRate,
+        case
+        when t.acquireCustomerCount != 0 then TRUNCATE(t.useCustomerCount / t.acquireCustomerCount * 100, 2)
+        else null end useRate,
+        case when t.payCustomerCount != 0 then TRUNCATE(t.payMoney / t.payCustomerCount, 2) else null end
+        customerPrice,
+        #{statType,jdbcType=INTEGER} statType
+        from (select
+        typeId,
+        storeId,
+        <include refid="selectColumnCommon"/>
+        from(
+        <include refid="supplierActivityStatisticsQuery"/>
+        ) statistics
+        where statistics.storeId != -1
+        group by statistics.storeId,statistics.typeId
+        ) t
+    </insert>
+
+    <insert id="saveCouponByRecent">
+        insert into coupon_info_effect_recent(store_id, coupon_id, pay_money, discount_money, pay_goods_count,
+                                         pay_trade_count, old_customer_count, new_customer_count, acquire_count,
+                                         acquire_customer_count, use_count, use_customer_count, create_time,
+                                         pay_customer_count, roi, joint_rate, use_rate, customer_price, stat_type)
+        select store_id,
+               coupon_id,
+               pay_money,
+               discount_money,
+               pay_goods_count,
+               pay_trade_count,
+               old_customer_count,
+               new_customer_count,
+               acquire_count,
+               acquire_customer_count,
+               use_count,
+               use_customer_count,
+               create_time,
+               pay_customer_count,
+               roi,
+               joint_rate,
+               use_rate,
+               customer_price,
+               #{statType,jdbcType=INTEGER}
+        from coupon_info_effect_recent
+        where stat_type = 0
+    </insert>
+
+    <insert id="saveActivityByRecent">
+        insert into coupon_activity_effect_recent(store_id, activity_id, pay_money, discount_money, pay_goods_count,
+                                                  pay_trade_count,supply_price,old_customer_count, new_customer_count,
+                                                  acquire_count, acquire_customer_count, use_count, use_customer_count,
+                                                  create_time, pay_customer_count, roi, joint_rate, use_rate,
+                                                  customer_price, stat_type)
+        select store_id,
+               activity_id,
+               pay_money,
+               discount_money,
+               pay_goods_count,
+               pay_trade_count,
+               supply_price,
+               old_customer_count,
+               new_customer_count,
+               acquire_count,
+               acquire_customer_count,
+               use_count,
+               use_customer_count,
+               create_time,
+               pay_customer_count,
+               roi,
+               joint_rate,
+               use_rate,
+               customer_price,
+               #{statType,jdbcType=INTEGER}
+        from coupon_activity_effect_recent
+        where stat_type = 0
+    </insert>
+
+    <insert id="saveStoreRecent">
+        insert into coupon_store_effect_recent(
+        <include refid="commonAddColSql"/>
+        )
+        select
+            t.*,
+            case when t.discountMoney != 0 then TRUNCATE(t.payMoney / t.discountMoney, 2) else null end roi,
+            case when t.payTradeCount != 0 then TRUNCATE(t.payGoodsCount / t.payTradeCount, 2) else null end jointRate,
+            case
+            when t.acquireCustomerCount != 0 then TRUNCATE(t.useCustomerCount / t.acquireCustomerCount * 100, 2)
+            else null end useRate,
+            case when t.payCustomerCount != 0 then TRUNCATE(t.payMoney / t.payCustomerCount, 2) else null end
+            customerPrice,
+            #{statType,jdbcType=INTEGER} statType
+        from (
+            select storeId,
+                <include refid="selectColumnCommon"/>
+            from(
+                SELECT rt1.store_id storeId,
+                    sum(rt1.total_price) payMoney,
+                    sum(trP.reducePrice) discountMoney,
+                    0 payTradeCount,
+                    0 payGoodsCount,
+                    0 supplyPrice,
+                    0 oldCustomerCount,
+                    0 newCustomerCount,
+                    0 acquireCount,
+                    0 acquireCustomerCount,
+                    0 useCount,
+                    0 useCustomerCount
+                FROM replay_trade rt1
+                JOIN (
+                    SELECT rtc.tid tid,
+                    sum(rtc.reduce_price) reducePrice
+                    FROM replay_trade_coupon rtc
+                    JOIN replay_trade rt ON rtc.tid = rt.tid
+                    WHERE rt.pay_state = 2
+                    AND rtc.coupon_type = 1
+                    AND rt.pay_time &gt;= #{beginTime}
+                    AND rt.pay_time &lt; #{endTime}
+                    GROUP BY rtc.tid
+                ) trP ON rt1.tid = trP.tid
+                GROUP BY rt1.store_id
+
+                union all
+
+                SELECT rti.store_id storeId,
+                    0 payMoney,
+                    0 discountMoney,
+                    count(DISTINCT rti.tid) payTradeCount,
+                    sum(rti.num) payGoodsCount,
+                    sum(rti.supply_price) supplyPrice,
+                    0 oldCustomerCount,
+                    0 newCustomerCount,
+                    0 acquireCount,
+                    0 acquireCustomerCount,
+                    0 useCount,
+                    0 useCustomerCount
+                FROM replay_trade_item rti
+                JOIN (
+                    SELECT rtc.oid oid
+                    FROM replay_trade_coupon rtc
+                    JOIN replay_trade rt ON rtc.tid = rt.tid
+                    WHERE rt.pay_state = 2
+                    AND rtc.coupon_type = 1
+                    AND rt.pay_time &gt;= #{beginTime}
+                    AND rt.pay_time &lt; #{endTime}
+                    GROUP BY rtc.oid
+                ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+                GROUP BY rti.store_id
+
+                union all
+
+                SELECT storeId storeId,
+                    0 payMoney,
+                    0 discountMoney,
+                    0 payTradeCount,
+                    0 payGoodsCount,
+                    0 supplyPrice,
+                    sum(oldCustomer) oldCustomerCount,
+                    sum(newCustomer) newCustomerCount,
+                    0 acquireCount,
+                    0 acquireCustomerCount,
+                    0 useCount,
+                    0 useCustomerCount
+                FROM (
+                    SELECT a.store_id storeId,
+                        CASE
+                        WHEN
+                        b.customer_id IS NOT NULL THEN
+                        1
+                        ELSE 0
+                        END AS oldCustomer,
+                        CASE
+                        WHEN b.customer_id IS NULL THEN
+                        1
+                        ELSE 0
+                        END AS newCustomer
+                    FROM (
+                        SELECT rt.store_id,
+                        rt.customer_id
+                        FROM replay_trade_coupon rtc
+                        JOIN replay_trade rt ON rtc.tid = rt.tid
+                        WHERE rt.pay_state = 2
+                        AND rtc.coupon_type = 1
+                        AND rt.pay_time &gt;= #{beginTime}
+                        AND rt.pay_time &lt; #{endTime}
+                        GROUP BY rt.store_id, rt.customer_id
+                    ) a
+                    LEFT JOIN (
+                        SELECT store_id, customer_id
+                        FROM customer_first_pay cfp
+                        WHERE cfp.first_pay_time &lt; #{beginTime}
+                        group by store_id, customer_id
+                    )b ON (a.customer_id = b.customer_id and a.store_id = b.store_id)
+                ) tmp
+                group by storeId
+
+                union all
+
+                SELECT rci.store_id storeId,
+                    0 payMoney,
+                    0 discountMoney,
+                    0 payTradeCount,
+                    0 payGoodsCount,
+                    0 supplyPrice,
+                    0 oldCustomerCount,
+                    0 newCustomerCount,
+                    count(coupon_code) acquireCount,
+                    count(DISTINCT customer_id) acquireCustomerCount,
+                    0 useCount,
+                    0 useCustomerCount
+                FROM replay_coupon_code rcc
+                JOIN replay_coupon_info rci ON rcc.coupon_id = rci.coupon_id
+                WHERE rci.coupon_type = 1
+                    AND acquire_time &gt;= #{beginTime}
+                    AND acquire_time &lt; #{endTime}
+                group by rci.store_id
+
+                union all
+
+                SELECT rt.store_id storeId,
+                    0 payMoney,
+                    0 discountMoney,
+                    0 payTradeCount,
+                    0 payGoodsCount,
+                    0 supplyPrice,
+                    0 oldCustomerCount,
+                    0 newCustomerCount,
+                    0 acquireCount,
+                    0 acquireCustomerCount,
+                    count( DISTINCT rtc.coupon_code ) useCount,
+                    count( DISTINCT rt.customer_id ) useCustomerCount
+                FROM
+                    replay_trade_coupon rtc
+                join replay_coupon_code rcc ON rcc.coupon_code_id = rtc.coupon_code_id
+                JOIN replay_trade rt on rtc.tid = rt.tid
+                WHERE
+                    rt.pay_state = 2
+                    AND rtc.coupon_type = 1
+                    AND rt.pay_time &gt;= #{beginTime}
+                    AND rt.pay_time &lt; #{endTime}
+                    AND rcc.use_status = 1
+                group by rt.store_id
+            ) statistics group by storeId
+        ) t
+    </insert>
+
+    <insert id="saveStoreRecentByOverview">
+        insert into coupon_store_effect_recent(
+        <include refid="commonAddColSql"/>
+        )select
+            store_id,
+            pay_money,
+            discount_money,
+            pay_trade_count,
+            pay_goods_count,
+            old_customer_count,
+            new_customer_count,
+            acquire_count,
+            acquire_customer_count,
+            use_count,
+            use_customer_count,
+            create_time,
+            old_customer_count+new_customer_count payCustomerCount,
+            case when discount_money != 0 then TRUNCATE(pay_money / discount_money, 2) else null end roi,
+            case when pay_trade_count != 0 then TRUNCATE(pay_goods_count / pay_trade_count, 2) else null end jointRate,
+            case
+            when acquire_customer_count != 0 then TRUNCATE(use_customer_count / acquire_customer_count * 100, 2)
+            else null end useRate,
+            case when old_customer_count+new_customer_count != 0 then TRUNCATE(pay_money / old_customer_count+new_customer_count, 2) else null end
+            customerPrice,
+            #{statType,jdbcType=INTEGER} statType
+        from coupon_overview_recent where store_id >0
+    </insert>
+
+    <insert id="saveStoreByRecent">
+        insert into coupon_store_effect_recent(
+        <include refid="commonAddColSql"/>
+        )select
+            store_id,
+            pay_money,
+            discount_money,
+            pay_trade_count,
+            pay_goods_count,
+            supply_price,
+            old_customer_count,
+            new_customer_count,
+            acquire_count,
+            acquire_customer_count,
+            use_count,
+            use_customer_count,
+            create_time,
+            pay_customer_count,
+            roi,
+            joint_rate,
+            use_rate,
+            customer_price,
+            #{statType,jdbcType=INTEGER}
+        from coupon_store_effect_recent
+        where stat_type=0
+    </insert>
+</mapper>

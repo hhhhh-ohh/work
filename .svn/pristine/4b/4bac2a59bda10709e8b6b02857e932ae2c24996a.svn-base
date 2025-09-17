@@ -1,0 +1,21 @@
+## 1、nacos配置修改
+### 配置sbc-service-order.properties
+groupon.test.enable true：测试模式-拼团10分钟后开团
+```prperties
+groupon.test.enable=false
+```
+
+### 配置sbc-service-message.properties
+```properties
+#新增vop日志分片
+spring.shardingsphere.sharding.tables.vop_log.actual-data-nodes=ds0.vop_log_$->{0..4}
+spring.shardingsphere.sharding.tables.vop_log.table-strategy.standard.sharding-column=date
+spring.shardingsphere.sharding.tables.vop_log.table-strategy.standard.precise-algorithm-class-name=com.wanmi.sbc\
+.message.algorithm.VopLogShardingAlgorithm
+#将spring.shardingsphere.sharding.binding-tables=app_message配置修改为
+spring.shardingsphere.sharding.binding-tables=app_message,vop_log
+
+配置sbc-boss.properties
+# 是否记录vop日志，true是记录, false是关闭, 默认是true
+vopLogFlag=true
+```

@@ -1,0 +1,8 @@
+nacos上sbc-service-mq.properties配置
+```properties
+#种草统计延迟MQ
+spring.cloud.stream.bindings.recommend-sync-output.destination=q.customer.service.recommend.sync
+spring.cloud.stream.rabbit.bindings.recommend-sync-output.producer.delayed-exchange=true
+spring.cloud.stream.bindings.recommend-sync-input.destination=q.customer.service.recommend.sync
+spring.cloud.stream.rabbit.bindings.recommend-sync-input.consumer.delayed-exchange=true
+```

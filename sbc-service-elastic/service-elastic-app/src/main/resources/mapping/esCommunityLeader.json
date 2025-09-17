@@ -1,0 +1,67 @@
+{
+  "properties": {
+    "leaderId": {
+      "type": "keyword"
+    },
+    "leaderAccount": {
+      "type": "keyword"
+    },
+    "rewardCash": {
+      "type": "double"
+    },
+    "forbiddenReason": {
+      "type": "keyword"
+    },
+    "distributorLevelId": {
+      "type": "keyword"
+    },
+    "createPerson": {
+      "type": "keyword"
+    },
+    "forbiddenFlag": {
+      "type": "keyword"
+    },
+    "commissionTotal": {
+      "type": "double"
+    },
+    "delFlag": {
+      "type": "keyword"
+    },
+    "distributorFlag": {
+      "type": "keyword"
+    },
+    "rewardCashNotRecorded": {
+      "type": "double"
+    },
+    "customerName": {
+      "type": "keyword"
+    },
+    "sales": {
+      "type": "double"
+    },
+    "distributionTradeCount": {
+      "type": "double"
+    },
+    "createTime": {
+      "type": "keyword"
+    },
+    "inviteCount": {
+      "type": "integer"
+    },
+    "inviteAvailableCount": {
+      "type": "integer"
+    },
+    "inviteCode": {
+      "type": "keyword"
+    },
+    "customerId": {
+      "type": "keyword"
+    },
+    "commission": {
+      "type": "double"
+    },
+    "customerAccount": {
+      "type": "keyword"
+    }
+  }
+}

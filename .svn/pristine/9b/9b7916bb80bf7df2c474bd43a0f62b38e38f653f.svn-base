@@ -1,0 +1,945 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.marketing.groupon.dao.GrouponStatisticsMapper">
+    <resultMap id="grouponByActiveName" type="com.wanmi.ares.response.MarketingInfoResp">
+        <result property="grouponMarketingId" column="id"/>
+        <result property="marketingName" column="activity_name"/>
+        <result property="startDatetime" column="start_time"/>
+        <result property="endDatetime" column="end_time"/>
+        <result property="storeId" column="store_id"/>
+        <result property="storeName" column="store_name"/>
+    </resultMap>
+
+    <resultMap id="grouponByOverviewMap" type="com.wanmi.ares.response.GrouponOverview">
+        <result property="payROI" column="pay_roi"/>
+        <result property="payMoney" column="pay_money"/>
+        <result property="discountMoney" column="discount_money"/>
+        <result property="payGoodsCount" column="pay_goods_count"/>
+        <result property="payTradeCount" column="pay_trade_count"/>
+        <result property="jointRate" column="joint_rate"/>
+        <result property="newCustomerCount" column="new_customer"/>
+        <result property="oldCustomerCount" column="old_customer"/>
+        <result property="payCustomerCount" column="pay_customer_count"/>
+        <result property="customerPrice" column="customer_price"/>
+        <result property="day" column="day"/>
+        <result property="week" column="week"/>
+        <result property="goodsInfoName" column="goods_info_name"/>
+        <result property="goodsInfoNo" column="goods_info_no"/>
+        <result property="shareCount" column="share_count"/>
+        <result property="shareVisitorsCount" column="share_visitors_count"/>
+        <result property="shareGrouponCount" column="share_groupon_count"/>
+        <result property="grouponTradeCount" column="groupon_trade_count"/>
+        <result property="grouponPersonCount" column="groupon_person_count"/>
+        <result property="alreadyGrouponTradeCount" column="already_groupon_trade_count"/>
+        <result property="alreadyGrouponPersonCount" column="already_groupon_person_count"/>
+        <result property="grouponRoi" column="groupon_roi"/>
+        <result property="specDetails" column="detail_name"/>
+        <result property="groupId" column="group_id"/>
+        <result property="goodsInfoId" column="goods_info_id"/>
+        <result property="pv" column="pv"/>
+        <result property="uv" column="uv"/>
+        <result property="uvGrouponRoi" column="uVGrouponRoi"/>
+        <result property="alreadyGrouponRoi" column="alreadyGrouponRoi"/>
+        <result property="supplyPrice" column="supply_price"/>
+    </resultMap>
+
+    <insert id="insertByTrade" parameterType="com.wanmi.ares.request.marketing.MarketingAnalysisJobRequest">
+        insert into groupon_trade_detail(marketing_id, store_id, customer_id, pay_money, discount_money, pay_goods_count,
+        goods_info_id, goods_info_name, goods_info_no, groupon_order_status, groupon_invitee, create_time, group_id,
+        boss_customer_flag,boss_customer_flag_week, store_customer_flag, store_customer_flag_week)
+            SELECT reg.groupon_activity_id,
+                    b.store_id,
+                    a.customer_id,
+                    a.total_pay_cash,
+                    if(b.original_price &lt;= b.price, 0, b.original_price - b.price) * b.num as discount_money,
+                    b.num,
+                    b.sku_id,
+                    b.sku_name,
+                    b.sku_no,
+                    reg.groupon_order_status,
+                    if(reg.groupon_invitee_id is null, 0, 1) as groupon_invitee,
+                    a.pay_time,
+                    CONCAT(reg.groupon_activity_id,b.sku_id) as group_id,
+                    <![CDATA[
+                    case when date_format(d.first_pay_time, '%Y-%m-%d') < date_format(a.pay_time, '%Y-%m-%d') then 1 else 0 end             as boss_customer_flag,
+                    case
+                    when d.first_pay_time_week < date_format(a.pay_time, '%x%v') then 1
+                    else 0 end                                                            as boss_customer_flag_week,
+                    case when date_format(e.first_pay_time, '%Y-%m-%d') < date_format(a.pay_time, '%Y-%m-%d') then 1 else 0 end             as store_customer_flag,
+                    case
+                    when e.first_pay_time_week < date_format(a.pay_time, '%x%v') then 1
+                    else 0 end                                                            as store_customer_flag_week
+                    ]]>
+            FROM replay_trade_groupon reg
+            left join replay_trade a on reg.tid = a.tid
+            LEFT JOIN replay_trade_item b ON a.tid = b.tid
+            left join (select min(first_pay_time)                      as first_pay_time,
+                    min(date_format(first_pay_time, '%x%v'))           as first_pay_time_week,
+                    customer_id
+                    from customer_first_pay
+                    group by customer_id) d on a.customer_id = d.customer_id
+
+            left join (select min(first_pay_time)                      as first_pay_time,
+                    min(date_format(first_pay_time, '%x%v'))           as first_pay_time_week,
+                    customer_id,
+                    store_id
+                    from customer_first_pay
+                    group by store_id, customer_id) e
+                    on a.customer_id = e.customer_id and e.store_id = a.store_id
+            WHERE a.pay_state = 2
+            <if test="initDate != null and initDate != ''">
+                AND date_format(a.pay_time, '%Y-%m-%d') = #{initDate}
+            </if>
+            <if test="initDate == null || initDate == ''">
+                AND date_format(a.pay_time, '%Y-%m-%d') = DATE_SUB(curdate(),INTERVAL 1 DAY)
+            </if>
+    </insert>
+    
+    <select id="grouponByOverview" resultMap="grouponByOverviewMap" parameterType="com.wanmi.ares.request.marketing.MarketingQueryRequest">
+        select
+            sum(a.pay_roi)                                      as pay_roi,
+            sum(a.pay_money)                                     as pay_money,
+            sum(a.discount_money)                                as discount_money,
+            sum(a.pay_goods_count)                               as pay_goods_count,
+            sum(a.pay_trade_count)                               as pay_trade_count,
+            sum(a.joint_rate)                                    as joint_rate,
+            sum(a.new_customer)                                  as new_customer,
+            sum(a.old_customer)                                  as old_customer,
+            sum(a.pay_customer_count)                            as pay_customer_count,
+            sum(a.customer_price)                                as customer_price,
+            sum(a.share_groupon_count)                           as share_groupon_count,
+            sum(a.groupon_trade_count)                           as groupon_trade_count,
+            sum(a.groupon_person_count)                          as groupon_person_count,
+            sum(a.already_groupon_trade_count)                   as already_groupon_trade_count,
+            sum(a.already_groupon_person_count)                  as already_groupon_person_count,
+            sum(a.groupon_roi)                                   as groupon_roi,
+            COALESCE(sum(a.pv),0)                                            as pv,
+            COALESCE(sum(a.uv),0)                                          as uv,
+            truncate(sum(a.groupon_person_count) / sum(a.uv), 4)      as uVGrouponRoi,
+            truncate(sum(a.already_groupon_person_count) / sum(a.uv), 4)      as alreadyGrouponRoi
+        from
+        (
+            select truncate(sum(a.pay_money) / sum(a.discount_money), 2) as pay_roi,
+                    sum(a.pay_money)                                     as pay_money,
+                    sum(a.discount_money)                                as discount_money,
+                    sum(a.pay_goods_count)                               as pay_goods_count,
+                    count(a.id)                                          as pay_trade_count,
+                    truncate(sum(a.pay_goods_count) / count(*),2)        as joint_rate,
+                    count(distinct case when b.customer_id is null then a.customer_id end)
+                                                                         as new_customer,
+                    count(distinct case when b.customer_id is not null then a.customer_id end)
+                                                                         as old_customer,
+                    count(distinct a.customer_id)                        as pay_customer_count,
+                    truncate(sum(a.pay_money) / count(distinct a.customer_id), 2)
+                                                                         as customer_price,
+                    count(if(a.groupon_invitee = 1, a.id, null))         as share_groupon_count,
+                    count(a.id)                                          as groupon_trade_count,
+                    count(DISTINCT a.customer_id)                        as groupon_person_count,
+                    count(if(a.groupon_order_status=2, a.id, null))      as already_groupon_trade_count,
+                    count(DISTINCT if(a.groupon_order_status=2, a.customer_id, null))
+                                                                         as already_groupon_person_count,
+                    truncate(count(DISTINCT if(a.groupon_order_status=2, a.customer_id, null)) / count(DISTINCT a.customer_id), 4)
+                                                                         as groupon_roi,
+                    0                                                    as pv,
+                    0                                                    as uv
+            from (select CONCAT(d.groupon_activity_id, d.goods_info_id) as group_id
+                        from replay_groupon_goods_info d
+                        where d.audit_status = 1 and
+                        (<![CDATA[(date_format(d.start_time, '%Y-%m-%d') >= #{queryDate}
+                                and date_format(d.start_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+                        or
+                        <![CDATA[(date_format(d.end_time, '%Y-%m-%d') >= #{queryDate}
+                                and date_format(d.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+                        <if test="storeId != null and storeId != ''">
+                            and d.store_id = #{storeId}
+                        </if>
+                ) rg
+            left join (
+                select * from groupon_trade_detail
+                where <![CDATA[date_format(create_time, '%Y-%m-%d') >= #{queryDate}
+                            and date_format(create_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>
+            ) a on a.group_id = rg.group_id
+            <if test="storeId == null || storeId == ''">
+                left join customer_first_pay b on a.customer_id = b.customer_id
+                and
+                <![CDATA[date_format(b.first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+            </if>
+            <if test="storeId != null and storeId != ''">
+                left join customer_first_pay b on a.customer_id = b.customer_id and a.store_id = b.store_id
+                and
+                <![CDATA[date_format(b.first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+            </if>
+            where 1=1
+             <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                 and rg.group_id in
+                 <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                     #{item}
+                 </foreach>
+             </if>
+
+            union all
+
+            SELECT
+                0           as pay_roi,
+                0           as pay_money,
+                0           as discount_money,
+                0           as pay_goods_count,
+                0           as pay_trade_count,
+                0           as joint_rate,
+                0           as new_customer,
+                0           as old_customer,
+                0           as pay_customer_count,
+                0           as customer_price,
+                0           as share_groupon_count,
+                0           as groupon_trade_count,
+                0           as groupon_person_count,
+                0           as already_groupon_trade_count,
+                0           as already_groupon_person_count,
+                0           as groupon_roi,
+                SUM( p.pv ) as pv,
+                0           as uv
+            FROM
+                replay_marketing_sku_pv p
+            <if test="storeId != null ">
+                LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+            </if>
+            <where>
+                p.marketing_type = 101
+                <![CDATA[
+                      and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                   ]]>
+                <if test="storeId != null and storeId != ''">
+                    and g.store_id = #{storeId}
+                </if>
+                <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                    and CONCAT(p.marketing_id, p.sku_id) in
+                    <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                </if>
+            </where>
+
+            union all
+
+            SELECT
+                0                               as pay_roi,
+                0                               as pay_money,
+                0                               as discount_money,
+                0                               as pay_goods_count,
+                0                               as pay_trade_count,
+                0                               as joint_rate,
+                0                               as new_customer,
+                0                               as old_customer,
+                0                               as pay_customer_count,
+                0                               as customer_price,
+                0                               as share_groupon_count,
+                0                               as groupon_trade_count,
+                0                               as groupon_person_count,
+                0                               as already_groupon_trade_count,
+                0                               as already_groupon_person_count,
+                0                               as groupon_roi,
+                0                               as pv,
+                COUNT(DISTINCT u.customer_id)   as uv
+            FROM
+                replay_marketing_sku_uv u
+            <if test="storeId != null ">
+                LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+            </if>
+            <where>
+                u.marketing_type = 101
+                <![CDATA[
+                      and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                   ]]>
+                <if test="storeId != null and storeId != ''">
+                    and g.store_id = #{storeId}
+                </if>
+                <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                    and CONCAT(u.marketing_id, u.sku_id) in
+                    <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                </if>
+            </where>
+        ) a
+    </select>
+
+    <select id="grouponShareCountByOverview" resultMap="grouponByOverviewMap" parameterType="com.wanmi.ares.request.marketing.MarketingQueryRequest">
+        SELECT
+            count(DISTINCT if(rs.type=0, rs.customer_id, null)) as share_count,
+            count(DISTINCT if(rs.type=1, rs.customer_id, null)) as share_visitors_count
+        from
+            (
+            select CONCAT(r.groupon_activity_id, r.goods_info_id) as group_id, r.type, r.customer_id, r.store_id
+            from replay_groupon_share_record r
+            where
+                <![CDATA[date_format(r.create_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(r.create_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>
+            ) rs
+        where 1=1
+        <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+            and rs.group_id in
+            <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <if test="storeId != null and storeId != ''">
+            and rs.store_id = #{storeId}
+        </if>
+    </select>
+
+    <select id="grouponByDay" resultMap="grouponByOverviewMap"
+            parameterType="com.wanmi.ares.request.marketing.MarketingQueryRequest">
+        select
+            sum(a.pay_roi)                                      as pay_roi,
+            sum(a.pay_money)                                     as pay_money,
+            sum(a.discount_money)                                as discount_money,
+            sum(a.pay_goods_count)                               as pay_goods_count,
+            sum(a.pay_trade_count)                               as pay_trade_count,
+            sum(a.joint_rate)                                    as joint_rate,
+            sum(a.new_customer)                                  as new_customer,
+            sum(a.old_customer)                                  as old_customer,
+            sum(a.pay_customer_count)                            as pay_customer_count,
+            sum(a.customer_price)                                as customer_price,
+            sum(a.share_groupon_count)                           as share_groupon_count,
+            sum(a.groupon_trade_count)                           as groupon_trade_count,
+            sum(a.groupon_person_count)                          as groupon_person_count,
+            sum(a.already_groupon_trade_count)                   as already_groupon_trade_count,
+            sum(a.already_groupon_person_count)                  as already_groupon_person_count,
+            sum(a.groupon_roi)                                   as groupon_roi,
+            COALESCE(sum(a.pv),0)                                            as pv,
+            COALESCE(sum(a.uv),0)                                          as uv,
+            truncate(sum(a.groupon_person_count) / sum(a.uv), 4)      as uVGrouponRoi,
+            truncate(sum(a.already_groupon_person_count) / sum(a.uv), 4)      as alreadyGrouponRoi,
+            a.day
+        from
+        (select truncate(sum(a.pay_money) / sum(a.discount_money), 2) as pay_roi,
+                sum(a.pay_money)                                     as pay_money,
+                sum(a.discount_money)                                as discount_money,
+                sum(a.pay_goods_count)                               as pay_goods_count,
+                count(a.id)                                          as pay_trade_count,
+                truncate(sum(a.pay_goods_count) / count(*),2)        as joint_rate,
+                <if test="storeId == null || storeId == ''">
+                    count(distinct if(a.boss_customer_flag = 0, a.customer_id, null))   as new_customer,
+                    count(distinct if(a.boss_customer_flag = 1, a.customer_id, null))   as old_customer,
+                </if>
+                <if test="storeId != null and storeId != ''">
+                    count(distinct if(a.store_customer_flag = 0, a.customer_id, null))  as new_customer,
+                    count(distinct if(a.store_customer_flag = 1, a.customer_id, null))  as old_customer,
+                </if>
+                count(distinct a.customer_id)                        as pay_customer_count,
+                truncate(sum(a.pay_money) / count(distinct a.customer_id), 2)
+                                                                     as customer_price,
+                count(if(a.groupon_invitee = 1, a.id, null))         as share_groupon_count,
+                count(a.id)                                          as groupon_trade_count,
+                count(DISTINCT a.customer_id)                        as groupon_person_count,
+                count(if(a.groupon_order_status=2, a.id, null))      as already_groupon_trade_count,
+                count(DISTINCT if(a.groupon_order_status=2, a.customer_id, null))
+                                                                     as already_groupon_person_count,
+                truncate(count(DISTINCT if(a.groupon_order_status=2, a.customer_id, null)) / count(DISTINCT a.customer_id), 4)
+                                                                     as groupon_roi,
+                0 as pv,
+                0 as uv,
+                date_format(a.create_time, '%Y-%m-%d')               as day
+        from groupon_trade_detail a
+        where <![CDATA[date_format(create_time, '%Y-%m-%d') >= #{queryDate}
+                            and date_format(create_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>
+        <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+            and a.group_id in
+            <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <if test="storeId != null and storeId != ''">
+            and a.store_id = #{storeId}
+        </if>
+        group by day
+
+
+        union all
+
+        SELECT
+            0           as pay_roi,
+            0           as pay_money,
+            0           as discount_money,
+            0           as pay_goods_count,
+            0           as pay_trade_count,
+            0           as joint_rate,
+            0           as new_customer,
+            0           as old_customer,
+            0           as pay_customer_count,
+            0           as customer_price,
+            0           as share_groupon_count,
+            0           as groupon_trade_count,
+            0           as groupon_person_count,
+            0           as already_groupon_trade_count,
+            0           as already_groupon_person_count,
+            0           as groupon_roi,
+            SUM( p.pv ) as pv,
+            0           as uv,
+            date_format(p.stat_date, '%Y-%m-%d')               as day
+        FROM
+        replay_marketing_sku_pv p
+        <if test="storeId != null ">
+            LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+        </if>
+        <where>
+            p.marketing_type = 101
+            <![CDATA[
+                      and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                   ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                and CONCAT(p.marketing_id, p.sku_id) in
+                <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by day
+
+        union all
+
+        SELECT
+            0           as pay_roi,
+            0           as pay_money,
+            0           as discount_money,
+            0           as pay_goods_count,
+            0           as pay_trade_count,
+            0           as joint_rate,
+            0           as new_customer,
+            0           as old_customer,
+            0           as pay_customer_count,
+            0           as customer_price,
+            0           as share_groupon_count,
+            0           as groupon_trade_count,
+            0           as groupon_person_count,
+            0           as already_groupon_trade_count,
+            0           as already_groupon_person_count,
+            0           as groupon_roi,
+            0           as pv,
+            COUNT(DISTINCT u.customer_id)   as uv,
+            date_format(u.stat_date, '%Y-%m-%d')               as day
+        FROM
+            replay_marketing_sku_uv u
+        <if test="storeId != null ">
+            LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        </if>
+        <where>
+            u.marketing_type = 101
+            <![CDATA[
+                      and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                   ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                and CONCAT(u.marketing_id, u.sku_id) in
+                <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by day
+        ) a
+        group by a.day
+    </select>
+
+    <select id="grouponShareCountByDay" resultMap="grouponByOverviewMap" parameterType="com.wanmi.ares.request.marketing.MarketingQueryRequest">
+        SELECT
+            count(DISTINCT if(rs.type=0, rs.customer_id, null)) as share_count,
+            count(DISTINCT if(rs.type=1, rs.customer_id, null)) as share_visitors_count,
+            date_format(rs.create_time, '%Y-%m-%d' ) AS day
+        from
+        (
+            select CONCAT(r.groupon_activity_id, r.goods_info_id) as group_id, r.type, r.customer_id, r.store_id, r.create_time
+            from replay_groupon_share_record r
+            where
+            <![CDATA[date_format(r.create_time, '%Y-%m-%d') >= #{queryDate}
+                    and date_format(r.create_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>
+            ) rs
+        where 1=1
+        <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+            and rs.group_id in
+            <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <if test="storeId != null and storeId != ''">
+            and rs.store_id = #{storeId}
+        </if>
+        group by day
+    </select>
+
+    <select id="grouponByWeek" resultMap="grouponByOverviewMap" parameterType="com.wanmi.ares.request.marketing.MarketingQueryRequest">
+        select
+        sum(a.pay_roi)                                      as pay_roi,
+        sum(a.pay_money)                                     as pay_money,
+        sum(a.discount_money)                                as discount_money,
+        sum(a.pay_goods_count)                               as pay_goods_count,
+        sum(a.pay_trade_count)                               as pay_trade_count,
+        sum(a.joint_rate)                                    as joint_rate,
+        sum(a.new_customer)                                  as new_customer,
+        sum(a.old_customer)                                  as old_customer,
+        sum(a.pay_customer_count)                            as pay_customer_count,
+        sum(a.customer_price)                                as customer_price,
+        sum(a.share_groupon_count)                           as share_groupon_count,
+        sum(a.groupon_trade_count)                           as groupon_trade_count,
+        sum(a.groupon_person_count)                          as groupon_person_count,
+        sum(a.already_groupon_trade_count)                   as already_groupon_trade_count,
+        sum(a.already_groupon_person_count)                  as already_groupon_person_count,
+        sum(a.groupon_roi)                                   as groupon_roi,
+        COALESCE(sum(a.pv),0)                                            as pv,
+        COALESCE(sum(a.uv),0)                                          as uv,
+        truncate(sum(a.groupon_person_count) / sum(a.uv), 4)      as uVGrouponRoi,
+        truncate(sum(a.already_groupon_person_count) / sum(a.uv), 4)      as alreadyGrouponRoi,
+        a.week
+        from
+        (
+        select truncate(sum(a.pay_money) / sum(a.discount_money), 2) as pay_roi,
+                sum(a.pay_money)                                     as pay_money,
+                sum(a.discount_money)                                as discount_money,
+                sum(a.pay_goods_count)                               as pay_goods_count,
+                count(a.id)                                          as pay_trade_count,
+                truncate(sum(a.pay_goods_count) / count(*),2)        as joint_rate,
+                <if test="storeId == null || storeId == ''">
+                    count(distinct if(a.boss_customer_flag_week = 0, a.customer_id, null))    as new_customer,
+                    count(distinct if(a.boss_customer_flag_week = 1, a.customer_id, null))    as old_customer,
+                </if>
+                <if test="storeId != null and storeId != ''">
+                    count(distinct if(a.store_customer_flag_week = 0, a.customer_id, null))    as new_customer,
+                    count(distinct if(a.store_customer_flag_week = 1, a.customer_id, null))    as old_customer,
+                </if>
+                count(distinct a.customer_id)                        as pay_customer_count,
+                truncate(sum(a.pay_money) / count(distinct a.customer_id), 2)
+                                                                     as customer_price,
+                count(if(a.groupon_invitee = 1, a.id, null))         as share_groupon_count,
+                count(a.id)                                          as groupon_trade_count,
+                count(DISTINCT a.customer_id)                        as groupon_person_count,
+                count(if(a.groupon_order_status=2, a.id, null))      as already_groupon_trade_count,
+                count(DISTINCT if(a.groupon_order_status=2, a.customer_id, null))
+                                                                     as already_groupon_person_count,
+                truncate(count(DISTINCT if(a.groupon_order_status=2, a.customer_id, null)) / count(DISTINCT a.customer_id), 4)
+                                                                     as groupon_roi,
+                                                                 0  as pv,
+                                                                 0 as uv,
+                date_format(a.create_time, '%x-%v')                  as week
+        from  groupon_trade_detail a
+        where <![CDATA[date_format(create_time, '%Y-%m-%d') >= #{queryDate}
+                        and date_format(create_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>
+        <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+            and a.group_id in
+            <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <if test="storeId != null and storeId != ''">
+            and a.store_id = #{storeId}
+        </if>
+        group by week
+
+        union all
+
+        SELECT
+        0           as pay_roi,
+        0           as pay_money,
+        0           as discount_money,
+        0           as pay_goods_count,
+        0           as pay_trade_count,
+        0           as joint_rate,
+        0           as new_customer,
+        0           as old_customer,
+        0           as pay_customer_count,
+        0           as customer_price,
+        0           as share_groupon_count,
+        0           as groupon_trade_count,
+        0           as groupon_person_count,
+        0           as already_groupon_trade_count,
+        0           as already_groupon_person_count,
+        0           as groupon_roi,
+        SUM( p.pv ) as pv,
+        0           as uv,
+        date_format(p.stat_date, '%x-%v')                  as week
+        FROM
+        replay_marketing_sku_pv p
+        <if test="storeId != null ">
+            LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+        </if>
+        <where>
+            p.marketing_type = 101
+            <![CDATA[
+                          and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                       ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                and CONCAT(p.marketing_id, p.sku_id) in
+                <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by week
+
+        union all
+
+        SELECT
+        0           as pay_roi,
+        0           as pay_money,
+        0           as discount_money,
+        0           as pay_goods_count,
+        0           as pay_trade_count,
+        0           as joint_rate,
+        0           as new_customer,
+        0           as old_customer,
+        0           as pay_customer_count,
+        0           as customer_price,
+        0           as share_groupon_count,
+        0           as groupon_trade_count,
+        0           as groupon_person_count,
+        0           as already_groupon_trade_count,
+        0           as already_groupon_person_count,
+        0           as groupon_roi,
+        0           as pv,
+        COUNT(DISTINCT u.customer_id)   as uv,
+        date_format(u.stat_date, '%x-%v')                  as week
+        FROM
+        replay_marketing_sku_uv u
+        <if test="storeId != null ">
+            LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        </if>
+        <where>
+            u.marketing_type = 101
+            <![CDATA[
+                      and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                   ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                and CONCAT(u.marketing_id, u.sku_id) in
+                <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by week
+        ) a
+        group by a.week
+    </select>
+
+    <select id="grouponShareCountByWeek" resultMap="grouponByOverviewMap" parameterType="com.wanmi.ares.request.marketing.MarketingQueryRequest">
+        SELECT
+        count(DISTINCT if(rs.type=0, rs.customer_id, null)) as share_count,
+        count(DISTINCT if(rs.type=1, rs.customer_id, null)) as share_visitors_count,
+        date_format(rs.create_time, '%x-%v') AS week
+        from
+        (
+        select CONCAT(r.groupon_activity_id, r.goods_info_id) as group_id, r.type, r.customer_id, r.store_id, r.create_time
+        from replay_groupon_share_record r
+        where
+        <![CDATA[date_format(r.create_time, '%Y-%m-%d') >= #{queryDate}
+                    and date_format(r.create_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>
+        ) rs
+        where 1=1
+        <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+            and rs.group_id in
+            <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <if test="storeId != null and storeId != ''">
+            and rs.store_id = #{storeId}
+        </if>
+        group by week
+    </select>
+
+    <select id="queryGrouponList" resultMap="grouponByActiveName" parameterType="com.wanmi.ares.request.marketing.SelectMarketingRequest">
+        select CONCAT(b.groupon_activity_id, b.goods_info_id) as id,
+                g.goods_info_name                             as activity_name,
+                b.start_time, b.end_time, b.store_id, c.store_name
+        from replay_groupon_goods_info b
+        left join replay_goods_info g on b.goods_info_id = g.goods_info_id
+        left join replay_store c on c.store_id = b.store_id
+        where b.audit_status = 1 and
+            (<![CDATA[(date_format(b.start_time, '%Y-%m-%d') >= #{queryDate}
+            and date_format(b.start_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+            or
+            <![CDATA[(date_format(b.end_time, '%Y-%m-%d') >= #{queryDate}
+            and date_format(b.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+            <if test="marketingName != null and marketingName != ''">
+                and g.goods_info_name like concat('%',#{marketingName},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                and c.store_name like concat('%',#{storeName},'%')
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND b.store_id = #{storeId}
+            </if>
+            order by b.create_time desc
+    </select>
+
+    <select id="countByPageTotal" parameterType="com.wanmi.ares.request.marketing.SelectMarketingRequest"
+            resultType="java.lang.Long">
+        select count(b.groupon_goods_id)
+        from replay_groupon_goods_info b
+        left join replay_goods_info g on b.goods_info_id = g.goods_info_id
+        left join replay_store c on c.store_id = b.store_id
+        where b.audit_status = 1 and
+            (<![CDATA[(date_format(b.start_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(b.start_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+            or
+            <![CDATA[(date_format(b.end_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(b.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+            <if test="marketingName != null and marketingName != ''">
+                and g.goods_info_name like concat('%',#{marketingName},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                and c.store_name like concat('%',#{storeName},'%')
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND b.store_id = #{storeId}
+            </if>
+    </select>
+
+    <select id="grouponByEffect" resultMap="grouponByOverviewMap" parameterType="com.wanmi.ares.request.marketing.EffectPageRequest">
+        select goods.*,
+            share.share_count,
+            share.share_visitors_count,
+            COALESCE(b.pv,0) as pv,
+            COALESCE(c.uv,0) as uv,
+            truncate(goods.groupon_person_count / c.uv, 4)      as uVGrouponRoi,
+            truncate(goods.already_groupon_person_count / c.uv, 4)      as alreadyGrouponRoi
+        from
+        (select b.goods_info_name,
+                b.goods_info_no,
+                b.goods_info_id,
+                b.supply_price,
+                truncate(sum(a.pay_money) / sum(a.discount_money), 2) as pay_roi,
+                sum(a.pay_money)                                     as pay_money,
+                sum(a.discount_money)                                as discount_money,
+                sum(a.pay_goods_count)                               as pay_goods_count,
+                count(a.id)                                          as pay_trade_count,
+                truncate(sum(a.pay_goods_count) / count(*),2)        as joint_rate,
+                count(distinct case when b.customer_id is null then a.customer_id end)
+                                                                     as new_customer,
+                count(distinct case when b.customer_id is not null then a.customer_id end)
+                                                                     as old_customer,
+                count(distinct a.customer_id)                        as pay_customer_count,
+                truncate(sum(a.pay_money) / count(distinct a.customer_id), 2)
+                                                                     as customer_price,
+                count(if(a.groupon_invitee = 1, a.id, null))         as share_groupon_count,
+                count(a.id)                                          as groupon_trade_count,
+                count(DISTINCT a.customer_id)                        as groupon_person_count,
+                count(if(a.groupon_order_status=2, a.id, null))      as already_groupon_trade_count,
+                count(DISTINCT if(a.groupon_order_status=2, a.customer_id, null))
+                                                                     as already_groupon_person_count,
+                truncate(count(DISTINCT if(a.groupon_order_status=2, a.customer_id, null)) / count(DISTINCT a.customer_id), 4)
+                                                                     as groupon_roi
+        from
+            (select CONCAT(d.groupon_activity_id, d.goods_info_id) as group_id,
+                    g.goods_info_name, g.goods_info_no, g.goods_info_id,g.supply_price
+                from replay_groupon_goods_info d
+                join replay_goods_info g on d.goods_info_id = g.goods_info_id
+                where d.audit_status = 1 and
+                        (<![CDATA[(date_format(d.start_time, '%Y-%m-%d') >= #{queryDate}
+                                and date_format(d.start_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+                        or
+                        <![CDATA[(date_format(d.end_time, '%Y-%m-%d') >= #{queryDate}
+                                and date_format(d.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+                        <if test="goodsInfoName != null and goodsInfoName != ''">
+                            and g.goods_info_name like concat('%',#{goodsInfoName},'%')
+                        </if>
+                        <if test="storeId != null and storeId != ''">
+                            and d.store_id = #{storeId}
+                        </if>
+            ) b
+        left join (
+            select * from groupon_trade_detail
+            where <![CDATA[date_format(create_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(create_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>
+                <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                    and group_id in
+                    <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="storeId != null and storeId != ''">
+                    and store_id = #{storeId}
+                </if>
+        ) a on a.group_id = b.group_id
+        <if test="storeId == null || storeId == ''">
+            left join customer_first_pay b on a.customer_id = b.customer_id
+            and
+            <![CDATA[date_format(b.first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+        </if>
+        <if test="storeId != null and storeId != ''">
+            left join customer_first_pay b on a.customer_id = b.customer_id and a.store_id = b.store_id
+            and
+            <![CDATA[date_format(b.first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+        </if>
+        where 1=1
+        <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+            and b.group_id in
+            <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        group by b.goods_info_id) goods
+        left join (
+            SELECT
+                count(DISTINCT if(rs.type=0, rs.customer_id, null)) as share_count,
+                count(DISTINCT if(rs.type=1, rs.customer_id, null)) as share_visitors_count,
+                rs.goods_info_id
+            from
+                (
+                select CONCAT(r.groupon_activity_id, r.goods_info_id) as group_id,
+                        r.type, r.customer_id, r.store_id, r.create_time, r.goods_info_id
+                from replay_groupon_share_record r
+                where
+                    <![CDATA[date_format(r.create_time, '%Y-%m-%d') >= #{queryDate}
+                        and date_format(r.create_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>
+                ) rs
+            where 1=1
+                <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                    and rs.group_id in
+                    <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                </if>
+            group by rs.goods_info_id
+        ) share on goods.goods_info_id = share.goods_info_id
+
+        left join
+        (
+            SELECT
+                sku_id as sku_id,
+                SUM( p.pv ) as pv
+            FROM
+            replay_marketing_sku_pv p
+            <if test="storeId != null ">
+                LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+            </if>
+            <where>
+                p.marketing_type = 101
+                <![CDATA[
+                              and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                           ]]>
+                <if test="storeId != null and storeId != ''">
+                    and g.store_id = #{storeId}
+                </if>
+                <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                    and CONCAT(p.marketing_id, p.sku_id) in
+                    <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                </if>
+            </where>
+            group by sku_id
+        ) b on goods.goods_info_id =  b.sku_id
+
+        left join
+        (
+            SELECT
+                sku_id as sku_id,
+                COUNT(DISTINCT u.customer_id)   as uv
+            FROM
+                replay_marketing_sku_uv u
+            <if test="storeId != null ">
+                LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+            </if>
+            <where>
+                u.marketing_type = 101
+                <![CDATA[
+                          and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                       ]]>
+                <if test="storeId != null and storeId != ''">
+                    and g.store_id = #{storeId}
+                </if>
+                <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+                    and CONCAT(u.marketing_id, u.sku_id) in
+                    <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                </if>
+            </where>
+            group by sku_id
+        ) c on goods.goods_info_id =  c.sku_id
+
+        <if test="sortName != null and sortName != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortName} ${sortOrder}, goods_info_id desc
+        </if>
+    </select>
+
+    <select id="countByEffectTotal" parameterType="com.wanmi.ares.request.marketing.EffectPageRequest"
+            resultType="java.lang.Long">
+        select  count(distinct b.goods_info_id)
+        from
+            (select CONCAT(d.groupon_activity_id, d.goods_info_id) as group_id, d.goods_info_id
+            from replay_groupon_goods_info d
+            left join replay_goods_info g on d.goods_info_id = g.goods_info_id
+            where d.audit_status = 1 and
+                (<![CDATA[(date_format(d.start_time, '%Y-%m-%d') >= #{queryDate}
+                                        and date_format(d.start_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+                or
+                <![CDATA[(date_format(d.end_time, '%Y-%m-%d') >= #{queryDate}
+                                        and date_format(d.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+                <if test="goodsInfoName != null and goodsInfoName != ''">
+                    and g.goods_info_name like concat('%',#{goodsInfoName},'%')
+                </if>
+                <if test="storeId != null and storeId != ''">
+                    and d.store_id = #{storeId}
+                </if>
+            ) b
+        where 1=1
+        <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+            and b.group_id in
+            <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="queryGoodsInfo" resultMap="grouponByOverviewMap" parameterType="java.util.List">
+        select
+        goods_info_name goodsInfoName,
+        goods_info_no goodsInfoNo
+        from replay_goods_info
+        <where>
+            <if test="goodsInfoIds != null and goodsInfoIds.size > 0">
+                and GOODS_INFO_ID in
+                <foreach collection="goodsInfoIds" item="item" index="index"  open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <select id="queryEarliestActivityTime" resultType="java.time.LocalDate" parameterType="com.wanmi.ares.request.marketing.MarketingQueryEarliestDateRequest">
+        select min(start_time)
+        from ( select
+                    CONCAT(b.groupon_activity_id, b.goods_info_id) as group_id,
+                    b.start_time,
+                    b.end_time
+                from replay_groupon_goods_info b
+                where b.audit_status = 1 and
+                (<![CDATA[(date_format(b.start_time, '%Y-%m-%d') >= #{queryDate}
+                    and date_format(b.start_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+                or
+                <![CDATA[(date_format(b.end_time, '%Y-%m-%d') >= #{queryDate}
+                    and date_format(b.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+                <if test="storeId != null and storeId != ''">
+                    and store_id = #{storeId}
+                </if>
+            ) a
+        where 1=1
+        <if test="grouponMarketingIds != null and grouponMarketingIds.size > 0">
+            and a.group_id in
+            <foreach collection="grouponMarketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+</mapper>

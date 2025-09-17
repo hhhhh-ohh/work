@@ -1,0 +1,64 @@
+{
+  "properties": {
+    "recordId": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "goodsInfoId": {
+      "type": "keyword"
+    },
+    "tradeId": {
+      "type": "keyword"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "companyId": {
+      "type": "long"
+    },
+    "customerId": {
+      "type": "keyword"
+    },
+    "distributorId": {
+      "type": "keyword"
+    },
+    "payTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "finishTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "missionReceivedTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "orderGoodsPrice": {
+      "type": "double"
+    },
+    "orderGoodsCount": {
+      "type": "long"
+    },
+    "commissionRate": {
+      "type": "double"
+    },
+    "commissionGoods": {
+      "type": "double"
+    },
+    "commissionState": {
+      "type": "keyword"
+    },
+    "deleteFlag": {
+      "type": "keyword"
+    },
+    "distributorCustomerId": {
+      "type": "keyword"
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "properties": {
+    "accountState": {
+      "type": "integer"
+    },
+    "companyCode": {
+      "type": "keyword"
+    },
+    "supplierName": {
+      "type": "keyword"
+    },
+    "storeType": {
+      "type": "integer"
+    },
+    "applyEnterTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "companyInfoId": {
+      "type": "long"
+    },
+    "accountName": {
+      "type": "keyword"
+    },
+    "companyType": {
+      "type": "integer"
+    },
+    "contractStartDate": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "employeeDelFlag": {
+      "type": "integer"
+    },
+    "contractEndDate": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "auditState": {
+      "type": "integer"
+    },
+    "storeClosedReason": {
+      "type": "text"
+    },
+    "isMasterAccount": {
+      "type": "text"
+    },
+    "auditReason": {
+      "type": "text"
+    },
+    "remitAffirm": {
+      "type": "text"
+    },
+    "companyInfoDelFlag": {
+      "type": "integer"
+    },
+    "accountDisableReason": {
+      "type": "text"
+    },
+    "storeName": {
+      "type": "keyword"
+    },
+    "storeState": {
+      "type": "integer"
+    },
+    "id": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "storeDelFlag": {
+      "type": "integer"
+    },
+    "contractAuditState": {
+      "type": "integer"
+    },
+    "contractAuditReason": {
+      "type": "text"
+    },
+    "relCompanyInfoId": {
+      "type": "long"
+    },
+    "relStoreId": {
+      "type": "long"
+    }
+  }
+}

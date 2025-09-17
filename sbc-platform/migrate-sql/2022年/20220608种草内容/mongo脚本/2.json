@@ -1,0 +1,101 @@
+db.getCollection("tpl_infos").insert({
+  "_id": "62848a308195e2c47eddb1e2",
+  "envCode": "test1",
+  "tplInfoCode": "wechat-recommendInfo",
+  "tplRuleCode": "wechat-recommendInfo",
+  "userId": "ADMIN",
+  "__v": 0,
+  "cateId": "62834fe6dd8d326546644310",
+  "configOrder": {
+    "widgetNameSpace": "x-site-ui/widget/horizontal-layout",
+    "children": [
+      {
+        "widgetNameSpace": "@wanmi/wechat-recommendInfo",
+        "props": {
+          "key": 1652775913931,
+          "bgColor": "#fff",
+          "fullScreen": false,
+          "image": "//wanmi-b2b-x-site.oss-cn-shanghai.aliyuncs.com/default-recommend.png",
+          "link": "",
+          "type": "full",
+          "subTitle": "副标题",
+          "title": "主标题",
+          "version": "0.0.1",
+          "imageStyle": "show",
+          "hasThemeColor": false,
+          "style": "full-1",
+          "titleColor": "#333333",
+          "linkText": "查看更多",
+          "color": "#999999"
+        }
+      },
+      {
+        "widgetNameSpace": "@wanmi/wechat-recommendFooter",
+        "props": {
+          "key": 1653027027237,
+          "bgColor": "#fff",
+          "fullScreen": false,
+          "version": "0.0.1",
+          "imageStyle": "show",
+          "hasThemeColor": false,
+          "style": "full-1",
+          "titleColor": "#333333",
+          "linkText": "查看更多",
+          "color": "#999999"
+        }
+      }
+    ]
+  },
+  "createdAt": "2022-05-17T08:07:42.392Z",
+  "deleted": false,
+  "detailInfo": {
+    "author": "耀",
+    "previewHtml": "",
+    "detailImage": "",
+    "previewImage": ""
+  },
+  "online": true,
+  "pageType": "recommend",
+  "platform": "weixin",
+  "sortIndex": 0,
+  "systemCode": "d2cStore",
+  "tag": [
+    "499"
+  ],
+  "tplInfoName": "种草页标题",
+  "type": "ADMIN",
+  "updatedAt": "2022-05-20T05:59:58.992Z",
+  "acceptBars": [
+    "@wanmi/wechat-recommendInfo",
+    "@wanmi/wechat-rushtobuy",
+    "@wanmi/wechat-recommendlist",
+    "@wanmi/wechat-grouponlist",
+    "@wanmi/wechat-coupon-01",
+    "@wanmi/wechat-nav",
+    "@wanmi/wechat-flashlist",
+    "@wanmi/wechat-preorderlist",
+    "@wanmi/wechat-presalelist",
+    "@wanmi/wechat-notice",
+    "@wanmi/wechat-title",
+    "@wanmi/wechat-video",
+    "@wanmi/wechat-slider",
+    "@wanmi/wechat-freelayout",
+    "@wanmi/wechat-search",
+    "@wanmi/wechat-hotarea",
+    "@wanmi/wechat-blank",
+    "@wanmi/wechat-richtext",
+    "@wanmi/wechat-goodslist",
+    "@wanmi/wechat-recommendFooter"
+  ],
+  "acceptStyles": [],
+  "adapterBars": [],
+  "color2Class": {},
+  "isDoublePlatformTpl": false,
+  "layoutBar": "x-site-ui/widget/horizontal-layout",
+  "loadingBar": "",
+  "pluginBars": [],
+  "publishType": "standard",
+  "rule4PageCode": "multi",
+  "styleType": "none",
+  "tplRuleName": "种草页标题"
+})

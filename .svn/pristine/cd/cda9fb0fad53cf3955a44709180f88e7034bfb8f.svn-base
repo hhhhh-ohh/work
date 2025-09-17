@@ -1,0 +1,16 @@
+@startuml
+start
+:输入卡券名称，新增卡券;
+:下载卡券导入模版;
+:上传模版;
+if(数据格式正确？)then(yes)
+    if(卡券同列数值无重复？)then(yes)
+        :组装卡密数据，存入mysql;
+    else(no)
+        :excel填充错误信息;
+    endif
+else(no)
+    :excel填充错误信息;
+endif
+stop
+@enduml11

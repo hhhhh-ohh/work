@@ -1,0 +1,13 @@
+@startuml
+start
+:收款单查询;
+:根据请求头AppKey获取所对应的商户;
+:调用服务order的收款订单查询接口;
+if (是否有收款单数据) then (y)
+    :调用pay服务的根据订单号批量查询订单支付信息接口;
+    :封装返回数据;
+else
+    :返回空集合;
+endif;
+stop
+@enduml

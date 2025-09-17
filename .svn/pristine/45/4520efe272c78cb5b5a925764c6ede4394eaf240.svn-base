@@ -1,0 +1,47 @@
+{
+  "replayTable" : "replay_trade_community_customer",
+  "dispatch" :null,
+  "pk": [],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "tid",
+        "dataType": 12
+      }, {
+        "field": "buyer._id",
+        "replayField": "customer_id",
+        "dataType": 12
+      }, {
+        "field": "communityTradeCommission.activityId",
+        "replayField": "activity_id",
+        "dataType": 12
+      }, {
+        "field": "communityTradeCommission.leaderId",
+        "replayField": "leader_id",
+        "dataType": 12
+      },{
+        "field": "communityTradeCommission.salesType",
+        "replayField": "sales_type",
+        "dataType": 4,
+        "enumType": {
+          "SELF": 0,
+          "LEADER":1
+        }
+      },{
+        "field": "tradePrice.totalPrice",
+        "replayField": "total_price",
+        "dataType": 3
+      },{
+        "field": "tradeState.createTime",
+        "replayField": "create_time",
+        "dataType": 93
+      },{
+        "field": "supplier.storeId",
+        "replayField": "store_id",
+        "dataType": -5
+      }
+    ],
+    "arrayData": {}
+  }
+}

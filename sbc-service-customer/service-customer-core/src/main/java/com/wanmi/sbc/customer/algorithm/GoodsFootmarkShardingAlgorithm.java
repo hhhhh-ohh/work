@@ -1,0 +1,25 @@
+//package com.wanmi.sbc.customer.algorithm;
+//
+//import lombok.extern.slf4j.Slf4j;
+//import org.apache.shardingsphere.api.sharding.standard.PreciseShardingAlgorithm;
+//import org.apache.shardingsphere.api.sharding.standard.PreciseShardingValue;
+//
+//import java.util.Collection;
+//
+///**
+// * @author 张如坤
+// * 分表规则
+// * PreciseShardingAlgorithm:精确分片算法，用于=、in场景
+// */
+//@Slf4j
+//public class GoodsFootmarkShardingAlgorithm implements PreciseShardingAlgorithm<String> {
+//
+//	@Override
+//	public String doSharding(Collection<String> availableTargetNames, PreciseShardingValue<String> preciseShardingValue) {
+//		log.info("=======足迹分表开始=========");
+//		String logicTableName= preciseShardingValue.getLogicTableName();
+//		int value = Math.abs(preciseShardingValue.getValue().hashCode() % availableTargetNames.size());
+//		log.info("=======足迹分表结束，最终路由表名：{}=========", String.format("%s_%s", logicTableName, value));
+//		return logicTableName  + "_" + value;
+//	}
+//}

@@ -1,0 +1,38 @@
+package com.wanmi.sbc.customer.agent.model.root;
+
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.io.Serializable;
+
+/**
+ * 代理商权限实体类
+ */
+@Entity
+@Table(name = "agent_update_poster_auth")
+@Data
+public class AgentUpdatePosterAuth implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 自增主键
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    /**
+     * 联系电话
+     */
+    @Column(name = "contact_phone")
+    private String contactPhone;
+
+    /**
+     * 城市ID
+     */
+    @Column(name = "city_id")
+    private Long cityId;
+}

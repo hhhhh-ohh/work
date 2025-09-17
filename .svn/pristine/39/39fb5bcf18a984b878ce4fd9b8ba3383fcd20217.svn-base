@@ -1,0 +1,68 @@
+package com.wanmi.sbc.customer.api.request.child;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.wanmi.sbc.common.enums.GenderType;
+import com.wanmi.sbc.common.util.CustomLocalDateDeserializer;
+import com.wanmi.sbc.common.util.CustomLocalDateSerializer;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+
+@Schema
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class CustomerChildSaveRequest {
+    /**
+     * 客户ID
+     */
+    @Size(max = 32, message = "客户ID长度不能超过32个字符")
+    private String customerId;
+
+    /**
+     * 家长姓名
+     */
+    @Size(max = 50, message = "家长姓名长度不能超过50个字符")
+    private String parentName;
+
+    /**
+     * 小孩姓名
+     */
+    @Size(max = 50, message = "小孩姓名长度不能超过50个字符")
+    private String childName;
+
+    /**
+     * 小孩生日
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonSerialize(using = CustomLocalDateSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateDeserializer.class)
+    private LocalDate childBirthday;
+
+    /**
+     * 性别类型 0女 1男 2保密
+     */
+    private GenderType childGender;
+
+    /**
+     * 学校名称
+     */
+    private String schoolName;
+
+    /**
+     * 学校编码
+     */
+    private String schoolCode;
+    /**
+     * 校徽
+     */
+    private String badgeCode;
+}

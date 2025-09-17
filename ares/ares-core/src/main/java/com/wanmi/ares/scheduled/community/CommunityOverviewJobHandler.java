@@ -1,0 +1,44 @@
+package com.wanmi.ares.scheduled.community;
+
+import com.alibaba.fastjson2.JSONObject;
+import com.wanmi.ares.community.service.CommunityService;
+import com.xxl.job.core.context.XxlJobHelper;
+import com.xxl.job.core.handler.annotation.XxlJob;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.Objects;
+
+/**
+ * @author edz
+ * @className CommunityJobHandler
+ * @description 社区团购数据统计
+ * @date 2023/8/11 16:43
+ **/
+@Slf4j
+@Component
+public class CommunityOverviewJobHandler {
+    @Autowired
+    CommunityService communityService;
+
+    @XxlJob(value = "communityOverviewJobHandler")
+    public void execute(){
+        String s = XxlJobHelper.getJobParam();
+        String startDate = null;
+        if (StringUtils.isNotEmpty(s)){
+            JSONObject jsonObject = JSONObject.parseObject(s);
+            if (Objects.nonNull(jsonObject.get("startDate"))){
+                startDate = jsonObject.get("startDate").toString();
+            }
+        }
+        log.info("communityOverviewJobHandler社区团购统计任务开始执行,参数：{}", s);
+        communityService.insertOverview(startDate);
+//        communityService.insertOverviewForStore();
+//        communityService.insertOverviewForBoss();
+        communityService.insertOverviewForAll();;
+        log.info("communityOverviewJobHandler社区团购统计任务执行结束");
+        XxlJobHelper.log("执行参数:{}", s);
+    }
+}

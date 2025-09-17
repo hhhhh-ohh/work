@@ -1,0 +1,10 @@
+##1、canal的canal.instance.filter.regex、dbreplay的topics.canal新增
+```properties
+sbc-customer.paying_member_customer_rel,sbc-order.paying_member_record
+```
+## 2、脚本执行后，清理营销插件库
+```properties
+redis-cli keys "marketing_plugin_cache*" | xargs redis-cli del
+```
+
+## 3、重新生成es_customer_detail索引结构

@@ -1,0 +1,69 @@
+package com.wanmi.sbc.order.api.request.smallorder;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SmallOrderReturnRequest {
+    /**
+    * 订单编号
+    * */
+    private String orderSn;
+
+    /**
+     * sku编码
+     * */
+    private String skuNo;
+
+    /**
+     * 退款数量
+     * */
+    private Integer refundNum;
+
+    /**
+     * 物流名称
+     * */
+    private String logisticName;
+
+    /**
+     * 物流编号
+     * */
+    private String logisticCode;
+
+    /**
+     * 退换货说明
+     * */
+    private String description;
+
+    /**
+     * 退换货原因
+     * */
+    private String reason;
+
+    /**
+     * 退换货类型 1:仅退款 2:退货退款
+     * */
+    private Integer refundType;
+
+    /**
+     * 图片
+     * */
+    private String imgList;
+
+    /**
+     * 总退款金额
+     * */
+    private BigDecimal totalRefundAmount;
+
+    /**
+     * 退款标识id
+     * */
+    private String refundId;
+}

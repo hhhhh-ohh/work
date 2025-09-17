@@ -1,0 +1,74 @@
+package com.wanmi.sbc.customer;
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.customer.api.provider.child.CustomerChildProvider;
+import com.wanmi.sbc.customer.api.request.child.CustomerChildSaveRequest;
+import com.wanmi.sbc.customer.api.request.child.CustomerChildUpdateRequest;
+import com.wanmi.sbc.customer.api.response.child.CustomerChildResponse;
+import com.wanmi.sbc.customer.api.response.child.SchoolResponse;
+import com.wanmi.sbc.util.CommonUtil;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@Validated
+@RequestMapping("/customerChild")
+@Tag(name = "CustomerChildBaseController", description = "客户小孩信息")
+public class CustomerChildBaseController {
+
+    @Autowired
+    private CustomerChildProvider customerChildProvider;
+
+    @Autowired
+    private CommonUtil commonUtil;
+
+    /**
+     * 添加子客户信息
+     *
+     * @param request 子客户保存请求参数，包含子客户的基本信息
+     * @return BaseResponse 响应结果，包含操作状态和返回数据
+     */
+    @PostMapping("/addChild")
+    public BaseResponse addChild(@RequestBody @Valid CustomerChildSaveRequest request) {
+        request.setCustomerId(commonUtil.getOperatorId());
+        return customerChildProvider.addChild(request);
+    }
+
+    /**
+     * 查询客户子账户列表
+     *
+     * @return 返回客户子账户列表的响应结果，包含子账户信息列表
+     */
+    @GetMapping("/listChild")
+    public BaseResponse<List<CustomerChildResponse>> listChild() {
+        String customerId = commonUtil.getOperatorId();
+        return customerChildProvider.listChild(customerId);
+    }
+
+    /**
+     * 修改子客户信息的学校信息
+     *
+     * @return
+     */
+    @PostMapping("/updateChildSchool")
+    public BaseResponse updateChildSchool(@RequestBody  CustomerChildUpdateRequest  request) {
+        return customerChildProvider.updateChildSchool(request);
+    }
+
+
+    /**
+     * 获取区域下的学校信息
+     *
+     * @return
+     */
+    @GetMapping("/getSchoolByAreaId")
+    public BaseResponse<List<SchoolResponse>> getSchoolByAreaId(@RequestParam String areaId) {
+        return customerChildProvider.getSchoolByAreaId(areaId);
+    }
+
+}

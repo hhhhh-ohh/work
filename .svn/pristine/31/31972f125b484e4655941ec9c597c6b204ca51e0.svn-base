@@ -1,0 +1,90 @@
+package com.wanmi.sbc.order.api.provider.orderperformance;
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.base.MicroServicePage;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceByUniqueCodesRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceModifyRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformancePageRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceSummaryRequest;
+import com.wanmi.sbc.order.api.response.orderperformance.GetSchooluUniformSalesDataResponse;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceDetailSummaryResponse;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceSummaryNewResponse;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceSummaryResponse;
+import com.wanmi.sbc.order.bean.vo.OrderPerformanceVO;
+import jakarta.validation.Valid;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.List;
+
+/**
+ * @Author: ZhangLingKe
+ * @Description:
+ * @Date: 2018-11-30 11:23
+ */
+@FeignClient(value = "${application.order.name}", contextId = "OrderPerformanceQueryProvider")
+public interface OrderPerformanceQueryProvider {
+
+    /**
+     * 创建订单业绩信息
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/create-order-performance")
+    BaseResponse createOrderPerformance(@RequestBody @Valid OrderPerformanceModifyRequest request);
+
+    /**
+     * 退货订单业绩信息
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/return-order-performance")
+    BaseResponse returnOrderPerformance(@RequestBody @Valid OrderPerformanceModifyRequest request);
+
+    /**
+     * 获取订单业绩分页列表
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-order-performance-page")
+    BaseResponse<MicroServicePage<OrderPerformanceVO>> getOrderPerformancePage(@RequestBody @Valid OrderPerformancePageRequest request);
+
+    /**
+     * 根据订单ID查询订单业绩信息
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-order-performance-summary")
+    BaseResponse<OrderPerformanceSummaryResponse> getOrderPerformanceSummary(@RequestBody @Valid OrderPerformanceSummaryRequest request);
+
+    /**
+     * 根据订单ID查询订单业绩信息（new）
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-order-performance-summary-new")
+    BaseResponse<OrderPerformanceSummaryNewResponse> getOrderPerformanceSummaryNew(@RequestBody @Valid OrderPerformanceSummaryRequest request);
+
+    /**
+     * 查询二级代理商（根据一级）
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-order-performance-summary-second")
+    BaseResponse<OrderPerformanceDetailSummaryResponse> getOrderPerformanceSummarySecond(@RequestBody @Valid OrderPerformanceSummaryRequest request);
+
+    /**
+     * 按唯一码列表查询订单业绩信息；开始时间, 结束时间 范围查询
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-school-uniform-sale-data")
+    BaseResponse<List<GetSchooluUniformSalesDataResponse>>  getSchooluUniformSalesData(@RequestBody OrderPerformanceByUniqueCodesRequest request);
+
+
+
+    /**
+     * 按区域查询订单业绩信息 该区域无订单不会显示
+     * 开始时间, 结束时间 范围查询
+     * @param orderPerformanceByUniqueCodesRequest
+     * @return
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-school-uniform-sale-data-new")
+    BaseResponse<GetSchooluUniformSalesDataResponse> getSchooluUniformSalesDataNew(@RequestBody  OrderPerformanceByUniqueCodesRequest orderPerformanceByUniqueCodesRequest);
+
+    /**
+     * 按区域查询订单业绩信息 该区域无订单会显示行数据
+     * 开始时间, 结束时间 范围查询
+     * @param orderPerformanceByUniqueCodesRequest
+     * @return
+     */
+    @PostMapping("/order/${application.order.version}/orderPerformance/get-all-school-uniform-sale-data-and-zero")
+    BaseResponse<GetSchooluUniformSalesDataResponse> getAllSchooluUniformSalesDataAndZero(@RequestBody  OrderPerformanceByUniqueCodesRequest orderPerformanceByUniqueCodesRequest);
+}

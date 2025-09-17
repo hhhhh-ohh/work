@@ -1,0 +1,124 @@
+package com.wanmi.sbc.orderperformance;
+
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.base.MicroServicePage;
+import com.wanmi.sbc.order.api.provider.orderperformance.OrderPerformanceQueryProvider;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceModifyRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformancePageRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceSummaryRequest;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceDetailSummaryResponse;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceSummaryNewResponse;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceSummaryResponse;
+import com.wanmi.sbc.order.bean.vo.OrderPerformanceVO;
+import com.wanmi.sbc.util.CommonUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+
+/**
+ * 订单收益服务API
+ */
+@RestController
+@Validated
+@RequestMapping("/orderPerformance")
+@Tag(name = "OrderPerformanceController", description = "S2B web公用-代理商信息API")
+public class OrderPerformanceController {
+
+
+    @Autowired
+    private OrderPerformanceQueryProvider orderPerformanceQueryProvider;
+
+    @Autowired
+    private CommonUtil commonUtil;
+
+
+    /**
+     * 订单收益汇总信息
+     *
+     * @param request
+     * @return
+     */
+    @Operation(summary = "订单收益汇总信息")
+    @RequestMapping(value = "/get-order-performance-summary", method = RequestMethod.POST)
+    public BaseResponse<OrderPerformanceSummaryResponse> getOrderPerformanceSummary(@RequestBody @Valid OrderPerformanceSummaryRequest request){
+        request.setUserId(commonUtil.getOperatorId());
+        return orderPerformanceQueryProvider.getOrderPerformanceSummary(request);
+    }
+
+
+    /**
+     * 获取订单业绩分页列表
+     * @param request
+     * @return
+     */
+    @Operation(summary = "获取订单业绩分页列表")
+    @RequestMapping(value = "/get-order-performance-page", method = RequestMethod.POST)
+    public BaseResponse<MicroServicePage<OrderPerformanceVO>> getOrderPerformancePage(@RequestBody @Valid OrderPerformancePageRequest request){
+        request.setUserId(commonUtil.getOperatorId());
+        return orderPerformanceQueryProvider.getOrderPerformancePage(request);
+    }
+
+
+    /**
+     * 订单收益汇总信息新的
+     *
+     * @param request
+     * @return
+     */
+    @Operation(summary = "订单收益汇总信息新的")
+    @RequestMapping(value = "/get-order-performance-summary-new", method = RequestMethod.POST)
+    public BaseResponse<OrderPerformanceSummaryNewResponse> getOrderPerformanceSummaryNew(@RequestBody @Valid OrderPerformanceSummaryRequest request){
+        request.setUserId(commonUtil.getOperatorId());
+        return orderPerformanceQueryProvider.getOrderPerformanceSummaryNew(request);
+    }
+
+    /**
+     * 获取二级代理商列表
+     *
+     * @param request
+     * @return
+     */
+    @Operation(summary = "根据一级查询二级")
+    @RequestMapping(value = "/get-order-performance-summary-second", method = RequestMethod.POST)
+    public BaseResponse<OrderPerformanceDetailSummaryResponse> getOrderPerformanceSummarySecond(@RequestBody @Valid OrderPerformanceSummaryRequest request){
+        request.setUserId(commonUtil.getOperatorId());
+        return orderPerformanceQueryProvider.getOrderPerformanceSummarySecond(request);
+    }
+
+
+    /**
+     * 创建订单订单收益
+     * @param request
+     * @return
+     */
+    @Operation(summary = "创建订单订单收益")
+    @RequestMapping(value = "/create-order-performance", method = RequestMethod.POST)
+    public BaseResponse createOrderPerformance(@RequestBody @Valid OrderPerformanceModifyRequest request){
+        return orderPerformanceQueryProvider.createOrderPerformance(request);
+    }
+
+
+    /**
+     * 退单订单订单收益
+     *
+     * @param request
+     * @return
+     */
+    @Operation(summary = "退单订单订单收益")
+    @RequestMapping(value = "/return-order-performance", method = RequestMethod.POST)
+    public BaseResponse returnOrderPerformance(@RequestBody @Valid OrderPerformanceModifyRequest request){
+        return orderPerformanceQueryProvider.returnOrderPerformance(request);
+    }
+
+
+
+
+}

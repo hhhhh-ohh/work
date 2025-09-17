@@ -1,0 +1,84 @@
+####索引重建
+1.删除索引
+    curl -XDELETE localhost:9200/es_goods
+    curl -XDELETE localhost:9200/es_goods_info
+2.boss端设值中重新初始化索引
+   
+
+nocos配置新增--使用线上环境的host和port
+sbc-service-goods.properties
+####mongo
+mongo.transction.enable=true
+spring.data.mongodb.host=172.19.26.12
+spring.data.mongodb.port=27017
+spring.data.mongodb.database=s2b
+
+
+4.如果遇到es 和 marketing服务启动不了 检查下nacos配置 如下 
+
+es
+# ----------------------------------------
+# redis config
+# ----------------------------------------
+spring.redis.host=xx.xx.xx.xx
+spring.redis.port=6379
+spring.redis.password=
+spring.redis.database=0
+spring.redis.timeout=5000
+spring.redis.lettuce.pool.max-active=20
+spring.redis.lettuce.pool.max-idle=10
+
+#redisson
+redisson.url=xx.xx.xx.xx:6379
+redisson.database=0
+redisson.password=
+redisson.injection=false
+
+如果还是不行 将
+redisson.injection=false
+改为
+redisson.injection=true
+
+##二、魔方定时发布模板
+1、Jenkins --> 魔方 --> 配置 --> 构建：
+新增：
+#### # rabbitmq setting
+export mqHost=${base_ip}
+export mqPort=5672
+export mqUserName=guest
+export mqPassword=guest
+
+#### # 添加项目配置信息 新增：
+mqHost:${mqHost},mqPort:${mqPort},mqUserName:${mqUserName},mqPassword:${mqPassword},\
+
+2、在服务器/htdocs/mofang/config下的几个魔方配置文件里新增rabbitmq配置信息：
+  "rabbitmqConfig": {
+    "host": "127.0.0.1",
+    "port": 5672,
+    "username": "guest",
+    "password": "guest"
+  }
+
+3、rabbitmq延时队列的配置，配置交换机
+  第一种方式：服务器命令行配置
+  1 服务器安装 rabbitmqadmin
+  1.1切换目录
+  cd /usr/local/bin
+  1.2 下载
+  wget http://localhost:15672/cli/rabbitmqadmin
+  1.3 权限
+  chmod +x rabbitmqadmin
+  1.4 添加交换机
+  rabbitmqadmin declare exchange name=site-publish-delayed-exchange type=x-delayed-message arguments='{"x-delayed-type": "direct"}'
+  
+  如果执行1.4报错信息为：-bash: rabbitmqadmin: command not found，请安下面的方式执行命令
+  ./rabbitmqadmin declare exchange name=site-publish-delayed-exchange type=x-delayed-message arguments='{"x-delayed-type": "direct"}'
+  
+  
+  或者，第二种方式：图形界面配置
+  Name: site-publish-delayed-exchange
+  Type: x-delayed-message
+  Durability:Durable
+  Auto delete: No
+  Internal: No
+  Arguments:x-delayed-type=direct  

@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mongo-capture
+    name: mongo-capture-deployment
+  name: mongo-capture
+  namespace: sbc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-capture
+  template:
+    metadata:
+      labels:
+        app: mongo-capture
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - image: {{IMAGE_NAME}}
+          imagePullPolicy: Always
+          name: mongo-capture
+          ports:
+            - containerPort: 10010
+              name: tomcat-port
+          livenessProbe:
+            httpGet:
+              path: /act/health
+              port: 10011
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          env:
+            - name: JAVA_OPTS
+              value: {{JAVA_ENV_PARAMS}}
+            - name: RESTART_
+              value: {{DATE}}
+          volumeMounts:
+            - mountPath: /data/server/log
+              name: mongo-capture-logs
+            - mountPath: /data/server/conf/application.properties
+              name: env-config
+              subPath: application.properties
+      volumes:
+        - name: mongo-capture-logs
+          hostPath:
+            path: /data/sbc/logs/mongo-capture
+        - name: env-config
+          configMap:
+            name: mongo-capture-config
+      hostNetwork: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-capture-config
+  namespace: sbc
+data:
+  application.properties: |
+    server.port=10010
+    tunnel.type=kafka
+    tunnel.partition=0
+    capture.client.regex-filter=s2b.trade,s2b.returnOrder,s2b.appointmentRecord
+    capture.client.cluster-name=default
+    capture.client.zookeeper-host=zookeeper-svc:2181
+    capture.client.flush-period=1000
+    capture.client.meta-mode=ZOOKEEPER
+    logging.config=/data/server/conf/logback.xml
+    spring.data.mongodb.uri=mongodb://wanmi:Wanmi^2022@mongodb:27017/admin?replicaSet=rs1
+    spring.data.mongodb.database=local
+    spring.kafka.bootstrap-servers=kafka-svc:9092
+    spring.kafka.producer.retries=0
+    spring.kafka.producer.batch-size=16384
+    spring.kafka.producer.buffer-memory=33554432
+    spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
+    spring.kafka.producer.value-serializer=org.apache.kafka.common.serialization.StringSerializer
+    spring.kafka.producer.properties.linger.ms=1
+    management.server.port=10011
+    management.endpoint.env.enabled=true
+    management.endpoint.health.enabled=true
+    management.endpoint.health.show-details=always
+    management.endpoint.info.enabled=true
+    management.endpoint.mappings.enabled=true
+    management.endpoints.enabled-by-default=true
+    management.endpoints.web.base-path=/act
+    management.endpoints.web.exposure.include=env,health,info,mappings

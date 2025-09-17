@@ -1,0 +1,13 @@
+@startuml
+start
+:将入参填充于原有的退单列表查询入参;
+if(是否是供应商?)then(yes)
+    :指定入参-providerCompanyInfoId;
+else
+    :指定入参-companyInfoId;
+endif;
+:调用微服务退单分页列表;
+:处理并转换分页列表中的信息;
+:返回处理后的分页列表;
+stop
+@enduml

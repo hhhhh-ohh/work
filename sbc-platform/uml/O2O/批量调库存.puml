@@ -1,0 +1,11 @@
+@startuml
+start
+   :下载库存调整文档;
+   :填写后上传;
+   if(校验是否通过) then(no)
+    :下载错误文档;
+   endif;
+   :库存调整数据入库;
+   :执行修改;
+stop
+@enduml

@@ -1,0 +1,11 @@
+@startuml
+start
+:BOSS编辑;
+:开放权限的限流和过期时间;
+:更新数据数据所对应的缓存;
+stop
+start
+:open-gateway;
+:会实时获取到修改后的数据并根据新数据进行校验;
+stop
+@enduml

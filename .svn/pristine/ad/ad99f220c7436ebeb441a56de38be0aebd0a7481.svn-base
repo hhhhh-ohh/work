@@ -1,0 +1,31 @@
+package com.wanmi.sbc.marketing.api.response.newcomerpurchaseconfig;
+
+import com.wanmi.sbc.marketing.bean.vo.NewcomerPurchaseConfigPageVO;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.util.List;
+import java.io.Serializable;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+/**
+ * <p>新人专享设置列表结果</p>
+ * @author zhanghao
+ * @date 2022-08-19 14:28:12
+ */
+@Schema
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class NewcomerPurchaseConfigExportResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 新人专享设置列表结果
+     */
+    @Schema(description = "新人专享设置列表结果")
+    private List<NewcomerPurchaseConfigPageVO> newcomerPurchaseConfigList;
+}

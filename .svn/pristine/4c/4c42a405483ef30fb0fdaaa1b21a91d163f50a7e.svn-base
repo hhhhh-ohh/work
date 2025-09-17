@@ -1,0 +1,285 @@
+package com.wanmi.sbc.customer.agent.service;
+
+import com.wanmi.sbc.common.enums.DeleteFlag;
+import com.wanmi.sbc.customer.agent.model.root.Agent;
+import com.wanmi.sbc.customer.agent.repository.AgentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * 代理商服务类
+ */
+@Service
+public class AgentService {
+
+    @Autowired
+    private AgentRepository agentRepository;
+
+    /**
+     * 通过代理商ID查询代理商信息
+     *
+     * @param agentId 代理商ID
+     * @return 代理商信息
+     */
+    public Agent findOne(String agentId) {
+        return agentRepository.findByAgentId(agentId);
+    }
+
+    /**
+     * 通过系统唯一码查询代理商信息
+     *
+     * @param agentUniqueCode 系统唯一码
+     * @return 代理商信息
+     */
+    public Agent findByAgentUniqueCode(String agentUniqueCode) {
+        return agentRepository.findByAgentUniqueCode(agentUniqueCode);
+    }
+
+    /**
+     * 根据审核状态查询代理商列表
+     *
+     * @param auditStatus 审核状态
+     * @return 代理商列表
+     */
+    public List<Agent> findByAuditStatus(Integer auditStatus) {
+        return agentRepository.findByAuditStatus(auditStatus);
+    }
+
+    /**
+     * 保存代理商信息
+     *
+     * @param agent 代理商信息
+     * @param employeeId 操作人ID
+     */
+    @Transactional
+    public void save(Agent agent, String employeeId) {
+        if (Objects.isNull(agent.getCreateTime())) {
+            agent.setCreateTime(LocalDateTime.now());
+            agent.setCreatePerson(employeeId);
+        }
+        agent.setUpdateTime(LocalDateTime.now());
+        agent.setUpdatePerson(employeeId);
+        agentRepository.save(agent);
+    }
+
+    /**
+     * 更新代理商信息
+     *
+     * @param agent 代理商信息
+     * @return 更新结果
+     */
+    @Transactional
+    public Integer update(Agent agent) {
+        Agent existingAgent = agentRepository.findById(agent.getAgentId()).orElse(null);
+        if (Objects.isNull(existingAgent)) {
+            return 0;
+        }
+
+        existingAgent.setAgentName(agent.getAgentName());
+        existingAgent.setAgentUniqueCode(agent.getAgentUniqueCode());
+        existingAgent.setProvinceId(agent.getProvinceId());
+        existingAgent.setCityId(agent.getCityId());
+        existingAgent.setAreaId(agent.getAreaId());
+        existingAgent.setStreetId(agent.getStreetId());
+        existingAgent.setSchoolName(agent.getSchoolName());
+        existingAgent.setShopName(agent.getShopName());
+        existingAgent.setContactPerson(agent.getContactPerson());
+        existingAgent.setContactPhone(agent.getContactPhone());
+        existingAgent.setBusinessLicense(agent.getBusinessLicense());
+        existingAgent.setBankAccount(agent.getBankAccount());
+        existingAgent.setValidStart(agent.getValidStart());
+        existingAgent.setValidEnd(agent.getValidEnd());
+        existingAgent.setAuditStatus(agent.getAuditStatus());
+        existingAgent.setRejectReason(agent.getRejectReason());
+        existingAgent.setDelFlag(agent.getDelFlag());
+        existingAgent.setUpdateTime(LocalDateTime.now());
+        existingAgent.setUpdatePerson(agent.getUpdatePerson());
+
+        agentRepository.save(existingAgent);
+        return 1;
+    }
+
+    /**
+     * 删除代理商（逻辑删除）
+     *
+     * @param agentId 代理商ID
+     * @return 删除结果
+     */
+    @Transactional
+    public int delete(String agentId, String employeeId) {
+        Agent agent = agentRepository.findById(agentId).orElse(null);
+        if (Objects.isNull(agent)) {
+            return 0;
+        }
+        agent.setDelFlag(DeleteFlag.YES);
+        agent.setUpdatePerson(employeeId);
+        agent.setUpdateTime(LocalDateTime.now());
+        agentRepository.save(agent);
+        return 1;
+    }
+
+    /**
+     * 批量删除代理商（逻辑删除）
+     *
+     * @param agentIds 代理商ID列表
+     * @return 删除结果
+     */
+    @Transactional
+    public int deleteBatch(List<String> agentIds, String employeeId) {
+        return agentIds.stream().map(agentId -> delete(agentId, employeeId)).reduce(0, Integer::sum);
+    }
+
+    /**
+     * 分页查询代理商信息
+     *
+     * @param specification 查询条件
+     * @param pageRequest 分页信息
+     * @return 代理商分页列表
+     */
+    public Page<Agent> findPage(Specification<Agent> specification, PageRequest pageRequest) {
+        return agentRepository.findAll(specification, pageRequest);
+    }
+
+    /**
+     * 通过联系方式查询代理商信息
+     *
+     * @param contactPhone 联系方式
+     * @return 代理商信息
+     */
+    public Agent findByContactPhone(String contactPhone) {
+        return agentRepository.findByContactPhone(contactPhone);
+    }
+
+
+    /**
+     * 通过联系方式查询代理商信息
+     * @param contactPhone
+     * @return
+     */
+    public Agent findByContactPhoneOrderByCreateTimeDesc(String contactPhone) {
+        List<Agent> agentList = agentRepository.findByContactPhoneOrderByCreateTimeDesc(contactPhone);
+        return agentList.isEmpty() ? null : agentList.get(0);    }
+
+    /**
+     * 通过联系方式和审核状态查询代理商信息
+     *
+     * @param contactPhone 联系方式
+     * @param auditStatus 审核状态
+     * @return 代理商信息
+     */
+    public Agent findByContactPhoneAndAuditStatus(String contactPhone, Integer auditStatus) {
+        return agentRepository.findByContactPhoneAndAuditStatus(contactPhone, auditStatus);
+    }
+
+    /**
+     * 通过会员ID查询代理商信息
+     *
+     * @param customerId 会员ID
+     * @return 代理商信息
+     */
+    public Agent findByCustomerId(String customerId) {
+        return agentRepository.findByCustomerId(customerId);
+    }
+
+    /**
+     * 通过会员ID查询代理商信息
+     *
+     * @param customerId 会员ID
+     * @return 代理商信息
+     */
+    public Agent findByCustomerIdOrderByCreateTimeDesc(String customerId) {
+        List<Agent> agentList = agentRepository.findByCustomerIdOrderByCreateTimeDesc(customerId);
+        return agentList.isEmpty() ? null : agentList.get(0);
+    }
+
+
+    /**
+     * 通过会员ID和审核状态查询代理商信息
+     *
+     * @param customerId 会员ID
+     * @param auditStatus 审核状态
+     * @return 代理商信息
+     */
+    public Agent findByCustomerIdAndAuditStatus(String customerId, Integer auditStatus) {
+        return agentRepository.findByCustomerIdAndAuditStatus(customerId, auditStatus);
+    }
+
+
+    /**
+     * 根据区域ID查询代理商列表
+     *
+     * @param areaId 区域ID
+     * @return 代理商列表
+     */
+    public List<Agent> findByAreaId(Long areaId) {
+        return agentRepository.findByAreaId(areaId);
+    }
+
+
+
+    /**
+     * 根据区域ID列表查询代理商列表
+     *
+     * @param areaIdList 区域ID列表
+     * @return 代理商列表
+     */
+    public List<Agent> findByAreaIdList(List<Long> areaIdList) {
+        return agentRepository.findByAreaIdIn(areaIdList);
+    }
+
+    /**
+     * 查询用户绑定的代理商
+     *
+     * @param customerId 用户ID
+     * @return 代理商
+     */
+    public Agent queryUserBindAgent(String customerId) {
+        // 审核状态 0已创建 1待审核 2通过 3驳回
+        Integer auditStatus = 2;
+        return agentRepository.findByCustomerIdAndAuditStatus(customerId, auditStatus);
+    }
+
+    /**
+     * 查询城市下的代理商
+     *
+     * @param cityId 城市ID
+     * @return 代理商列表
+     */
+    public List<Agent>  findByCityId(Long cityId) {
+        return agentRepository.findByCityId(cityId);
+    }
+
+    /**
+     * 查询城市下的代理商
+     *
+     * @param cityId 城市ID
+     * @param auditStatus 审核状态 0已创建 1待审核 2通过 3驳回
+     * @return 代理商列表
+     */
+    public List<Agent> findByCityIdAndAuditStatus(Long cityId, Integer auditStatus) {
+        return agentRepository.findByCityIdAndAuditStatus(cityId, auditStatus);
+    }
+
+    /**
+     * 根据城市ID、审核状态和更新时间筛选代理商列表
+     * @param cityId 城市ID
+     * @param auditStatus 审核状态
+     * @param updateTime 更新时间
+     * @return 代理商列表
+     */
+    public List<Agent> findByCityIdAndAuditStatusAndUpdateTimeBefore(Long cityId, Integer auditStatus, LocalDateTime updateTime) {
+        return agentRepository.findByCityIdAndAuditStatusAndUpdateTimeBefore(cityId, auditStatus, updateTime);
+    }
+
+    public void updateByIdNative(Agent agent) {
+        agentRepository.save(agent);
+    }
+}

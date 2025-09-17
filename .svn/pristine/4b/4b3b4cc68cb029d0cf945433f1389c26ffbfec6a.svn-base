@@ -1,0 +1,139 @@
+# ----------------------------------------
+# application info
+# ----------------------------------------
+info.app.name=Ares
+info.app.description=Ares - statistics platform
+info.build.artifact=@project.artifactId@
+info.build.version=@project.version@
+
+# ----------------------------------------
+# actuator settings
+# ----------------------------------------
+management.server.port=7881
+management.endpoints.enabled-by-default=false
+management.endpoints.web.base-path=/act
+management.endpoint.info.enabled=true
+management.endpoint.health.enabled=true
+management.endpoint.env.enabled=true
+management.endpoint.mappings.enabled=true
+management.endpoint.health.show-details=always
+management.endpoints.web.exposure.include=health,info,mappings,env
+# ----------------------------------------
+# i18n
+# ----------------------------------------
+spring.messages.basename=i18n/ResultCode
+spring.messages.cache-duration=5
+# ----------------------------------------
+# log config
+# ----------------------------------------
+logging.level.root=INFO
+logging.level.com.wanmi=DEBUG
+logging.level.org.springframework=WARN
+logging.config=classpath:logback.xml
+# ----------------------------------------
+# server settings
+# ----------------------------------------
+server.port=7880
+server.servlet.session.timeout=1800
+server.tomcat.threads.max=200
+server.error.whitelabel.enabled=false
+server.error.include-stacktrace=ALWAYS
+server.tomcat.basedir=${user.home}/htdocs/data/sbc/ares/tmp
+spring.jpa.show-sql=true
+spring.jpa.open-in-view=true
+# -------------------------
+# dbcp settings
+# -------------------------
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.url=jdbc:mysql://172.19.25.118:3306/s2b_statistics?characterEncoding=UTF-8&&zeroDateTimeBehavior=convertToNull&autoReconnect=true&failOverReadOnly=false&connectTimeout=30000&serverTimezone=Asia/Shanghai
+spring.datasource.username=root
+spring.datasource.password=Wmi@2023
+spring.datasource.dbcp2.min-idle=5
+spring.datasource.dbcp2.max-wait-millis=30000
+spring.datasource.dbcp2.initial-size=5
+spring.datasource.dbcp2.log-abandoned=true
+spring.datasource.dbcp2.remove-abandoned-on-maintenance=true
+spring.datasource.dbcp2.remove-abandoned-timeout=600
+spring.datasource.dbcp2.time-between-eviction-runs-millis=5000
+spring.datasource.dbcp2.min-evictable-idle-time-millis=30000
+spring.datasource.dbcp2.validation-query=SELECT 1
+spring.datasource.dbcp2.test-while-idle=true
+spring.datasource.dbcp2.test-on-borrow=true
+
+
+seata.enabled=true
+seata.application-id=sbc-service-ares
+#Seata\u4E8B\u52A1\u7EC4\u7F16\u53F7\uFF0C\u7528\u4E8ETC\u96C6\u7FA4\u540DSeata\u670D\u52A1\u914D\u7F6E\u9879\uFF0C\u5BF9\u5E94ServiceProperties\u7C7B
+seata.tx-service-group=sbc-service-ares-group
+# \u865A\u62DF\u7EC4\u548C\u5206\u7EC4\u7684\u6620\u5C04
+seata.service.vgroup-mapping.sbc-service-ares-group=default
+seata.enableAutoDataSourceProxy=true
+seata.registry.type=nacos
+seata.registry.nacos.server-addr=172.19.26.12:8848
+seata.registry.nacos.namespace=public
+seata.registry.nacos.cluster=default
+seata.client.rm.lock.retryInterval=10
+seata.client.rm.lock.retryTimes=300
+seata.registry.nacos.group=SEATA_GROUP
+seata.registry.nacos.application=seata-server
+
+# ----------------------------------------
+# spring cloud
+# ----------------------------------------
+#spring.application.name=sbc-service-ares
+#eureka.client.serviceUrl.defaultZone=http://172.19.25.186:8900/eureka/
+#eureka.instance.preferIpAddress=true
+wm.nacos.username=nacos
+wm.nacos.password=Nacos@2024
+spring.application.name=sbc-service-ares
+spring.cloud.nacos.config.enabled=false
+#spring.cloud.nacos.server-addr=172.19.25.53:8848
+#spring.cloud.nacos.username=${wm.nacos.username}
+#spring.cloud.nacos.password=${wm.nacos.password}
+spring.cloud.nacos.discovery.server-addr=172.19.26.12:8848
+# ----------------------------------------
+# json message converter
+# ----------------------------------------
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.default-property-inclusion=non_null
+# ----------------------------------------
+# mybatis config
+# ----------------------------------------
+mybatis.mapper-locations=classpath*:META-INF/mybatis/com/wanmi/ares/mapper/*Mapper.xml
+# ----------------------------------------
+# request log
+# ----------------------------------------
+request.log.enable=true
+request.log.need-result=true
+request.log.log-type=0
+
+### xxl-job admin address list, such as "http://address" or "http://address01,http://address02"
+xxl.job.admin.addresses=http://172.19.26.12:8990/xxl-job-admin
+### xxl-job executor address
+xxl.job.executor.appname=xxl-job-executor-sbc-ares
+xxl.job.executor.ip=
+xxl.job.executor.port=9993
+### xxl-job, access token
+xxl.job.accessToken=b5f7ed32b2e24789bdce1308afcafebe
+### xxl-job log path
+xxl.job.executor.logpath=./log/jobhandler
+### xxl-job log retention days
+xxl.job.executor.logretentiondays=-1
+
+yun.file.path.env.profile=dev
+
+### \u5BF9date\u7C7B\u578B\u8FDB\u884C\u65F6\u533A\u6821\u6B63
+spring.jackson.time-zone=GMT+8
+
+# \u4F7F\u7528okhttp
+feign.okhttp.enabled=true
+# \u5F00\u542F\u8BF7\u6C42\u6570\u636E\u7684\u538B\u7F29\u529F\u80FD
+feign.compression.request.enabled=false
+# \u5F00\u542F\u8FD4\u56DE\u6570\u636E\u7684\u538B\u7F29\u529F\u80FD
+feign.compression.response.enabled=true
+# \u538B\u7F29\u7C7B\u578B
+feign.compression.request.mime-types=text/xml,application/xml, application/json
+# \u6700\u5C0F\u538B\u7F29\u503C\u6807\u51C6\uFF0C\u5F53\u6570\u636E\u5927\u4E8E 1024 \u624D\u4F1A\u8FDB\u884C\u538B\u7F29
+feign.compression.request.min-request-size=1024
+
+

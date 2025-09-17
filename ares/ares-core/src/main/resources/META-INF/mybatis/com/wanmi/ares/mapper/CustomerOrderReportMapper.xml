@@ -1,0 +1,2250 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.report.customer.dao.CustomerOrderReportMapper">
+
+
+    <sql id="commonAddColSql">
+        STAT_DATE, CUSTOMER_ID,CUSTOMER_NAME, CUSTOMER_ACCOUNT, ORDER_NUM, ORDER_MONEY, ORDER_GOODS_NUM,
+        PAY_NUM, PAY_MONEY, ORDER_PER_PRICE, REFUND_NUM, REFUND_MONEY, REFUND_GOODS_NUM, SHOP_ID, CREATE_TM
+    </sql>
+
+    <sql id="commonAddCustomerLevelCol">
+        STAT_DATE,
+        CUSTOMER_LEVEL_ID ,
+        CUSTOMER_LEVEL_NAME,
+        ORDER_NUM,
+        ORDER_MONEY,
+        ORDER_GOODS_NUM,
+        PAY_NUM,
+        PAY_MONEY,
+        USER_PER_PRICE_THIRTY,
+        ORDER_PER_PRICE,
+        REFUND_NUM,
+        REFUND_MONEY,
+        REFUND_GOODS_NUM,
+        SHOP_ID,
+        CREATE_TM
+        <if test="tableName == 'customer_level_day'">
+            ,CUSTOMER_COUNT
+        </if>
+    </sql>
+
+    <sql id="commonAddCustomerAreaCol">
+        STAT_DATE,
+        CITY_ID,
+        ORDER_NUM,
+        ORDER_MONEY,
+        ORDER_GOODS_NUM,
+        PAY_NUM,
+        PAY_MONEY,
+        USER_PER_PRICE_THIRTY,
+        ORDER_PER_PRICE,
+        REFUND_NUM,
+        REFUND_MONEY,
+        REFUND_GOODS_NUM,
+        SHOP_ID,
+        CREATE_TM
+        <if test="tableName == 'customer_region_day'">
+            ,CUSTOMER_COUNT
+        </if>
+
+    </sql>
+
+    <sql id="generateCustomerOrderForBoss">
+        LEFT JOIN (
+        SELECT
+        rt.customer_id,
+        count( rt.tid ) num,
+        sum( rt.total_price ) price
+        FROM
+        replay_trade rt
+        WHERE
+         rt.create_time >= #{beginDate}
+        AND rt.create_time <![CDATA[ <= ]]> #{endDate}
+        GROUP BY
+        rt.customer_id
+        ) resRt ON resRt.customer_id = rscr.customer_id
+        LEFT JOIN (
+        SELECT
+        rt.customer_id,
+        sum( rti.num ) num
+        FROM
+        replay_trade rt
+        LEFT JOIN replay_trade_item rti ON rti.tid = rt.tid
+        WHERE
+         rt.create_time >= #{beginDate}
+        AND rt.create_time <![CDATA[ <= ]]> #{endDate}
+        GROUP BY
+        rt.customer_id
+        ) resRti ON resRti.customer_id = rscr.customer_id
+        LEFT JOIN (
+        SELECT
+        rt.customer_id,
+        count( rt.tid ) payNUm,
+        sum( rt.total_price ) payPrice
+        FROM
+        replay_trade rt
+        WHERE
+        rt.pay_time >= #{beginDate}
+        AND rt.pay_time <![CDATA[ <= ]]> #{endDate}
+        AND pay_state = 2
+        GROUP BY
+        rt.customer_id
+        ) resPay ON resPay.customer_id = rscr.customer_id
+        LEFT JOIN (
+        SELECT
+        rro.customer_id,
+        count( rro.rid ) num,
+        sum( rro.actual_return_price ) rPrice
+        FROM
+        replay_return_order rro
+        WHERE
+        rro.create_time >= #{beginDate}
+        AND rro.create_time <![CDATA[ <= ]]> #{endDate}
+        GROUP BY
+        rro.customer_id
+        ) resRro ON resRro.customer_id = rscr.customer_id
+        LEFT JOIN (
+        SELECT
+        count( rri.id ) num,
+        rro.customer_id
+        FROM
+        replay_return_order rro
+        LEFT JOIN replay_return_item rri ON rri.rid = rro.rid
+        WHERE
+        rro.create_time >= #{beginDate}
+        AND rro.create_time <![CDATA[ <= ]]> #{endDate}
+        GROUP BY
+        rro.customer_id
+        ) resRri ON resRri.customer_id = rscr.customer_id
+        WHERE
+        resRt.num IS NOT NULL
+        OR resPay.payNUm IS NOT NULL
+        OR resRro.num IS NOT NULL
+    </sql>
+
+    <sql id="generateCustomerOrderForSupplier">
+        LEFT JOIN (
+        SELECT
+        rt.customer_id,
+        rt.company_id,
+        count( rt.tid ) num,
+        sum( rt.total_price ) price
+        FROM
+        replay_trade rt
+        WHERE
+        rt.create_time >= #{beginDate}
+        AND rt.create_time <![CDATA[ <= ]]> #{endDate}
+        GROUP BY
+        rt.customer_id,rt.company_id
+        ) resRt ON resRt.customer_id = rscr.customer_id and resRt.company_id = rscr.company_info_id
+        LEFT JOIN (
+        SELECT
+        rt.customer_id,
+        rt.company_id,
+        sum(rti.num) num
+        FROM
+        replay_trade rt
+        LEFT JOIN replay_trade_item rti ON rti.tid = rt.tid
+        WHERE
+        rt.create_time >= #{beginDate}
+        AND rt.create_time <![CDATA[ <= ]]> #{endDate}
+        GROUP BY
+        rt.customer_id,rt.company_id
+        ) resRti ON resRti.customer_id = rscr.customer_id and resRti.company_id = rscr.company_info_id
+        left join (
+        SELECT
+        rt.customer_id,
+        rt.company_id,
+        count(rt.tid) payNUm,
+        sum(rt.total_price) payPrice
+        FROM replay_trade rt
+        WHERE rt.pay_time >= #{beginDate}
+        AND rt.pay_time <![CDATA[ <= ]]> #{endDate}
+        AND pay_state = 2
+        group by rt.customer_id,rt.company_id
+        ) resPay on resPay.customer_id = rscr.customer_id and resPay.company_id = rscr.company_info_id
+        left join (
+        select
+        rro.customer_id,
+        rro.company_id,
+        count(rro.rid) num,
+        sum(rro.actual_return_price) rPrice
+        from replay_return_order rro
+        where rro.create_time >= #{beginDate}
+        AND rro.create_time <![CDATA[ <= ]]> #{endDate}
+        group by rro.customer_id,rro.company_id
+        ) resRro on resRro.customer_id = rscr.customer_id and resRro.company_id = rscr.company_info_id
+        left join(
+        select
+        count(rri.num) num,
+        rro.customer_id,
+        rro.company_id
+        from replay_return_order rro
+        left join replay_return_item rri on rri.rid = rro.rid
+        where rro.create_time >= #{beginDate}
+        AND rro.create_time <![CDATA[ <= ]]> #{endDate}
+        group by rro.customer_id,rro.company_id
+        ) resRri on resRri.customer_id = rscr.customer_id and resRri.company_id = rscr.company_info_id
+        where resRt.num is not null or resPay.payNUm is not null or resRro.num is not null
+    </sql>
+
+    <sql id="addCustomerOrderForSevenAndThirtyAndMonth">
+        CUSTOMER_ID,
+        CUSTOMER_NAME,
+        CUSTOMER_ACCOUNT,
+        ORDER_NUM,
+        ORDER_MONEY,
+        ORDER_GOODS_NUM,
+        PAY_NUM,
+        PAY_MONEY,
+        ORDER_PER_PRICE,
+        REFUND_NUM,
+        REFUND_MONEY,
+        REFUND_GOODS_NUM,
+        SHOP_ID,
+        CREATE_TM,
+        STAT_DATE
+    </sql>
+
+    <sql id="addCustomerOrderForBossForSevenAndThirtyAndMonthSelect">
+        SELECT
+        rscr.customer_id AS CUSTOMER_ID,
+        min(rcd.customer_name) AS CUSTOMER_NAME,
+        rscr.customer_account AS CUSTOMER_ACCOUNT,
+        IFNULL(sum( resRt.num ),0) AS ORDER_NUM,
+        IFNULL(sum( resRt.price ),0) AS ORDER_MONEY,
+        IFNULL(sum( resRti.num ),0) AS ORDER_GOODS_NUM,
+        IFNULL(sum( resPay.payNUm ),0) AS PAY_NUM,
+        IFNULL(sum( resPay.payPrice),0) AS PAY_MONEY,
+        case when IFNULL(sum( resRt.num ),0)=0 then  0
+        else IFNULL( CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0)  end
+         ORDER_PER_PRICE,
+        IFNULL(sum( resRro.num ),0) AS REFUND_NUM,
+        IFNULL(sum( resRro.rPrice ),0) AS REFUND_MONEY,
+        IFNULL(sum( resRri.num ),0) AS REFUND_GOODS_NUM,
+        0 AS SHOP_ID,
+        now( ) AS CREATE_TM,
+        #{statisticsDate} AS STAT_DATE
+        FROM
+        replay_customer rscr
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+    </sql>
+
+    <sql id="addCustomerOrderForSupplierForSevenAndThirtyAndMonthSelect">
+        SELECT
+        rscr.customer_id AS CUSTOMER_ID,
+        min(rcd.customer_name) AS CUSTOMER_NAME,
+        rc.customer_account AS CUSTOMER_ACCOUNT,
+        IFNULL(sum( resRt.num ),0) AS ORDER_NUM,
+        IFNULL(sum( resRt.price ),0) AS ORDER_MONEY,
+        IFNULL(sum( resRti.num ),0) AS ORDER_GOODS_NUM,
+        IFNULL(sum( resPay.payNUm ),0) AS PAY_NUM,
+        IFNULL(sum( resPay.payPrice ),0) AS PAY_MONEY,
+        case when IFNULL(sum( resRt.num ),0)=0 then  0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0)  end
+         ORDER_PER_PRICE,
+        IFNULL(sum( resRro.num ),0) AS REFUND_NUM,
+        IFNULL(sum( resRro.rPrice ),0) AS REFUND_MONEY,
+        IFNULL(sum( resRri.num ),0) AS REFUND_GOODS_NUM,
+        min(rscr.company_info_id) AS SHOP_ID,
+        now( ) AS CREATE_TM,
+        #{statisticsDate} AS STAT_DATE
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rc.customer_id
+    </sql>
+
+<!--    <insert id="saveCustomerAreaReport" useGeneratedKeys="true" keyColumn="id" keyProperty="id">-->
+<!--        INSERT INTO-->
+<!--        ${tableName}-->
+<!--        (<include refid="commonAddCustomerAreaCol"/>) VALUES-->
+<!--        <foreach collection="customerAreaReports" item="item" index="index" separator=",">-->
+<!--            (#{item.baseDate}, #{item.id}, #{item.orderCount}, #{item.amount}, #{item.skuCount},-->
+<!--            #{item.payOrderCount}, #{item.payAmount}, #{item.userPerPrice}, #{item.orderPerPrice}, #{item.returnCount},-->
+<!--            #{item.returnAmount},-->
+<!--            #{item.returnSkuCount},-->
+<!--            #{item.companyId}, now()-->
+<!--            <if test="tableName == 'customer_region_day'">-->
+<!--                ,-->
+<!--                #{item.customerCount}-->
+<!--            </if>-->
+<!--            )-->
+<!--        </foreach>-->
+<!--    </insert>-->
+
+    <select id="exportCustomerOrderTotalForBoss" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        SELECT
+        count(1)
+        FROM
+        (
+        SELECT
+        rscr.customer_id AS id,
+        rscr.customer_account AS account,
+        0 AS companyId,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) AS
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_customer rscr
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForBoss"/>
+        GROUP BY
+        rscr.customer_id
+        ) as result
+    </select>
+
+    <select id="exportCustomerOrderForBoss" resultType="com.wanmi.ares.report.customer.model.root.CustomerReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        SELECT
+        rscr.customer_id AS id,
+        rscr.log_out_status AS logOutStatus,
+        min(rcd.customer_name) AS name,
+        rscr.customer_account AS account,
+        0 AS companyId,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_customer rscr
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForBoss"/>
+        GROUP BY
+        rscr.customer_id
+        order by sum( resRt.price ) desc
+        <if test="number!=null and size !=null">
+            limit #{number,jdbcType=INTEGER}, #{size,jdbcType=INTEGER}
+        </if>
+    </select>
+
+
+    <select id="exportCustomerOrderTotalForSupplierAndBoss" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select count(1) from (
+        SELECT
+        c.*,
+        rs.store_type AS storeType
+        FROM
+        (
+        SELECT
+        rscr.customer_id AS id,
+        min(rcd.customer_name) AS name,
+        rscr.customer_account AS account,
+        0 AS companyId,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_customer rscr
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForBoss"/>
+        GROUP BY
+        rscr.customer_id
+        order by sum( resRt.price ) desc
+        ) c
+        LEFT JOIN replay_store rs ON c.companyId = rs.company_info_id
+        -- limit ${number}, ${size}
+
+        UNION ALL
+
+        SELECT
+        c.*,
+        rs.store_type AS storeType
+        FROM
+        (
+        SELECT
+        rscr.customer_id AS id,
+        min(rcd.customer_name) AS name,
+        rc.customer_account AS account,
+        rscr.company_info_id AS companyId,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rscr.customer_id,rscr.company_info_id
+        order by sum( resRt.price ) desc
+        ) c LEFT JOIN replay_store rs ON c.companyId = rs.company_info_id
+        -- limit ${number}, ${size}
+        ) c
+    </select>
+
+
+    <select id="exportCustomerOrderForSupplierAndBoss"
+            resultType="com.wanmi.ares.report.customer.model.root.CustomerReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+
+        SELECT
+        c.*,
+        rs.store_type AS storeType
+        FROM
+        (
+        SELECT
+        rscr.customer_id AS id,
+        min(rcd.customer_name) AS name,
+        rscr.customer_account AS account,
+        0 AS companyId,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_customer rscr
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForBoss"/>
+        GROUP BY
+        rscr.customer_id
+        order by sum( resRt.price ) desc
+        ) c
+        LEFT JOIN replay_store rs ON c.companyId = rs.company_info_id
+
+        UNION ALL
+
+        SELECT
+        c.*,
+        rs.store_type AS storeType
+        FROM
+        (
+        SELECT
+        rscr.customer_id AS id,
+        min(rcd.customer_name) AS name,
+        rc.customer_account AS account,
+        rscr.company_info_id AS companyId,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rscr.customer_id,rscr.company_info_id
+        order by sum( resRt.price ) desc
+        ) c LEFT JOIN replay_store rs ON c.companyId = rs.company_info_id
+
+    </select>
+
+
+    <select id="exportCustomerOrderTotalForSupplier" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select count(1) from (
+        SELECT
+        rscr.customer_id AS id,
+        rc.customer_account AS account,
+        rscr.company_info_id AS companyId,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) AS
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rscr.customer_id,rscr.company_info_id) as result
+        where result.companyId = #{companyInfoId}
+    </select>
+
+    <select id="exportCustomerOrderTotalForSupplierByStoreType" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select count(1) from (
+        select * from (
+        SELECT
+        rscr.customer_id AS id,
+        rc.customer_account AS account,
+        rscr.company_info_id AS companyId,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) AS
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rscr.customer_id,rscr.company_info_id)
+        t left join replay_store r on t.companyId = r.company_info_id
+        where r.store_type=#{storeSelectType}
+        ) as result
+    </select>
+
+
+
+
+    <select id="exportCustomerOrderForSupplier" resultType="com.wanmi.ares.report.customer.model.root.CustomerReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select t.* from (
+        SELECT
+        rscr.customer_id AS id,
+        min(rcd.customer_name) AS name,
+        rc.customer_account AS account,
+        rscr.company_info_id AS companyId,
+        rc.log_out_status AS logOutStatus,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rscr.customer_id,rscr.company_info_id
+        order by sum( resRt.price ) desc
+        ) t where t.companyId = #{companyInfoId}
+        limit #{number,jdbcType=INTEGER}, #{size,jdbcType=INTEGER}
+    </select>
+
+
+    <select id="exportCustomerOrderForSupplierByStoreType" resultType="com.wanmi.ares.report.customer.model.root.CustomerReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select t.*,r.store_type as storeType from (
+        SELECT
+        rscr.customer_id AS id,
+        min(rcd.customer_name) AS name,
+        rc.customer_account AS account,
+        rscr.company_info_id AS companyId
+        rc.log_out_status AS logOutStatus,,
+        IFNULL(sum( resRt.num ),0) AS orderCount,
+        IFNULL(sum( resRt.price ),0) AS amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payPrice),0) AS payAmount,
+        IFNULL(sum( resPay.payNUm ),0) AS payOrderCount,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        IFNULL(count(rscr.customer_id),0) as customerCount
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rscr.customer_id,rscr.company_info_id
+        order by sum( resRt.price ) desc
+        ) t left join replay_store r on t.companyId = r.company_info_id
+        where r.store_type=#{storeSelectType}
+        limit #{number,jdbcType=INTEGER}, #{size,jdbcType=INTEGER}
+    </select>
+
+    <insert id="generateCustomerOrderForBossForDay">
+        INSERT INTO customer_day (
+        STAT_DATE,
+        CUSTOMER_ID,
+        CUSTOMER_NAME,
+        CUSTOMER_ACCOUNT,
+        ORDER_NUM,
+        ORDER_MONEY,
+        ORDER_GOODS_NUM,
+        PAY_NUM,
+        PAY_MONEY,
+        ORDER_PER_PRICE,
+        REFUND_NUM,
+        REFUND_MONEY,
+        REFUND_GOODS_NUM,
+        SHOP_ID,
+        CREATE_TM
+        )
+        SELECT
+        #{statisticsDate} AS STAT_DATE,
+        rscr.customer_id AS CUSTOMER_ID,
+        min(rcd.customer_name) AS CUSTOMER_NAME,
+        rscr.customer_account AS CUSTOMER_ACCOUNT,
+        IFNULL(sum( resRt.num ),0) AS ORDER_NUM,
+        IFNULL(sum( resRt.price ),0) AS ORDER_MONEY,
+        IFNULL(sum( resRti.num ),0) AS ORDER_GOODS_NUM,
+        IFNULL(sum( resPay.payNUm ),0) AS PAY_NUM,
+        IFNULL(sum( resPay.payPrice ),0) AS PAY_MONEY,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        IFNULL(sum( resRro.num ),0) AS REFUND_NUM,
+        IFNULL(sum( resRro.rPrice ),0) AS REFUND_MONEY,
+        IFNULL(sum( resRri.num ),0) AS REFUND_GOODS_NUM,
+        0 AS SHOP_ID,
+        now( ) AS CREATE_TM
+        FROM
+        replay_customer rscr
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForBoss"/>
+        GROUP BY
+        rscr.customer_id;
+    </insert>
+
+    <insert id="generateCustomerOrderForBossForSeven">
+        INSERT INTO
+        customer_recent_seven (<include refid="addCustomerOrderForSevenAndThirtyAndMonth"/>)
+        <include refid="addCustomerOrderForBossForSevenAndThirtyAndMonthSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        GROUP BY
+        rscr.customer_id;
+    </insert>
+
+    <insert id="generateCustomerOrderForBossForThirty">
+        INSERT INTO
+        customer_recent_thirty (<include refid="addCustomerOrderForSevenAndThirtyAndMonth"/>)
+        <include refid="addCustomerOrderForBossForSevenAndThirtyAndMonthSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        GROUP BY
+        rscr.customer_id;
+    </insert>
+
+    <insert id="generateCustomerOrderForBossForMonth">
+        INSERT INTO
+        customer_month (<include refid="addCustomerOrderForSevenAndThirtyAndMonth"/>)
+        <include refid="addCustomerOrderForBossForSevenAndThirtyAndMonthSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        GROUP BY
+        rscr.customer_id;
+    </insert>
+
+    <insert id="generateCustomerOrderForSupplierForDay">
+        INSERT INTO customer_day (
+        STAT_DATE,
+        CUSTOMER_ID,
+        CUSTOMER_NAME,
+        CUSTOMER_ACCOUNT,
+        ORDER_NUM,
+        ORDER_MONEY,
+        ORDER_GOODS_NUM,
+        PAY_NUM,
+        PAY_MONEY,
+        ORDER_PER_PRICE,
+        REFUND_NUM,
+        REFUND_MONEY,
+        REFUND_GOODS_NUM,
+        SHOP_ID,
+        CREATE_TM
+        )
+        SELECT
+        #{statisticsDate} AS STAT_DATE,
+        rscr.customer_id AS CUSTOMER_ID,
+        min(rcd.customer_name) AS CUSTOMER_NAME,
+        rc.customer_account AS CUSTOMER_ACCOUNT,
+        IFNULL(sum( resRt.num ),0) AS ORDER_NUM,
+        IFNULL(sum( resRt.price ),0) AS ORDER_MONEY,
+        IFNULL(sum( resRti.num ),0) AS ORDER_GOODS_NUM,
+        IFNULL(sum( resPay.payNUm ),0) AS PAY_NUM,
+        IFNULL(sum( resPay.payPrice ),0) AS PAY_MONEY,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        IFNULL(sum( resRro.num ),0) AS REFUND_NUM,
+        IFNULL(sum( resRro.rPrice ),0) AS REFUND_MONEY,
+        IFNULL(sum( resRri.num ),0) AS REFUND_GOODS_NUM,
+        rscr.company_info_id AS SHOP_ID,
+        now( ) AS CREATE_TM
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rscr.customer_id,rscr.company_info_id;
+    </insert>
+
+    <insert id="generateCustomerOrderForSupplierForSeven">
+        INSERT INTO
+        customer_recent_seven (<include refid="addCustomerOrderForSevenAndThirtyAndMonth"/>)
+        <include refid="addCustomerOrderForSupplierForSevenAndThirtyAndMonthSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rscr.customer_id;
+    </insert>
+
+    <insert id="generateCustomerOrderForSupplierForThirty">
+        INSERT INTO
+        customer_recent_thirty (<include refid="addCustomerOrderForSevenAndThirtyAndMonth"/>)
+        <include refid="addCustomerOrderForSupplierForSevenAndThirtyAndMonthSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rscr.customer_id;
+    </insert>
+
+    <insert id="generateCustomerOrderForSupplierForMonth">
+        INSERT INTO
+        customer_month (<include refid="addCustomerOrderForSevenAndThirtyAndMonth"/>)
+        <include refid="addCustomerOrderForSupplierForSevenAndThirtyAndMonthSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rscr.customer_id;
+    </insert>
+
+    <sql id="addCustomerLevelOrder">
+        <if test="flowDataType==0 || flowDataType==1">
+            STAT_DATE,
+        </if>
+        CUSTOMER_LEVEL_ID ,
+        CUSTOMER_LEVEL_NAME,
+        ORDER_NUM,
+        ORDER_MONEY,
+        ORDER_GOODS_NUM,
+        PAY_NUM,
+        PAY_MONEY,
+        USER_PER_PRICE_THIRTY,
+        ORDER_PER_PRICE,
+        REFUND_NUM,
+        REFUND_MONEY,
+        REFUND_GOODS_NUM,
+        SHOP_ID,
+        CREATE_TM
+        <if test="flowDataType==0 || flowDataType==1">
+            ,CUSTOMER_COUNT
+        </if>
+        <if test="flowDataType>1">
+            ,STAT_DATE
+        </if>
+    </sql>
+
+    <sql id="addCustomerLevelOrderSelect">
+        SELECT
+        <if test="flowDataType==0 || flowDataType==1">
+            #{statisticsDate} as STAT_DATE,
+        </if>
+        <if test="shopType!=1">
+            rcl.customer_level_id as CUSTOMER_LEVEL_ID,
+            rcl.customer_level_name as CUSTOMER_LEVEL_NAME,
+        </if>
+        <if test="shopType==1">
+            rsl.store_level_id as CUSTOMER_LEVEL_ID,
+            rsl.level_name as CUSTOMER_LEVEL_NAME,
+        </if>
+        IFNULL(sum( resRt.num ),0) as ORDER_NUM,
+        IFNULL(sum( resRt.price ),0) as ORDER_MONEY,
+        IFNULL(sum( resRti.num ),0) AS ORDER_GOODS_NUM,
+        IFNULL(sum( resPay.payNUm ),0) as PAY_NUM,
+        IFNULL(sum( resPay.payPrice ),0) asPAY_MONEY,
+        case when IFNULL(count(DISTINCT(rscr.customer_id)),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(count(DISTINCT(rscr.customer_id)),0), DECIMAL ( 15,
+        2 ) ),0) end
+        USER_PER_PRICE_THIRTY,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        IFNULL(sum( resRro.num ),0) AS REFUND_NUM,
+        IFNULL(sum( resRro.rPrice ),0) AS REFUND_MONEY,
+        IFNULL(sum( resRri.num ),0) AS REFUND_GOODS_NUM,
+        <if test="shopType== 1">
+            rscr.company_info_id as SHOP_ID,
+        </if>
+        <if test="shopType!= 1">
+            0 as SHOP_ID,
+        </if>
+        now() as CREATE_TM
+        <if test="flowDataType==0 || flowDataType==1">
+            ,IFNULL(count(DISTINCT(rscr.customer_id)),0) as CUSTOMER_COUNT
+        </if>
+        <if test="flowDataType>1">
+            , #{statisticsDate} as STAT_DATE
+        </if>
+        FROM
+        <if test="shopType== 1">
+            replay_store_customer_rela rscr
+            left join replay_store_level rsl on rsl.store_level_id = rscr.store_level_id
+        </if>
+        <if test="shopType!= 1">
+            replay_customer rscr
+            LEFT JOIN replay_customer_level rcl ON rcl.customer_level_id = rscr.customer_level_id
+        </if>
+    </sql>
+
+    <sql id="exportCustomerLevelOrderSelect">
+        SELECT
+        <if test="shopType == 0">
+            rcl.customer_level_id as id,
+            rcl.customer_level_name as name,
+        </if>
+        <if test="shopType != 0">
+            rsl.store_level_id as id,
+            rsl.level_name as name,
+        </if>
+        IFNULL(sum( resRt.num ),0) as orderCount,
+        IFNULL(sum( resRt.price ),0) as amount,
+        IFNULL(sum( resRti.num ),0) AS skuCount,
+        IFNULL(sum( resPay.payNUm ),0) as payOrderCount,
+        IFNULL(sum( resPay.payPrice ),0) payAmount,
+        case when IFNULL(count(DISTINCT(rscr.customer_id)),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum(resRt.price),0) / IFNULL(count(DISTINCT(rscr.customer_id)),0), DECIMAL ( 15, 2
+        ) ),0) end
+        userPerPrice,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum( resRro.num ),0) AS returnCount,
+        IFNULL(sum( resRro.rPrice ),0) AS returnAmount,
+        IFNULL(sum( resRri.num ),0) AS returnSkuCount,
+        <if test="shopType != 0">
+            rscr.company_info_id as companyId,
+        </if>
+        <if test="shopType == 0">
+            0 as companyId,
+        </if>
+        IFNULL(count(DISTINCT(rscr.customer_id)),0) as customerCount
+        FROM
+        <if test="shopType != 0">
+            replay_store_customer_rela rscr
+            left join replay_store_level rsl on rsl.store_level_id = rscr.store_level_id
+        </if>
+        <if test="shopType == 0">
+            replay_customer rscr
+            LEFT JOIN replay_customer_level rcl ON rcl.customer_level_id = rscr.customer_level_id
+        </if>
+    </sql>
+
+    <select id="exportCustomerLevelOrderTotalForBoss" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select count(1) from (
+        <include refid="exportCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcl.customer_level_id
+        order by sum(resPay.payPrice) desc) result
+    </select>
+
+    <select id="exportCustomerLevelOrderForBoss"
+            resultType="com.wanmi.ares.report.customer.model.root.CustomerLevelReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        <include refid="exportCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcl.customer_level_id
+        order by sum( resRt.price ) desc
+        limit #{number,jdbcType=INTEGER}, #{size,jdbcType=INTEGER}
+    </select>
+
+    <select id="exportCustomerLevelOrderTotalForSupplier" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select count(1) from (
+        <include refid="exportCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id
+        order by sum(resPay.payPrice) desc) result
+        where result.companyId = #{companyInfoId}
+    </select>
+
+    <select id="exportCustomerLevelOrderForSupplier"
+            resultType="com.wanmi.ares.report.customer.model.root.CustomerLevelReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select * from (
+        <include refid="exportCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id
+        order by sum( resRt.price ) desc
+        ) result where result.companyId = #{companyInfoId}
+        limit #{number,jdbcType=INTEGER}, #{size,jdbcType=INTEGER}
+    </select>
+
+    <insert id="generateCustomerLevelOrderForSupplierForDay">
+        insert into customer_level_day(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        <include refid="addCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id;
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForSupplierForSeven">
+        insert into customer_level_recent_seven(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        <include refid="addCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id;
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForSupplierForThirty">
+        insert into customer_level_recent_thirty(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        <include refid="addCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id;
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForSupplierForMonth">
+        insert into customer_level_month(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        <include refid="addCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id;
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForBossForDay">
+        insert into customer_level_day(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        <include refid="addCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcl.customer_level_id
+        order by sum(resPay.payPrice) desc;
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForBossForSeven">
+        insert into customer_level_recent_seven(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        <include refid="addCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcl.customer_level_id
+        order by sum(resPay.payPrice) desc;
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForBossForThirty">
+        insert into customer_level_recent_thirty(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        <include refid="addCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcl.customer_level_id
+        order by sum(resPay.payPrice) desc;
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForBossForMonth">
+        insert into customer_level_month(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        <include refid="addCustomerLevelOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcl.customer_level_id
+        order by sum(resPay.payPrice) desc;
+    </insert>
+
+    <sql id="addCustomerAreaOrder">
+        <if test="flowDataType==0 || flowDataType==1">
+            STAT_DATE,
+        </if>
+        CITY_ID,
+        ORDER_NUM,
+        ORDER_MONEY,
+        ORDER_GOODS_NUM,
+        PAY_NUM,
+        PAY_MONEY,
+        USER_PER_PRICE_THIRTY,
+        ORDER_PER_PRICE,
+        REFUND_NUM,
+        REFUND_MONEY,
+        REFUND_GOODS_NUM,
+        SHOP_ID,
+        CREATE_TM
+        <if test="flowDataType>=2">
+            ,STAT_DATE
+        </if>
+        <if test="flowDataType==0 || flowDataType==1">
+            ,CUSTOMER_COUNT
+        </if>
+    </sql>
+    <sql id="addCustomerAreaOrderSelect">
+        SELECT
+        <if test="flowDataType==0 || flowDataType==1">
+            #{statisticsDate} as STAT_DATE,
+        </if>
+        if(rcd.city_id = 0, null, rcd.city_id) as CITY_ID,
+        IFNULL(sum(resRt.num),0) as ORDER_NUM,
+        IFNULL(sum(resRt.price),0) as ORDER_MONEY,
+        IFNULL(sum(resRti.num),0) as ORDER_GOODS_NUM,
+        IFNULL(sum(resPay.payNUm),0) as PAY_NUM,
+        IFNULL(sum(resPay.payPrice),0) as PAY_MONEY,
+        case when IFNULL(count(DISTINCT(rscr.customer_id)),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(count(DISTINCT(rscr.customer_id)),0), DECIMAL ( 15,
+        2 ) ),0) end
+        USER_PER_PRICE_THIRTY,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        IFNULL(sum(resRro.num),0) as REFUND_NUM,
+        IFNULL(sum(resRro.rPrice),0) as REFUND_MONEY,
+        IFNULL(sum(resRri.num),0) as REFUND_GOODS_NUM,
+        <if test="shopType==1">
+            min(rscr.company_info_id) as SHOP_ID,
+        </if>
+        <if test="shopType!=1">
+            0 as SHOP_ID,
+        </if>
+        now() as CREATE_TM
+        <if test="flowDataType>=2">
+            ,#{statisticsDate} as STAT_DATE
+        </if>
+        <if test="flowDataType==0 || flowDataType==1">
+            ,IFNULL(count(DISTINCT(rscr.customer_id)),0) as CUSTOMER_COUNT
+        </if>
+        FROM
+        <if test="shopType!=1">
+            replay_customer rscr
+            LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        </if>
+        <if test="shopType==1">
+            replay_store_customer_rela rscr
+            inner join replay_customer rc on rc.customer_id = rscr.customer_id
+            LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        </if>
+    </sql>
+
+    <sql id="exportCustomerAreaOrderSelectForSupplier">
+        SELECT
+        IFNULL(rcd.city_id ,'-1') as cityId,
+        IFNULL(sum(resRt.num),0) as orderCount,
+        IFNULL(sum(resRt.price),0) as amount,
+        IFNULL(sum(resRti.num),0) as skuCount,
+        IFNULL(sum(resPay.payPrice),0) as payAmount,
+        IFNULL(sum(resPay.payNUm),0) as payOrderCount,
+        case when IFNULL(count(DISTINCT(rscr.customer_id)),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(count(DISTINCT(rscr.customer_id)),0), DECIMAL ( 15,
+        2 ) ),0) end
+        userPerPrice,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum(resRro.num),0) as returnCount,
+        IFNULL(sum(resRro.rPrice),0) as returnAmount,
+        IFNULL(sum(resRri.num),0) as returnSkuCount,
+        min(rscr.company_info_id) as companyId,
+        IFNULL(count(DISTINCT(rscr.customer_id)),0) as CUSTOMER_COUNT
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+    </sql>
+
+
+    <sql id="exportCustomerAreaOrderSelectForBoss">
+        SELECT
+        IFNULL(rcd.city_id ,'-1') as cityId,
+        IFNULL(sum(resRt.num),0) as orderCount,
+        IFNULL(sum(resRt.price),0) as amount,
+        IFNULL(sum(resRti.num),0) as skuCount,
+        IFNULL(sum(resPay.payPrice),0) as payAmount,
+        IFNULL(sum(resPay.payNUm),0) as payOrderCount,
+        case when IFNULL(count(DISTINCT(rscr.customer_id)),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(count(DISTINCT(rscr.customer_id)),0), DECIMAL ( 15,
+        2 ) ),0) end
+        userPerPrice,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        orderPerPrice,
+        IFNULL(sum(resRro.num),0) as returnCount,
+        IFNULL(sum(resRro.rPrice),0) as returnAmount,
+        IFNULL(sum(resRri.num),0) as returnSkuCount,
+        0 as companyId,
+        IFNULL(count(DISTINCT(rscr.customer_id)),0) as CUSTOMER_COUNT
+        FROM
+        replay_customer rscr
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+    </sql>
+
+    <select id="exportCustomerAreaOrderTotalForBoss" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select count(1) from (
+        <include refid="exportCustomerAreaOrderSelectForBoss"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcd.city_id) result
+    </select>
+
+    <select id="exportCustomerAreaOrderForBoss"
+            resultType="com.wanmi.ares.report.customer.model.root.CustomerAreaReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        <include refid="exportCustomerAreaOrderSelectForBoss"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcd.city_id
+        order by sum( resRt.price ) desc
+        limit #{number,jdbcType=INTEGER}, #{size,jdbcType=INTEGER}
+    </select>
+
+    <select id="exportCustomerAreaOrderTotalForSupplier" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select count(1) from (
+        <include refid="exportCustomerAreaOrderSelectForSupplier"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id) result
+        where result.companyId = #{companyInfoId}
+    </select>
+
+    <select id="exportCustomerAreaOrderTotalForSupplierByStoreType" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select count(1) from (
+        select * from (
+        <include refid="exportCustomerAreaOrderSelectForSupplier"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id) t left join replay_store r on t.companyId = r.company_info_id
+        where r.store_type = #{storeSelectType}
+        ) result
+    </select>
+
+
+
+    <select id="exportCustomerAreaOrderForSupplier"
+            resultType="com.wanmi.ares.report.customer.model.root.CustomerAreaReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select t.* from (
+        <include refid="exportCustomerAreaOrderSelectForSupplier"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id
+        order by sum( resRt.price ) desc
+        ) t where t.companyId = #{companyInfoId}
+        limit #{number,jdbcType=INTEGER}, #{size,jdbcType=INTEGER}
+    </select>
+
+    <select id="exportCustomerAreaOrderForSupplierByStoreType"
+            resultType="com.wanmi.ares.report.customer.model.root.CustomerAreaReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select t.*,r.store_type as storeType from (
+        <include refid="exportCustomerAreaOrderSelectForSupplier"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id
+        order by sum( resRt.price ) desc
+        ) t left join replay_store r on t.companyId = r.company_info_id
+        where r.store_type = #{storeSelectType}
+        limit #{number,jdbcType=INTEGER}, #{size,jdbcType=INTEGER}
+    </select>
+
+
+    <select id="exportCustomerAreaOrderTotalForSupplierAndBoss" resultType="int"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select count(1) from (
+        <include refid="exportCustomerAreaOrderSelectForSupplier"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id
+
+        UNION ALL
+
+        <include refid="exportCustomerAreaOrderSelectForBoss"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcd.city_id
+
+        ) result
+    </select>
+
+
+    <select id="exportCustomerAreaOrderForSupplierAndBoss"
+            resultType="com.wanmi.ares.report.customer.model.root.CustomerAreaReport"
+            parameterType="com.wanmi.ares.report.customer.model.request.CustomerOrderDataRequest">
+        select
+        c.*,
+        rs.store_type AS storeType
+        FROM
+        (
+        <include refid="exportCustomerAreaOrderSelectForSupplier"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id
+        ) c LEFT JOIN replay_store rs ON c.companyId = rs.company_info_id
+
+        UNION ALL
+
+        select
+        c.*,
+        rs.store_type AS storeType
+        FROM
+        (
+        <include refid="exportCustomerAreaOrderSelectForBoss"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcd.city_id
+        ) c LEFT JOIN replay_store rs ON c.companyId = rs.company_info_id
+
+    </select>
+
+    <insert id="generateCustomerAreaOrderForBossForDay">
+        insert into customer_region_day
+        (
+        <include refid="addCustomerAreaOrder"/>
+        )
+        <include refid="addCustomerAreaOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcd.city_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForBossForSeven">
+        insert into customer_region_recent_seven
+        (
+        <include refid="addCustomerAreaOrder"/>
+        )
+        <include refid="addCustomerAreaOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcd.city_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForBossForThirty">
+        insert into customer_region_recent_thirty
+        (
+        <include refid="addCustomerAreaOrder"/>
+        )
+        <include refid="addCustomerAreaOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcd.city_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForBossForMonth">
+        insert into customer_region_month
+        (
+        <include refid="addCustomerAreaOrder"/>
+        )
+        <include refid="addCustomerAreaOrderSelect"/>
+        <include refid="generateCustomerOrderForBoss"/>
+        group by rcd.city_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForSupplierForDay">
+        insert into customer_region_day
+        (
+        <include refid="addCustomerAreaOrder"/>
+        )
+        <include refid="addCustomerAreaOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id,rscr.company_info_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForSupplierForSeven">
+        insert into customer_region_recent_seven
+        (
+        <include refid="addCustomerAreaOrder"/>
+        )
+        <include refid="addCustomerAreaOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id,rscr.company_info_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForSupplierForThirty">
+        insert into customer_region_recent_thirty
+        (
+        <include refid="addCustomerAreaOrder"/>
+        )
+        <include refid="addCustomerAreaOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id,rscr.company_info_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForSupplierForMonth">
+        insert into customer_region_month
+        (
+        <include refid="addCustomerAreaOrder"/>
+        )
+        <include refid="addCustomerAreaOrderSelect"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id,rscr.company_info_id
+    </insert>
+
+    <resultMap id="customerReportResult" type="com.wanmi.ares.report.customer.model.root.CustomerReport">
+        <id property="id" column="id"/>
+        <result property="companyId" column="SHOP_ID"/>
+        <result property="orderCount" column="ORDER_NUM"/>
+        <result property="amount" column="ORDER_MONEY"/>
+        <result property="skuCount" column="ORDER_GOODS_NUM"/>
+        <result property="payAmount" column="PAY_MONEY"/>
+        <result property="orderPerPrice" column="ORDER_PER_PRICE"/>
+        <result property="returnCount" column="REFUND_NUM"/>
+        <result property="returnAmount" column="REFUND_MONEY"/>
+        <result property="returnSkuCount" column="REFUND_GOODS_NUM"/>
+        <result property="name" column="CUSTOMER_NAME"/>
+        <result property="account" column="CUSTOMER_ACCOUNT"/>
+        <result property="customerId" column="CUSTOMER_ID"/>
+        <result property="payOrderCount" column="PAY_NUM"/>
+    </resultMap>
+
+    <!--  tableName传值不是对外请求传入是代码写死的  -->
+    <select id="queryCustomerReport" resultMap="customerReportResult">
+        SELECT c.STAT_DATE, c.CUSTOMER_ID,c.CUSTOMER_NAME, c.CUSTOMER_ACCOUNT, c.ORDER_NUM, c.ORDER_MONEY,
+        c.ORDER_GOODS_NUM,
+        c.PAY_NUM, c.PAY_MONEY, c.ORDER_PER_PRICE, c.REFUND_NUM, c.REFUND_MONEY, c.REFUND_GOODS_NUM, c.SHOP_ID,
+        c.CREATE_TM
+        <if test="tableName == 'customer_day'">
+            FROM customer_day c
+        </if>
+        <if test="tableName == 'customer_recent_seven'">
+            FROM customer_recent_seven c
+        </if>
+        <if test="tableName == 'customer_recent_thirty'">
+            FROM customer_recent_thirty c
+        </if>
+        <if test="tableName == 'customer_month'">
+            FROM customer_month c
+        </if>
+        LEFT JOIN replay_store r
+        on c.SHOP_ID = r.company_info_id
+        where 1=1
+        <if test="customerOrderQueryRequest.companyId != null and customerOrderQueryRequest.companyId != ''">
+            and c.SHOP_ID = #{customerOrderQueryRequest.companyId}
+        </if>
+
+        <if test="customerOrderQueryRequest.customerId !=null and customerOrderQueryRequest.customerId != ''">
+            and c.CUSTOMER_ID = #{customerOrderQueryRequest.customerId}
+        </if>
+        <if test="customerOrderQueryRequest.queryText != null">
+            and (c.customer_name like CONCAT('%',#{customerOrderQueryRequest.queryText},'%') or
+            c.customer_account like CONCAT('%',#{customerOrderQueryRequest.queryText},'%'))
+        </if>
+        <if test="daylyDate !=null">
+            and c.STAT_DATE = #{daylyDate}
+        </if>
+        <if test="customerOrderQueryRequest.sortField != null">
+            order by ${customerOrderQueryRequest.sortField} ${customerOrderQueryRequest.sortTypeText}
+        </if>
+        limit #{pageRequest.start} , #{pageRequest.pageSize}
+    </select>
+
+    <resultMap id="customerLevelReportResult" type="com.wanmi.ares.report.customer.model.root.CustomerLevelReport">
+        <id property="id" column="id"/>
+        <result property="companyId" column="SHOP_ID"/>
+        <result property="orderCount" column="ORDER_NUM"/>
+        <result property="amount" column="ORDER_MONEY"/>
+        <result property="skuCount" column="ORDER_GOODS_NUM"/>
+        <result property="payAmount" column="PAY_MONEY"/>
+        <result property="userPerPrice" column="USER_PER_PRICE_THIRTY"/>
+        <result property="orderPerPrice" column="ORDER_PER_PRICE"/>
+        <result property="returnCount" column="REFUND_NUM"/>
+        <result property="returnAmount" column="REFUND_MONEY"/>
+        <result property="returnSkuCount" column="REFUND_GOODS_NUM"/>
+        <result property="name" column="CUSTOMER_LEVEL_NAME"/>
+        <result property="account" column="CUSTOMER_ACCOUNT"/>
+        <result property="payOrderCount" column="PAY_NUM"/>
+        <result property="customerCount" column="CUSTOMER_COUNT"/>
+    </resultMap>
+
+    <!--查询客户级别报表-->
+    <!--  tableName传值不是对外请求传入是代码写死的  -->
+    <select id="queryCustomerLevelReport" resultMap="customerLevelReportResult">
+        SELECT
+        customer_report_level.id as ID,
+        customer_report_level.STAT_DATE as STAT_DATE,
+        customer_report_level.CUSTOMER_LEVEL_ID as CUSTOMER_LEVEL_ID,
+        customer_report_level.CUSTOMER_LEVEL_NAME as CUSTOMER_LEVEL_NAME,
+        customer_report_level.ORDER_NUM as ORDER_NUM,
+        customer_report_level.ORDER_MONEY as ORDER_MONEY,
+        customer_report_level.ORDER_GOODS_NUM as ORDER_GOODS_NUM,
+        customer_report_level.PAY_NUM as PAY_NUM,
+        customer_report_level.PAY_MONEY as PAY_MONEY,
+        customer_report_level.USER_PER_PRICE_THIRTY as USER_PER_PRICE_THIRTY,
+        customer_report_level.ORDER_PER_PRICE as ORDER_PER_PRICE,
+        customer_report_level.REFUND_NUM as REFUND_NUM,
+        customer_report_level.REFUND_MONEY as REFUND_MONEY,
+        customer_report_level.REFUND_GOODS_NUM as REFUND_GOODS_NUM,
+        customer_report_level.SHOP_ID as SHOP_ID,
+        customer_report_level.CREATE_TM as CREATE_TM
+
+        <if test = "tableName == 'customer_level_day'">
+            FROM customer_level_day customer_report_level
+        </if>
+        <if test = "tableName == 'customer_level_recent_seven'">
+            FROM customer_level_recent_seven customer_report_level
+        </if>
+        <if test = "tableName == 'customer_level_recent_thirty'">
+            FROM customer_level_recent_thirty customer_report_level
+        </if>
+        <if test = "tableName == 'customer_level_month'">
+            FROM customer_level_month customer_report_level
+        </if>
+
+        <if test="customerOrderQueryRequest.companyId == 0">
+            left join replay_customer_level level
+            on customer_report_level.CUSTOMER_LEVEL_ID = level.customer_level_id
+        </if>
+        <if test="customerOrderQueryRequest.companyId != 0">
+            left join replay_store_level rcl
+            on customer_report_level.CUSTOMER_LEVEL_ID = rcl.store_level_id
+        </if>
+        where 1=1
+        <if test="customerOrderQueryRequest.companyId != null and customerOrderQueryRequest.companyId != ''">
+            and SHOP_ID = #{customerOrderQueryRequest.companyId}
+        </if>
+        <if test="customerOrderQueryRequest.queryText != null and customerOrderQueryRequest.queryText != '' and customerOrderQueryRequest.companyId == 0">
+            and level.customer_level_name = #{customerOrderQueryRequest.queryText}
+        </if>
+        <if test="customerOrderQueryRequest.queryText != null and customerOrderQueryRequest.queryText != '' and customerOrderQueryRequest.companyId != 0">
+            and rcl.level_name = #{customerOrderQueryRequest.queryText}
+        </if>
+        <if test="daylyDate !=null">
+            and customer_report_level.STAT_DATE = #{daylyDate}
+        </if>
+        <if test="customerOrderQueryRequest.sortField != null">
+            order by customer_report_level.${customerOrderQueryRequest.sortField}
+            ${customerOrderQueryRequest.sortTypeText}
+        </if>
+        limit #{pageRequest.start} , #{pageRequest.pageSize}
+    </select>
+
+    <resultMap id="customerAreaReportResult" type="com.wanmi.ares.report.customer.model.root.CustomerAreaReport">
+        <id property="id" column="id"/>
+        <id property="cityId" column="CITY_ID"/>
+        <result property="companyId" column="SHOP_ID"/>
+        <result property="orderCount" column="ORDER_NUM"/>
+        <result property="amount" column="ORDER_MONEY"/>
+        <result property="skuCount" column="ORDER_GOODS_NUM"/>
+        <result property="payAmount" column="PAY_MONEY"/>
+        <result property="userPerPrice" column="USER_PER_PRICE_THIRTY"/>
+        <result property="orderPerPrice" column="ORDER_PER_PRICE"/>
+        <result property="returnCount" column="REFUND_NUM"/>
+        <result property="returnAmount" column="REFUND_MONEY"/>
+        <result property="returnSkuCount" column="REFUND_GOODS_NUM"/>
+        <result property="name" column="CUSTOMER_LEVEL_NAME"/>
+        <result property="account" column="CUSTOMER_ACCOUNT"/>
+        <result property="payOrderCount" column="PAY_NUM"/>
+        <result property="customerCount" column="CUSTOMER_COUNT"/>
+    </resultMap>
+
+    <!--查询客户地区-->
+    <!--  tableName传值不是对外请求传入是代码写死的  -->
+    <select id="queryCustomerAreaReport" resultMap="customerAreaReportResult">
+        select
+        c.id,
+        c.STAT_DATE,
+        c.CITY_ID,
+        c.ORDER_NUM,
+        c.ORDER_MONEY,
+        c.ORDER_GOODS_NUM,
+        c.PAY_NUM,
+        c.PAY_MONEY,
+        c.USER_PER_PRICE_THIRTY,
+        c.ORDER_PER_PRICE,
+        c.REFUND_NUM,
+        c.REFUND_MONEY,
+        c.REFUND_GOODS_NUM,
+        c.SHOP_ID,
+        c.CREATE_TM
+        <if test="tableName == 'customer_region_day'">
+            FROM customer_region_day c
+        </if>
+        <if test="tableName == 'customer_region_recent_seven'">
+            FROM customer_region_recent_seven c
+        </if>
+        <if test="tableName == 'customer_region_recent_thirty'">
+            FROM customer_region_recent_thirty c
+        </if>
+        <if test="tableName == 'customer_region_month'">
+            FROM customer_region_month c
+        </if>
+
+        where 1 = 1
+        <if test="customerOrderQueryRequest.companyId != null and  customerOrderQueryRequest.companyId != ''">
+            and c.SHOP_ID = #{customerOrderQueryRequest.companyId}
+        </if>
+        <if test="customerOrderQueryRequest.queryText != null and customerOrderQueryRequest.cityList != null">
+            and c.city_id in
+            <foreach item="item" index="index" collection="customerOrderQueryRequest.cityList" open="(" separator=","
+                     close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="daylyDate !=null">
+            and c.STAT_DATE = #{daylyDate}#
+        </if>
+        <if test="customerOrderQueryRequest.sortField != null">
+            order by ${customerOrderQueryRequest.sortField} ${customerOrderQueryRequest.sortTypeText}
+        </if>
+        limit #{pageRequest.start} , #{pageRequest.pageSize}
+    </select>
+    <!--可以复用countAll //todo调整-->
+    <!--  tableName传值不是对外请求传入是代码写死的  -->
+    <select id="countCustomerReport" resultType="java.lang.Integer">
+        select count(1)
+        <if test ="tableName == 'customer_day'">
+            FROM customer_day c
+        </if>
+        <if test ="tableName == 'customer_recent_seven'">
+            FROM customer_recent_seven c
+        </if>
+        <if test ="tableName == 'customer_recent_thirty'">
+            FROM customer_recent_thirty c
+        </if>
+        <if test ="tableName == 'customer_month'">
+            FROM customer_month c
+        </if>
+        LEFT JOIN replay_store r
+        on c.SHOP_ID = r.company_info_id
+        where 1 = 1
+        <if test="customerOrderQueryRequest.companyId != null  and  customerOrderQueryRequest.companyId != ''">
+            and SHOP_ID = #{customerOrderQueryRequest.companyId}
+        </if>
+        <if test="customerOrderQueryRequest.customerId !=null and customerOrderQueryRequest.customerId != ''">
+            and CUSTOMER_ID = #{customerOrderQueryRequest.customerId}
+        </if>
+        <if test="customerOrderQueryRequest.queryText != null">
+            and (customer_name like CONCAT('%',#{customerOrderQueryRequest.queryText},'%') or
+            customer_account like CONCAT('%',#{customerOrderQueryRequest.queryText},'%'))
+        </if>
+        <if test="daylyDate !=null">
+            and STAT_DATE = #{daylyDate}
+        </if>
+    </select>
+
+    <!--  tableName传值不是对外请求传入是代码写死的  -->
+    <select id="countCustomerAreaReport" resultType="java.lang.Integer">
+        select count(1)
+        <if test="tableName == 'customer_region_day'">
+            FROM customer_region_day c
+        </if>
+        <if test="tableName == 'customer_region_recent_seven'">
+            FROM customer_region_recent_seven c
+        </if>
+        <if test="tableName == 'customer_region_recent_thirty'">
+            FROM customer_region_recent_thirty c
+        </if>
+        <if test="tableName == 'customer_region_month'">
+            FROM customer_region_month c
+        </if>
+        where 1 = 1
+        <if test="customerOrderQueryRequest.companyId != null   and  customerOrderQueryRequest.companyId != ''">
+            and c.SHOP_ID = #{customerOrderQueryRequest.companyId}
+        </if>
+        <if test="customerOrderQueryRequest.queryText != null  and  customerOrderQueryRequest.cityList != null">
+            and c.city_id in
+            <foreach item="item" index="index" collection="customerOrderQueryRequest.cityList" open="(" separator=","
+                     close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="daylyDate !=null">
+            and c.STAT_DATE = #{daylyDate}
+        </if>
+    </select>
+
+
+    <!--  tableName传值不是对外请求传入是代码写死的  -->
+    <delete id="deleteCustomerReportByDate">
+        DELETE
+        <if test="tableName == 'customer_day'">
+            from customer_day
+        </if>
+        <if test="tableName == 'customer_level_day'">
+            from customer_level_day
+        </if>
+        <if test="tableName == 'customer_region_day'">
+            from customer_region_day
+        </if>
+        where STAT_DATE = #{deleteDate}
+    </delete>
+
+    <!--  tableName传值不是对外请求传入是代码写死的  -->
+    <delete id="deleteCustomerReport">
+        DELETE from ${tableName}
+    </delete>
+
+    <!--导出客户订货维度查询-->
+    <select id="exportCustomerReport" resultMap="customerReportResult">
+        select
+        sum(ORDER_NUM) as order_num,
+        sum(ORDER_MONEY) as ORDER_MONEY,
+        sum(ORDER_GOODS_NUM) as ORDER_GOODS_NUM,
+        sum(PAY_NUM) as PAY_NUM,
+        sum(PAY_GOODS_NUM) as PAY_GOODS_NUM,
+        sum(PAY_MONEY) as PAY_MONEY,
+        sum(REFUND_NUM) as REFUND_NUM,
+        sum(REFUND_MONEY) as REFUND_MONEY,
+        sum(REFUND_GOODS_NUM) as REFUND_GOODS_NUM,
+        case when IFNULL(sum( ORDER_NUM ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( ORDER_MONEY ),0) / IFNULL(sum( ORDER_NUM ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        CUSTOMER_ID,
+        min(CUSTOMER_NAME) as CUSTOMER_NAME,
+        min(CUSTOMER_ACCOUNT) as CUSTOMER_ACCOUNT
+        from customer_day
+        where STAT_DATE &gt;= #{exportQuery.dateFrom} and STAT_DATE &lt;= #{exportQuery.dateTo}
+        <if test="exportQuery.companyId != null   and  exportQuery.companyId != '' and exportQuery.companyId != 0 and storeSelectType == 0">
+            and SHOP_ID = #{exportQuery.companyId}
+        </if>
+        GROUP BY CUSTOMER_ID
+        ORDER BY ORDER_MONEY DESC
+        limit #{exportQuery.beginIndex} , #{exportQuery.size}
+    </select>
+
+    <select id="countExportCustomerReport" resultType="java.lang.Integer">
+        select count(1) from (select
+        count(CUSTOMER_ID)
+        from customer_day
+        where STAT_DATE &gt;= #{exportQuery.dateFrom} and STAT_DATE &lt;= #{exportQuery.dateTo}
+        and 1 = 1
+        <if test="exportQuery.companyId != null   and  exportQuery.companyId != '' and exportQuery.companyId != 0 and storeSelectType == 0">
+            and SHOP_ID = #{exportQuery.companyId}
+        </if>
+        GROUP BY CUSTOMER_ID) as temp
+    </select>
+
+    <!--导出客户级别维度查询    -->
+    <select id="exportCustomerLevelReport" resultMap="customerLevelReportResult">
+        SELECT
+        sum(ORDER_NUM) AS order_num,
+        sum(ORDER_MONEY) AS ORDER_MONEY,
+        sum(ORDER_GOODS_NUM) AS ORDER_GOODS_NUM,
+        sum(PAY_NUM) AS PAY_NUM,
+        sum(PAY_GOODS_NUM) AS PAY_GOODS_NUM,
+        sum(PAY_MONEY) AS PAY_MONEY,
+        sum(REFUND_NUM) AS REFUND_NUM,
+        sum(REFUND_MONEY) AS REFUND_MONEY,
+        sum(REFUND_GOODS_NUM) AS REFUND_GOODS_NUM,
+        sum(CUSTOMER_COUNT) AS CUSTOMER_COUNT,
+        min(CUSTOMER_LEVEL_NAME) AS CUSTOMER_LEVEL_NAME,
+        case when IFNULL(sum( ORDER_NUM ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( ORDER_MONEY ),0) / IFNULL(sum( ORDER_NUM ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        case when IFNULL(sum( CUSTOMER_COUNT ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( ORDER_MONEY ),0) / IFNULL(sum( CUSTOMER_COUNT ),0), DECIMAL ( 15, 2 ) ),0) end
+        USER_PER_PRICE_THIRTY
+        FROM customer_level_day
+        where STAT_DATE &gt;= #{exportQuery.dateFrom} and STAT_DATE &lt;= #{exportQuery.dateTo}
+        <if test="exportQuery.companyId != null   and  exportQuery.companyId != '' and exportQuery.companyId != 0 and storeSelectType == 0">
+            and SHOP_ID = #{exportQuery.companyId}
+        </if>
+        group BY CUSTOMER_LEVEL_ID
+        ORDER BY ORDER_MONEY DESC
+        limit #{exportQuery.beginIndex} , #{exportQuery.size}
+    </select>
+
+    <select id="countExportCustomerLevelReport" resultType="java.lang.Integer">
+        select count(1) FROM (select count(CUSTOMER_LEVEL_ID) from customer_level_day
+        where STAT_DATE &gt;= #{exportQuery.dateFrom} and STAT_DATE &lt;= #{exportQuery.dateTo}
+        <if test="exportQuery.companyId != null   and  exportQuery.companyId != '' and exportQuery.companyId != 0 and storeSelectType == 0">
+            and SHOP_ID = #{exportQuery.companyId}
+        </if>
+        GROUP BY CUSTOMER_LEVEL_ID) temp
+    </select>
+
+    <!--导出地区维度订货报表-->
+    <select id="exportCustomerAreaReport" resultMap="customerAreaReportResult">
+        select
+        sum(ORDER_NUM) as order_num,
+        sum(ORDER_MONEY) as ORDER_MONEY,
+        sum(ORDER_GOODS_NUM) as ORDER_GOODS_NUM,
+        sum(PAY_NUM) as PAY_NUM,
+        sum(PAY_GOODS_NUM) as PAY_GOODS_NUM,
+        sum(PAY_MONEY) as PAY_MONEY,
+        sum(REFUND_NUM) as REFUND_NUM,
+        sum(REFUND_MONEY) as REFUND_MONEY,
+        sum(REFUND_GOODS_NUM) as REFUND_GOODS_NUM,
+        sum(CUSTOMER_COUNT) as CUSTOMER_COUNT,
+        CITY_ID,
+        case when IFNULL(sum( ORDER_NUM ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( ORDER_MONEY ),0) / IFNULL(sum( ORDER_NUM ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        case when IFNULL(sum( CUSTOMER_COUNT ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( ORDER_MONEY ),0) / IFNULL(sum( CUSTOMER_COUNT ),0), DECIMAL ( 15, 2 ) ),0) end
+        USER_PER_PRICE_THIRTY
+        from customer_region_day
+        where STAT_DATE &gt;= #{exportQuery.dateFrom} and STAT_DATE &lt;= #{exportQuery.dateTo}
+        <if test="exportQuery.companyId != null   and  exportQuery.companyId != '' and exportQuery.companyId != 0 and storeSelectType == 0">
+            and SHOP_ID = #{exportQuery.companyId}
+        </if>
+        GROUP BY CITY_ID
+        ORDER BY ORDER_MONEY DESC
+        limit #{exportQuery.beginIndex} , #{exportQuery.size}
+    </select>
+
+    <select id="countExportCustomerAreaReport" resultType="java.lang.Integer">
+        select count(1) FROM (SELECT count(city_id) from customer_region_day
+        where STAT_DATE &gt;= #{exportQuery.dateFrom} and STAT_DATE &lt;= #{exportQuery.dateTo}
+        <if test="exportQuery.companyId != null   and  exportQuery.companyId != '' and exportQuery.companyId != 0 and storeSelectType == 0">
+            and SHOP_ID = #{exportQuery.companyId}
+        </if>
+        GROUP BY CITY_ID) as temp
+    </select>
+
+    <update id="updateCustomerDayReport">
+        UPDATE customer_day set CUSTOMER_NAME = #{customer.name}, CUSTOMER_ACCOUNT = #{customer.account} where CUSTOMER_ID = #{customer.id}
+    </update>
+
+    <!--清理数据-->
+    <delete id="clearCustomerReport">
+        alter table customer_day truncate partition #{pname};
+        alter table customer_month truncate partition #{pname};
+        alter table customer_level_day truncate partition #{pname};
+        alter table customer_level_month truncate partition #{pname};
+        alter table customer_region_day truncate partition #{pname};
+        alter table customer_region_month truncate partition #{pname};
+    </delete>
+
+    <!--  tableName传值不是对外请求传入是代码写死的  -->
+    <select id="countCustomerLevelReport" resultType="java.lang.Integer">
+        select count(1)
+        <if test = "tableName == 'customer_level_day'">
+            from customer_level_day customer_level
+        </if>
+        <if test = "tableName == 'customer_level_recent_seven'">
+            from customer_level_recent_seven customer_level
+        </if>
+        <if test = "tableName == 'customer_level_recent_thirty'">
+            from customer_level_recent_thirty customer_level
+        </if>
+        <if test = "tableName == 'customer_level_month'">
+            from customer_level_month customer_level
+        </if>
+
+        LEFT JOIN replay_customer_level level on customer_level.CUSTOMER_LEVEL_ID = level.customer_level_id
+        where 1=1
+        <if test="customerOrderQueryRequest.companyId != null and customerOrderQueryRequest.companyId != ''">
+            and (#{customerOrderQueryRequest.companyId} is null or customer_level.SHOP_ID =
+            #{customerOrderQueryRequest.companyId})
+        </if>
+
+        <if test="customerOrderQueryRequest.queryText != null and customerOrderQueryRequest.queryText != ''">
+            and level.customer_level_name = #{customerOrderQueryRequest.queryText}
+        </if>
+        and(#{daylyDate} is null or customer_level.STAT_DATE = #{daylyDate});
+    </select>
+
+    <!--  tableName传值不是对外请求传入是代码写死的  -->
+    <select id="countCustomerStoreLevelReport" resultType="java.lang.Integer">
+        select count(1)
+        <if test="tableName == 'customer_level_day'">
+            from customer_level_day customer_level
+        </if>
+        <if test="tableName == 'customer_level_recent_seven'">
+            from customer_level_recent_seven customer_level
+        </if>
+        <if test="tableName == 'customer_level_recent_thirty'">
+            from customer_level_recent_thirty customer_level
+        </if>
+        <if test="tableName == 'customer_level_month'">
+            from customer_level_month customer_level
+        </if>
+        LEFT JOIN replay_store_level level on customer_level.CUSTOMER_LEVEL_ID = level.store_level_id
+        where 1=1
+        <if test="customerOrderQueryRequest.companyId != null and customerOrderQueryRequest.companyId != ''">
+            and (#{customerOrderQueryRequest.companyId} is null or customer_level.SHOP_ID =
+            #{customerOrderQueryRequest.companyId})
+        </if>
+        <if test="customerOrderQueryRequest.queryText != null and customerOrderQueryRequest.queryText != ''">
+            and level.level_name = #{customerOrderQueryRequest.queryText}
+        </if>
+        and(#{daylyDate} is null or customer_level.STAT_DATE = #{daylyDate});
+    </select>
+
+
+
+
+    <sql id="addCustomerLevelOrderInsert">
+        <if test="flowDataType==0 || flowDataType==1">
+            t.STAT_DATE,
+        </if>
+        <if test="shopType!=1">
+            t.CUSTOMER_LEVEL_ID,
+            t.CUSTOMER_LEVEL_NAME,
+        </if>
+        <if test="shopType==1">
+            t.CUSTOMER_LEVEL_ID,
+            t.CUSTOMER_LEVEL_NAME,
+        </if>
+        t.ORDER_NUM,
+        t.ORDER_MONEY,
+        t.ORDER_GOODS_NUM,
+        t.PAY_NUM,
+        t.PAY_MONEY,
+        t.USER_PER_PRICE_THIRTY,
+        t.ORDER_PER_PRICE,
+        t.REFUND_NUM,
+        t.REFUND_MONEY,
+        t.REFUND_GOODS_NUM,
+        IF(r.store_type=1,-12,-13) as SHOP_ID,
+        t.CREATE_TM
+        <if test="flowDataType==0 || flowDataType==1">
+            ,t.CUSTOMER_COUNT
+        </if>
+        <if test="flowDataType>1">
+            ,t.STAT_DATE
+        </if>
+    </sql>
+    <sql id="addCustomerLevelOrderSelectByStoreType">
+        SELECT
+        <if test="flowDataType==0 || flowDataType==1">
+            #{statisticsDate} as STAT_DATE,
+        </if>
+        <if test="shopType!=1">
+            rcl.customer_level_id as CUSTOMER_LEVEL_ID,
+            rcl.customer_level_name as CUSTOMER_LEVEL_NAME,
+        </if>
+        <if test="shopType==1">
+            rsl.store_level_id as CUSTOMER_LEVEL_ID,
+            rsl.level_name as CUSTOMER_LEVEL_NAME,
+        </if>
+        IFNULL(sum( resRt.num ),0) as ORDER_NUM,
+        IFNULL(sum( resRt.price ),0) as ORDER_MONEY,
+        IFNULL(sum( resRti.num ),0) AS ORDER_GOODS_NUM,
+        IFNULL(sum( resPay.payNUm ),0) as PAY_NUM,
+        IFNULL(sum( resPay.payPrice ),0) as PAY_MONEY,
+        case when IFNULL(count(DISTINCT(rscr.customer_id)),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(count(DISTINCT(rscr.customer_id)),0), DECIMAL ( 15,
+        2 ) ),0) end
+        USER_PER_PRICE_THIRTY,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        IFNULL(sum( resRro.num ),0) AS REFUND_NUM,
+        IFNULL(sum( resRro.rPrice ),0) AS REFUND_MONEY,
+        IFNULL(sum( resRri.num ),0) AS REFUND_GOODS_NUM,
+        <if test="shopType== 1">
+            rscr.company_info_id as SHOP_INFO_ID,
+        </if>
+        <if test="shopType!= 1">
+            0 as SHOP_INFO_ID,
+        </if>
+        now() as CREATE_TM
+        <if test="flowDataType==0 || flowDataType==1">
+            ,IFNULL(count(DISTINCT(rscr.customer_id)),0) as CUSTOMER_COUNT
+        </if>
+        <if test="flowDataType>1">
+            , #{statisticsDate} as STAT_DATE
+        </if>
+        FROM
+        <if test="shopType== 1">
+            replay_store_customer_rela rscr
+            left join replay_store_level rsl on rsl.store_level_id = rscr.store_level_id
+        </if>
+        <if test="shopType!= 1">
+            replay_customer rscr
+            LEFT JOIN replay_customer_level rcl ON rcl.customer_level_id = rscr.customer_level_id
+        </if>
+    </sql>
+
+    <insert id="generateCustomerLevelOrderForSupplierStoreTypeForDay">
+        insert into customer_level_day(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        SELECT
+        <include refid="addCustomerLevelOrderInsert"/>
+        from (
+        <include refid="addCustomerLevelOrderSelectByStoreType"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForSupplierStoreTypeForSeven">
+        insert into customer_level_recent_seven(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        SELECT
+        <include refid="addCustomerLevelOrderInsert"/>
+        from (
+        <include refid="addCustomerLevelOrderSelectByStoreType"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForSupplierStoreTypeForThirty">
+        insert into customer_level_recent_thirty(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        SELECT
+        <include refid="addCustomerLevelOrderInsert"/>
+        from (
+        <include refid="addCustomerLevelOrderSelectByStoreType"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+    <insert id="generateCustomerLevelOrderForSupplierStoreTypeForMonth">
+        insert into customer_level_month(
+        <include refid="addCustomerLevelOrder"/>
+        )
+        SELECT
+        <include refid="addCustomerLevelOrderInsert"/>
+        from (
+        <include refid="addCustomerLevelOrderSelectByStoreType"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rsl.store_level_id,
+        rscr.company_info_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+
+
+    <sql id="addCustomerOrderForSevenAndThirtyAndMonthByStoreType">
+        t.CUSTOMER_ID,
+        t.CUSTOMER_NAME,
+        t.CUSTOMER_ACCOUNT,
+        t.ORDER_NUM,
+        t.ORDER_MONEY,
+        t.ORDER_GOODS_NUM,
+        t.PAY_NUM,
+        t.PAY_MONEY,
+        t.ORDER_PER_PRICE,
+        t.REFUND_NUM,
+        t.REFUND_MONEY,
+        t.REFUND_GOODS_NUM,
+        IF(r.store_type=1,-12,-13) as SHOP_ID,
+        t.CREATE_TM,
+        t.STAT_DATE
+    </sql>
+    <sql id="addCustomerOrderForSupplierForSevenAndThirtyAndMonthSelectInsert">
+        SELECT
+        rscr.customer_id AS CUSTOMER_ID,
+        min(rcd.customer_name) AS CUSTOMER_NAME,
+        rc.customer_account AS CUSTOMER_ACCOUNT,
+        IFNULL(sum( resRt.num ),0) AS ORDER_NUM,
+        IFNULL(sum( resRt.price ),0) AS ORDER_MONEY,
+        IFNULL(sum( resRti.num ),0) AS ORDER_GOODS_NUM,
+        IFNULL(sum( resPay.payNUm ),0) AS PAY_NUM,
+        IFNULL(sum( resPay.payPrice ),0) AS PAY_MONEY,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        IFNULL(sum( resRro.num ),0) AS REFUND_NUM,
+        IFNULL(sum( resRro.rPrice ),0) AS REFUND_MONEY,
+        IFNULL(sum( resRri.num ),0) AS REFUND_GOODS_NUM,
+        min(rscr.company_info_id) AS SHOP_INFO_ID,
+        now( ) AS CREATE_TM,
+        #{statisticsDate} AS STAT_DATE
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rc.customer_id
+    </sql>
+
+    <insert id="generateCustomerOrderForSupplierStoreTypeForDay">
+        INSERT INTO customer_day (
+        STAT_DATE,
+        CUSTOMER_ID,
+        CUSTOMER_NAME,
+        CUSTOMER_ACCOUNT,
+        ORDER_NUM,
+        ORDER_MONEY,
+        ORDER_GOODS_NUM,
+        PAY_NUM,
+        PAY_MONEY,
+        ORDER_PER_PRICE,
+        REFUND_NUM,
+        REFUND_MONEY,
+        REFUND_GOODS_NUM,
+        CREATE_TM,
+        SHOP_ID
+        )
+        select t.STAT_DATE,
+         t.CUSTOMER_ID,
+         t.CUSTOMER_NAME,
+         t.CUSTOMER_ACCOUNT,
+         t.ORDER_NUM,
+         t.ORDER_MONEY,
+         t.ORDER_GOODS_NUM,
+         t.PAY_NUM,
+         t.PAY_MONEY,
+         t.ORDER_PER_PRICE,
+         t.REFUND_NUM,
+         t.REFUND_MONEY,
+         t.REFUND_GOODS_NUM,
+         t.CREATE_TM,
+         IF(r.store_type=1,-12,-13) as SHOP_ID
+         from (
+        SELECT
+        #{statisticsDate} AS STAT_DATE,
+        rscr.customer_id AS CUSTOMER_ID,
+        min(rcd.customer_name) AS CUSTOMER_NAME,
+        rc.customer_account AS CUSTOMER_ACCOUNT,
+        IFNULL(sum( resRt.num ),0) AS ORDER_NUM,
+        IFNULL(sum( resRt.price ),0) AS ORDER_MONEY,
+        IFNULL(sum( resRti.num ),0) AS ORDER_GOODS_NUM,
+        IFNULL(sum( resPay.payNUm ),0) AS PAY_NUM,
+        IFNULL(sum( resPay.payPrice ),0) AS PAY_MONEY,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        IFNULL(sum( resRro.num ),0) AS REFUND_NUM,
+        IFNULL(sum( resRro.rPrice ),0) AS REFUND_MONEY,
+        IFNULL(sum( resRri.num ),0) AS REFUND_GOODS_NUM,
+        rscr.company_info_id AS SHOP_INFO_ID,
+        now( ) AS CREATE_TM
+        FROM
+        replay_store_customer_rela rscr
+        inner join replay_customer rc on rc.customer_id = rscr.customer_id
+        LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rscr.customer_id,rscr.company_info_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+    <insert id="generateCustomerOrderForSupplierStoreTypeForSeven">
+        INSERT INTO
+        customer_recent_seven (
+        <include refid="addCustomerOrderForSevenAndThirtyAndMonth"/>
+        )
+        select
+        <include refid="addCustomerOrderForSevenAndThirtyAndMonthByStoreType"/>
+        from (
+        <include refid="addCustomerOrderForSupplierForSevenAndThirtyAndMonthSelectInsert"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rscr.customer_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+
+    </insert>
+
+    <insert id="generateCustomerOrderForSupplierStoreTypeForThirty">
+        INSERT INTO
+        customer_recent_thirty (
+        <include refid="addCustomerOrderForSevenAndThirtyAndMonth"/>
+        )
+        select
+        <include refid="addCustomerOrderForSevenAndThirtyAndMonthByStoreType"/>
+        from (
+        <include refid="addCustomerOrderForSupplierForSevenAndThirtyAndMonthSelectInsert"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rscr.customer_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+    <insert id="generateCustomerOrderForSupplierStoreTypeForMonth">
+        INSERT INTO
+        customer_month (
+        <include refid="addCustomerOrderForSevenAndThirtyAndMonth"/>
+        )
+        select
+        <include refid="addCustomerOrderForSevenAndThirtyAndMonthByStoreType"/>
+        from (
+        <include refid="addCustomerOrderForSupplierForSevenAndThirtyAndMonthSelectInsert"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        GROUP BY
+        rscr.customer_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+
+
+    <sql id="addCustomerAreaOrderSelectByStoreTypeSub">
+        SELECT
+        <if test="flowDataType==0 || flowDataType==1">
+            #{statisticsDate} as STAT_DATE,
+        </if>
+        rcd.city_id as CITY_ID,
+        IFNULL(sum(resRt.num),0) as ORDER_NUM,
+        IFNULL(sum(resRt.price),0) as ORDER_MONEY,
+        IFNULL(sum(resRti.num),0) as ORDER_GOODS_NUM,
+        IFNULL(sum(resPay.payNUm),0) as PAY_NUM,
+        IFNULL(sum(resPay.payPrice),0) as PAY_MONEY,
+        case when IFNULL(count(DISTINCT(rscr.customer_id)),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(count(DISTINCT(rscr.customer_id)),0), DECIMAL ( 15,
+        2 ) ),0) end
+        USER_PER_PRICE_THIRTY,
+        case when IFNULL(sum( resRt.num ),0)=0 then 0
+        else IFNULL(CONVERT ( IFNULL(sum( resRt.price ),0) / IFNULL(sum( resRt.num ),0), DECIMAL ( 15, 2 ) ),0) end
+        ORDER_PER_PRICE,
+        IFNULL(sum(resRro.num),0) as REFUND_NUM,
+        IFNULL(sum(resRro.rPrice),0) as REFUND_MONEY,
+        IFNULL(sum(resRri.num),0) as REFUND_GOODS_NUM,
+        <if test="shopType==1">
+            min(rscr.company_info_id) as SHOP_INFO_ID,
+        </if>
+        <if test="shopType!=1">
+            0 as SHOP_INFO_ID,
+        </if>
+        now() as CREATE_TM
+        <if test="flowDataType>=2">
+            ,#{statisticsDate} as STAT_DATE
+        </if>
+        <if test="flowDataType==0 || flowDataType==1">
+            ,IFNULL(count(DISTINCT(rscr.customer_id)),0) as CUSTOMER_COUNT
+        </if>
+        FROM
+        <if test="shopType!=1">
+            replay_customer rscr
+            LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        </if>
+        <if test="shopType==1">
+            replay_store_customer_rela rscr
+            inner join replay_customer rc on rc.customer_id = rscr.customer_id
+            LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rscr.customer_id
+        </if>
+    </sql>
+    <sql id="addCustomerAreaOrderSelectByStoreType">
+        <if test="flowDataType==0 || flowDataType==1">
+            t.STAT_DATE,
+        </if>
+        t.CITY_ID,
+        t.ORDER_NUM,
+        t.ORDER_MONEY,
+        t.ORDER_GOODS_NUM,
+        t.PAY_NUM,
+        t.PAY_MONEY,
+        t.USER_PER_PRICE_THIRTY,
+        t.ORDER_PER_PRICE,
+        t.REFUND_NUM,
+        t.REFUND_MONEY,
+        t.REFUND_GOODS_NUM,
+        t.CREATE_TM
+        <if test="flowDataType>=2">
+            ,t.STAT_DATE
+        </if>
+        <if test="flowDataType==0 || flowDataType==1">
+            ,t.CUSTOMER_COUNT
+        </if>
+        ,IF(r.store_type=1,-12,-13) as SHOP_ID
+    </sql>
+    <sql id="addCustomerAreaOrderSelectByStoreTypeInsert">
+        <if test="flowDataType==0 || flowDataType==1">
+            STAT_DATE,
+        </if>
+        CITY_ID,
+        ORDER_NUM,
+        ORDER_MONEY,
+        ORDER_GOODS_NUM,
+        PAY_NUM,
+        PAY_MONEY,
+        USER_PER_PRICE_THIRTY,
+        ORDER_PER_PRICE,
+        REFUND_NUM,
+        REFUND_MONEY,
+        REFUND_GOODS_NUM,
+        CREATE_TM
+        <if test="flowDataType>=2">
+            ,STAT_DATE
+        </if>
+        <if test="flowDataType==0 || flowDataType==1">
+            ,CUSTOMER_COUNT
+        </if>
+        ,SHOP_ID
+    </sql>
+
+    <insert id="generateCustomerAreaOrderForSupplierStoreTypeForDay">
+        insert into customer_region_day
+        (
+        <include refid="addCustomerAreaOrderSelectByStoreTypeInsert"/>
+        )
+        SELECT
+        <include refid="addCustomerAreaOrderSelectByStoreType"/>
+        from (
+        <include refid="addCustomerAreaOrderSelectByStoreTypeSub"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id,rscr.company_info_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForSupplierStoreTypeForSeven">
+        insert into customer_region_recent_seven
+        (
+        <include refid="addCustomerAreaOrderSelectByStoreTypeInsert"/>
+        )
+        SELECT
+        <include refid="addCustomerAreaOrderSelectByStoreType"/>
+        from (
+        <include refid="addCustomerAreaOrderSelectByStoreTypeSub"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id,rscr.company_info_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForSupplierStoreTypeForThirty">
+        insert into customer_region_recent_thirty
+        (
+        <include refid="addCustomerAreaOrderSelectByStoreTypeInsert"/>
+        )
+        SELECT
+        <include refid="addCustomerAreaOrderSelectByStoreType"/>
+        from (
+        <include refid="addCustomerAreaOrderSelectByStoreTypeSub"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id,rscr.company_info_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+    <insert id="generateCustomerAreaOrderForSupplierStoreTypeForMonth">
+        insert into customer_region_month
+        (
+        <include refid="addCustomerAreaOrderSelectByStoreTypeInsert"/>
+        )
+        SELECT
+        <include refid="addCustomerAreaOrderSelectByStoreType"/>
+        from (
+        <include refid="addCustomerAreaOrderSelectByStoreTypeSub"/>
+        <include refid="generateCustomerOrderForSupplier"/>
+        group by rcd.city_id,rscr.company_info_id
+        ) t left join replay_store r on t.SHOP_INFO_ID = r.company_info_id
+    </insert>
+
+
+
+
+
+</mapper>

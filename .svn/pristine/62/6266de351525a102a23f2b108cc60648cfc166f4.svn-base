@@ -1,0 +1,38 @@
+db.getCollection("bus_bar_infos").insert({
+  "_id": "62872cbdad37ec410e0265a9",
+  "envCode": "test1",
+  "key": "@wanmi/wechat-recommendFooter",
+  "platform": "weixin",
+  "systemCode": "d2cStore",
+  "__v": 0,
+  "addible": false,
+  "cateId": "",
+  "classify": "",
+  "createdAt": "2022-05-20T05:53:02.047Z",
+  "deletable": false,
+  "deleted": false,
+  "dependencies": [
+    "@wanmi/wechat-recommendFooter"
+  ],
+  "img": "",
+  "isAdvanced": true,
+  "isCommon": true,
+  "packageName": "@wanmi/wechat-recommendFooter",
+  "props": {
+    "props": {
+      "title": "请输入标题内容",
+      "showTypes": [
+        "readTimes",
+        "pointTimes",
+        "broadTimes"
+      ],
+      "version": "0.0.1"
+    },
+    "widgetNameSpace": "@wanmi/wechat-recommendFooter"
+  },
+  "replicable": false,
+  "title": "种草页底部",
+  "type": "COMMON",
+  "updatedAt": "2022-05-20T06:16:00.459Z",
+  "version": "0.0.1"
+})

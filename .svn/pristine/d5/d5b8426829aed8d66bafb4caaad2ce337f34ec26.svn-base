@@ -1,0 +1,27 @@
+## 1、es商品库、商品资料库数据重刷
+
+##2、Jenkins修改
+构建项目和推送项目加上api（具体参考演示环境的Jenkins配置）：
+```prperties
+micro_services=(common api account setting message empower customer goods marketing order elastic mq open vas platform)
+```
+
+推送项目:
+```prperties
+cd ../$project
+if [ "$project" == 'perseus' ];then
+mvn clean install $deploy -Dmaven.test.skip=true
+elif [ "$project" == 'open' ];then
+mvn clean install $deploy -Dmaven.test.skip=true
+elif [ "$project" == 'platform' ];then
+mvn clean install $deploy -Dmaven.test.skip=true
+elif [ $project == 'common' ];then
+continue
+elif [ $project == 'api' ];then
+continue
+elif [ $project == 'ares' ];then
+mvn clean install $deploy -Dmaven.test.skip=true -pl $project-core,$project-thrift-server,$project-app
+else
+mvn clean install $deploy -Dmaven.test.skip=true -pl service-$project-core,service-$project-app
+fi
+```

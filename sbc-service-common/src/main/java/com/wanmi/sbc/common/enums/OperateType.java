@@ -1,0 +1,34 @@
+package com.wanmi.sbc.common.enums;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.wanmi.sbc.common.annotation.ApiEnum;
+import com.wanmi.sbc.common.annotation.ApiEnumProperty;
+
+/**
+ * 操作类型 0:扣除 1:增长 2:覆盖'
+ *
+ * @author yang
+ * @since 2019/2/22
+ */
+@ApiEnum
+public enum OperateType {
+    @ApiEnumProperty("扣除")
+    DEDUCT,
+    @ApiEnumProperty("增长")
+    GROWTH,
+    @ApiEnumProperty("覆盖")
+    REPLACE;
+
+
+    @JsonCreator
+    public OperateType fromValue(int value) {
+        return values()[value];
+    }
+
+    @JsonValue
+    public int toValue() {
+        return this.ordinal();
+    }
+
+}

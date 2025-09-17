@@ -1,0 +1,39 @@
+package com.wanmi.sbc.vas.api.request.recommend.goodsrelatedrecommend;
+
+import com.wanmi.sbc.common.base.BaseRequest;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+
+/**
+ * @ClassName GoodsRelatedRecommendUpdateWeightRequest
+ * @description
+ * @Author lvzhenwei
+ * @Date 2020/11/25 14:07
+ **/
+@Schema
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class GoodsRelatedRecommendUpdateWeightRequest extends BaseRequest {
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 主键id
+     */
+    @Schema(description = "主键id")
+    private Long id;
+
+    /**
+     * 权重
+     */
+    @Schema(description = "权重")
+    private BigDecimal weight;
+}

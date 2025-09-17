@@ -1,0 +1,7 @@
+1、XSS攻击漏洞修复，对应的nacos配置修改，
+sbc-boss.properties、sbc-supplier.properties、sbc-provider.properties增加配置信息：
+
+xss.param-names=couponDesc
+
+2、nacos配置sbc-provider.properties增加配置信息：
+scan-task.within-time=30

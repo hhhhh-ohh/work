@@ -1,0 +1,34 @@
+{
+  "properties": {
+    "sensitiveId": {
+      "type": "long"
+    },
+    "sensitiveWords": {
+      "type": "keyword"
+    },
+    "delFlag": {
+      "type": "integer"
+    },
+    "createUser": {
+      "type": "keyword"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "updateUser": {
+      "type": "keyword"
+    },
+    "updateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "deleteUser": {
+      "type": "keyword"
+    },
+    "deleteTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    }
+  }
+}

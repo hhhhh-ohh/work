@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: callback
+    name: callback-deployment
+  name: callback
+  namespace: sbc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: callback
+  template:
+    metadata:
+      labels:
+        app: callback
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - image: {{IMAGE_NAME}}
+          imagePullPolicy: Always
+          name: callback
+          ports:
+            - containerPort: 8780
+              name: tomcat-port
+          livenessProbe:
+            httpGet:
+              path: /act/health
+              port: 8781
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 30
+          env:
+            - name: JAVA_OPTS
+              value: {{JAVA_ENV_PARAMS}}
+            - name: NACOS_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: sbc-config
+                  key: nacosAddress
+            - name: RESTART_
+              value: {{DATE}}
+#          resources:
+#            limits:
+#              cpu: '1'
+#              memory: 3Gi
+#            requests:
+#              cpu: '1'JAVA_ENV_PARAMS
+#              memory: 3Gi
+          volumeMounts:
+            - mountPath: /data/server/log
+              name: callback-logs
+      volumes:
+        - name: callback-logs
+          hostPath:
+            path: /data/sbc/logs/callback
+      hostNetwork: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: callback-svc
+  namespace: sbc
+  labels:
+    k8s-app: callback-svc
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8780
+      targetPort: 8780
+      protocol: TCP
+      name: http
+  selector:
+    app: callback

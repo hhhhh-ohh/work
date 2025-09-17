@@ -1,0 +1,84 @@
+## es同步
+boss后端重新同步es_customer_invoice
+
+## 清除redis缓存
+删除redis缓存中的key： `GOODS_CATE_KEY:`
+删除redis缓存中的key: `marketing_plugin_cache`
+
+## nacos配置修改
+### sbc-service-mq.properties
+```properties
+# 商品-库存批量修改
+spring.cloud.stream.bindings.batch-goods-stock-update-input.destination=q.goods.batch.stock.update
+spring.cloud.stream.bindings.batch-goods-stock-update-output.destination=q.goods.batch.stock.update
+
+#商品库存覆盖
+spring.cloud.stream.bindings.goods-info-stock-replace-input.destination=q.goods.info.stock.replace.data.request
+spring.cloud.stream.bindings.goods-info-stock-replace-output.destination=q.goods.info.stock.replace.data.request
+
+#客户-客户积分批量修改
+spring.cloud.stream.bindings.batch-customer-points-update-input.destination=q.customer.points.batch.update
+spring.cloud.stream.bindings.batch-customer-points-update-output.destination=q.customer.points.batch.update
+```
+
+### sbc-boss.properties
+原有配置项改为以下配置
+```properties
+api.badWords.excludePath-rest-urls={"/sensitiveWords/valid":"POST","/sensitiveWords/edit":"POST","/sensitiveWords/add":"POST"}
+```
+
+## sbc-service-empower.properties
+```properties
+##############银联SDK配置文件（证书方式签名）################
+# 说明：
+# 1. 使用时请删除后缀的“.证书”，并将此文件复制到对应的文件夹下
+# 2. 具体配置项请根据注释修改。
+#
+##########################入网测试环境交易发送地址（线上测试需要使用生产环境交易请求地址）#############################
+##交易请求地址
+union.acpsdk.frontTransUrl=https://gateway.test.95516.com/gateway/api/frontTransReq.do
+union.acpsdk.backTransUrl=https://gateway.test.95516.com/gateway/api/backTransReq.do
+union.acpsdk.singleQueryUrl=https://gateway.test.95516.com/gateway/api/queryTrans.do
+union.acpsdk.batchTransUrl=https://gateway.test.95516.com/gateway/api/batchTrans.do
+union.acpsdk.fileTransUrl=https://filedownload.test.95516.com/
+union.acpsdk.appTransUrl=https://gateway.test.95516.com/gateway/api/appTransReq.do
+union.acpsdk.cardTransUrl=https://gateway.test.95516.com/gateway/api/cardTransReq.do
+
+#以下缴费产品使用，其余产品用不到
+union.acpsdk.jfFrontTransUrl=https://gateway.test.95516.com/jiaofei/api/frontTransReq.do
+union.acpsdk.jfBackTransUrl=https://gateway.test.95516.com/jiaofei/api/backTransReq.do
+union.acpsdk.jfSingleQueryUrl=https://gateway.test.95516.com/jiaofei/api/queryTrans.do
+union.acpsdk.jfCardTransUrl=https://gateway.test.95516.com/jiaofei/api/cardTransReq.do
+union.acpsdk.jfAppTransUrl=https://gateway.test.95516.com/jiaofei/api/appTransReq.do
+########################################################################
+# 报文版本号，固定5.1.0，请勿改动
+union.acpsdk.version=5.1.0
+# 签名方式，证书方式固定01，请勿改动
+union.acpsdk.signMethod=01
+# 是否验证验签证书的CN，测试环境请设置false，生产环境请设置true。非false的值默认都当true处理。
+union.acpsdk.ifValidateCNName=false
+# 是否验证https证书，测试环境请设置false，生产环境建议优先尝试true，不行再false。非true的值默认都当false处理。
+union.acpsdk.ifValidateRemoteCert=false
+#后台通知地址，填写接收银联后台通知的地址，必须外网能访问
+union.acpsdk.backUrl=http://222.222.222.222:8080/ACPSample_B2B/backRcvResponse
+#前台通知地址，填写处理银联前台通知的地址，必须外网能访问
+union.acpsdk.frontUrl=http://localhost:8080/ACPSample_B2B/frontRcvResponse
+#########################入网测试环境签名证书配置 ################################
+# 多证书的情况证书路径为代码指定，可不对此块做配置。
+# 签名证书路径，必须使用绝对路径，如果不想使用绝对路径，可以自行实现相对路径获取证书的方法；测试证书所有商户共用开发包中的测试签名证书，生产环境请从cfca下载得到。
+union.acpsdk.signCertPath=/data/sbc/empower/bin/acp_test_sign.pfx
+# 签名证书密码，测试环境固定000000，生产环境请修改为从cfca下载的正式证书的密码，正式环境证书密码位数需小于等于6位，否则上传到商户服务网站会失败
+union.acpsdk.signCertPwd=000000
+# 签名证书类型，固定不需要修改
+union.acpsdk.signCertType=PKCS12
+##########################加密证书配置################################
+# 敏感信息加密证书路径(商户号开通了商户对敏感信息加密的权限，需要对 卡号accNo，pin和phoneNo，cvn2，expired加密（如果这些上送的话），对敏感信息加密使用)
+union.acpsdk.encryptCertPath=/data/sbc/empower/bin/acp_test_enc.cer
+##########################验签证书配置################################
+# 验签中级证书路径(银联提供)
+union.acpsdk.middleCertPath=/data/sbc/empower/bin/acp_test_middle.cer
+# 验签根证书路径(银联提供)
+union.acpsdk.rootCertPath=/data/sbc/empower/bin/acp_test_root.cer
+```
+
+

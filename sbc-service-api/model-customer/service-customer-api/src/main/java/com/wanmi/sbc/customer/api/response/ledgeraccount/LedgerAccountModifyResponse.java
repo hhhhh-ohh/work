@@ -1,0 +1,31 @@
+package com.wanmi.sbc.customer.api.response.ledgeraccount;
+
+import com.wanmi.sbc.customer.bean.vo.LedgerAccountVO;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+/**
+ * <p>清分账户修改结果</p>
+ * @author 许云鹏
+ * @date 2022-07-01 15:50:40
+ */
+@Schema
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class LedgerAccountModifyResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 已修改的清分账户信息
+     */
+    @Schema(description = "已修改的清分账户信息")
+    private LedgerAccountVO ledgerAccountVO;
+}

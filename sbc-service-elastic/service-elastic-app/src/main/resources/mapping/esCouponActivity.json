@@ -1,0 +1,61 @@
+{
+  "properties": {
+    "platformFlag": {
+      "type": "integer"
+    },
+    "activityName": {
+      "type": "keyword"
+    },
+    "joinLevelType": {
+      "type": "integer"
+    },
+    "pauseFlag": {
+      "type": "integer"
+    },
+    "delFlag": {
+      "type": "integer"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "joinLevels": {
+      "type": "keyword"
+    },
+    "terminals": {
+      "type": "keyword"
+    },
+    "activityId": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "receiveCount": {
+      "type": "integer"
+    },
+    "startTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "endTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "couponActivityType": {
+      "type": "integer"
+    },
+    "receiveType": {
+      "type": "integer"
+    },
+    "drawActivityId": {
+      "type": "long"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+truncate table `sbc-order`.`pickup_code_record`;

@@ -1,0 +1,1 @@
+INSERT INTO `sbc-setting`.`function_info`(`function_id`, `system_type_cd`, `menu_id`, `function_title`, `function_name`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('2c9b8072801be66a01801c5786540000', 3, 'fc8e04c03fe311e9828800163e0fc468', '导入商品', 'f_order_add_import', '', 12, '2022-04-12 13:55:40', 0);

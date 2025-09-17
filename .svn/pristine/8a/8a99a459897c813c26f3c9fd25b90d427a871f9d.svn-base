@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mq
+    name: mq-deployment
+  name: mq
+  namespace: sbc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mq
+  template:
+    metadata:
+      labels:
+        app: mq
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - image: {{IMAGE_NAME}}
+          imagePullPolicy: Always
+          name: mq
+          ports:
+            - containerPort: 8820
+              name: tomcat-port
+          livenessProbe:
+            httpGet:
+              path: /act/health
+              port: 8821
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 30
+          env:
+            - name: JAVA_OPTS
+              value: {{JAVA_ENV_PARAMS}}
+            - name: NACOS_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: sbc-config
+                  key: nacosAddress
+            - name: RESTART_
+              value: {{DATE}}
+#          resources:
+#            limits:
+#              cpu: '1'
+#              memory: 3Gi
+#            requests:
+#              cpu: '1'JAVA_ENV_PARAMS
+#              memory: 3Gi
+          volumeMounts:
+            - mountPath: /data/server/log
+              name: mq-logs
+      volumes:
+        - name: mq-logs
+          hostPath:
+            path: /data/sbc/logs/mq
+      hostNetwork: false
+---

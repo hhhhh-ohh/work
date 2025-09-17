@@ -1,0 +1,195 @@
+{
+  "replayTable" : "replay_trade_item",
+  "dispatch" :{
+    "dispatch": null,
+    "typeFilter": ["INSERT","UPDATE","DELETE"],
+    "typeDispatch": {}
+  },
+  "pk": ["oid"],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "tid",
+        "dataType": 12
+      },
+      {
+        "field": "supplier.storeId",
+        "replayField": "store_id",
+        "dataType": -5
+      },
+      {
+        "field": "supplier.supplierCode",
+        "replayField": "supplier_code",
+        "dataType": 12
+      }
+    ],
+    "arrayData": {
+      "arrayRoot": "tradeItems",
+      "mappingData": {
+        "singleData": [
+          {
+            "field": "bargainGoodsId",
+            "replayField": "bargain_goods_id",
+            "dataType": -5
+          },
+          {
+            "field": "supplyPrice",
+            "replayField": "supply_price",
+            "dataType": 3
+          },
+          {
+            "field": "oid",
+            "replayField": "oid",
+            "dataType": 12
+          },
+          {
+            "field": "adminId",
+            "replayField": "admin_id",
+            "dataType": 12
+          },
+          {
+            "field": "spuId",
+            "replayField": "spu_id",
+            "dataType": 12
+          },
+          {
+            "field": "spuName",
+            "replayField": "spu_name",
+            "dataType": 12
+          },
+          {
+            "field": "skuId",
+            "replayField": "sku_id",
+            "dataType": 12
+          },
+          {
+            "field": "skuName",
+            "replayField": "sku_name",
+            "dataType": 12
+          },
+          {
+            "field": "skuNo",
+            "replayField": "sku_no",
+            "dataType": 12
+          },
+          {
+            "field": "cateId",
+            "replayField": "cate_id",
+            "dataType": -5
+          },
+          {
+            "field": "cateTopId",
+            "replayField": "cate_top_id",
+            "dataType": -5
+          },
+          {   
+            "field": "pic",
+            "replayField": "img",
+            "dataType": 12
+          },
+          {
+            "field": "cateName",
+            "replayField": "cate_name",
+            "dataType": 12
+          },
+          {
+            "field": "brand",
+            "replayField": "brand",
+            "dataType": -5
+          },
+          {
+            "field": "num",
+            "replayField": "num",
+            "dataType": -5
+          },
+          {
+            "field": "unit",
+            "replayField": "unit",
+            "dataType": 12
+          },
+          {
+            "field": "price",
+            "replayField": "price",
+            "dataType": 3
+          },
+          {
+            "field": "originalPrice",
+            "replayField": "original_price",
+            "dataType": 3
+          },
+          {
+            "field": "levelPrice",
+            "replayField": "level_price",
+            "dataType": 3
+          },
+          {
+            "field": "splitPrice",
+            "replayField": "split_price",
+            "dataType": 3
+          },
+          {
+            "field": "cost",
+            "replayField": "cost",
+            "dataType": 3
+          },
+          {
+            "field": "bn",
+            "replayField": "bn",
+            "dataType": 32
+          },
+          {
+            "field": "canReturnNum",
+            "replayField": "can_return_num",
+            "dataType": 4
+          },
+          {
+            "field": "isBookingSaleGoods",
+            "replayField": "is_booking_sale_goods",
+            "dataType": -6
+          },
+          {
+            "field": "bookingSaleId",
+            "replayField": "booking_sale_id",
+            "dataType": -5
+          },
+          {
+            "field": "bookingType",
+            "replayField": "booking_type",
+            "dataType": 4,
+            "enumType": {
+              "FULL_MONEY": 0,
+              "EARNEST_MONEY": 1
+            }
+          },
+          {
+            "field": "flashSaleGoodsId",
+            "replayField": "flash_sale_goods_id",
+            "dataType": -5
+          },
+          {
+            "field": "isAppointmentSaleGoods",
+            "replayField": "is_appointment_sale_goods",
+            "dataType": -6
+          },
+          {
+            "field": "appointmentSaleId",
+            "replayField": "appointment_sale_id",
+            "dataType": -5
+          },
+          {
+            "field": "specDetails",
+            "replayField": "spec_details",
+            "dataType": 12
+          },
+          {
+            "field": "suitsId",
+            "replayField": "suits_id",
+            "dataType": -5
+          }
+        ],
+        "arrayData": {}
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+package com.wanmi.sbc.customer.api.request.store;
+
+import com.wanmi.sbc.customer.api.request.CustomerBaseRequest;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import jakarta.validation.constraints.NotNull;
+
+import lombok.*;
+
+/**
+ * <p>根据店铺id查询未删除店铺基本信息request</p>
+ * Created by of628-wenzhi on 2018-09-12-下午2:46.
+ */
+@Schema
+@EqualsAndHashCode(callSuper = true)
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class NoDeleteStoreByIdRequest extends CustomerBaseRequest{
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 店铺id
+     */
+    @Schema(description = "店铺id")
+    @NotNull
+    private Long storeId;
+}

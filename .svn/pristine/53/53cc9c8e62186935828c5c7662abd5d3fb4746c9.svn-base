@@ -1,0 +1,37 @@
+package com.wanmi.sbc.mq.consumer.service;
+
+import com.alibaba.fastjson2.JSONObject;
+import com.wanmi.sbc.common.base.Operator;
+import com.wanmi.sbc.order.api.provider.small.SmallProvider;
+import com.wanmi.sbc.order.api.request.distribution.ReturnOrderSendMQRequest;
+import com.wanmi.sbc.order.api.request.returnorder.ReturnOrderOnlineRefundByTidRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.messaging.Message;
+import org.springframework.stereotype.Service;
+
+import java.util.function.Consumer;
+
+@Slf4j
+@Service
+public class TradeToH5CreateOrderService {
+    @Autowired
+    private SmallProvider smallProvider;
+
+    @Bean
+    public Consumer<Message<String>> mqTradeToH5CreateOrderService() {
+        return this::extracted;
+    }
+
+    public void extracted(Message<String> message) {
+        String json = message.getPayload();
+        try {
+            log.info("=============== 推送订单到h5平台MQ处理start ===============订单号:{}", json);
+            smallProvider.createH5OrderByTid(json);
+            log.info("=============== 推送订单到h5平台MMQ处理end ===============");
+        } catch (Exception e) {
+            log.error("推送订单到h5平台MQ处理异常! param={}", json, e);
+        }
+    }
+}

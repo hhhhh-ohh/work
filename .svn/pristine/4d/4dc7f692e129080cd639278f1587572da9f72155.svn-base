@@ -1,0 +1,11 @@
+@startuml
+start
+   :商品编辑;
+   if(不存在商品信息) then(yes)
+    :填充商品信息默认值;
+   endif;
+   :原有商品保存逻辑;
+   :路由到新方法;
+   :同步新ES索引;
+stop
+@enduml

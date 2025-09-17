@@ -1,0 +1,39 @@
+package com.wanmi.sbc.marketing.api.response.grouponsetting;
+import com.wanmi.sbc.common.base.BasicResponse;
+import com.wanmi.sbc.marketing.bean.vo.GrouponSettingGoodsVO;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.util.List;
+
+/**
+ * <p>拼团活动信息表新增结果</p>
+ * @author groupon
+ * @date 2019-05-15 14:19:49
+ */
+@Schema
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class GrouponSettingGoodsResponse extends BasicResponse {
+    private static final long serialVersionUID = 1L;
+
+    private List<GrouponSettingGoodsVO> grouponSettingGoodsVOList;
+    /**
+     * 页码
+     */
+    @Schema(description = "页码")
+    private int number;
+
+    /**
+     * 总数据大小
+     */
+    @Schema(description = "总数据大小")
+    private long total;
+}

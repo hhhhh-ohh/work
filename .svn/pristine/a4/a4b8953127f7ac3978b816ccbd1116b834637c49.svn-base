@@ -1,0 +1,29 @@
+## nacos配置修改
+### sbc-service-mq.properties
+#### 1、
+```properties
+spring.cloud.stream.bindings.groupon-order-pay-success-auto-refund-input.destination=q.order.service.groupon.pay.success.auto.refund
+spring.cloud.stream.bindings.groupon-order-pay-success-auto-refund-output.destination=q.order.service.groupon.pay.success.auto.refund
+```
+改为
+```properties
+spring.cloud.stream.bindings.groupon-order-pay-success-auto-refund-delay-input.destination=q.order.service.groupon.pay.success.auto.refund.delay
+spring.cloud.stream.rabbit.bindings.groupon-order-pay-success-auto-refund-delay-input.consumer.delayed-exchange=true
+spring.cloud.stream.bindings.groupon-order-pay-success-auto-refund-delay-output.destination=q.order.service.groupon.pay.success.auto.refund.delay
+spring.cloud.stream.rabbit.bindings.groupon-order-pay-success-auto-refund-delay-output.producer.delayed-exchange=true
+```
+
+#### 2、
+```properties
+spring.cloud.stream.rabbit.increase-customer-growth-value-new-output.delayed-exchange=true
+```
+改为
+```properties
+spring.cloud.stream.rabbit.bindings.increase-customer-growth-value-new-output.producer.delayed-exchange=true
+```
+
+### sbc-mobile.properties 增加如下配置
+```properties
+#魔方首页地址
+magic.page.main.config=https://xxx.xxx.xxx/app-render/magic/d2cStore/000000/weixin/index
+```

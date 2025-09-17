@@ -1,0 +1,611 @@
+package com.wanmi.sbc.order.swdh5.service;
+
+/**
+ * <p>调用老平台下单流程</p>
+ * @author 万里晗
+ * @date 2023-07-24 14:13:21
+ */
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.enums.CommonErrorCodeEnum;
+import com.wanmi.sbc.common.util.DateUtil;
+import com.wanmi.sbc.goods.api.provider.info.GoodsInfoQueryProvider;
+import com.wanmi.sbc.goods.api.request.info.GoodsInfoListByIdsRequest;
+import com.wanmi.sbc.goods.bean.vo.GoodsInfoVO;
+import com.wanmi.sbc.order.api.request.smallorder.SmallOrderRequest;
+import com.wanmi.sbc.order.api.request.smallorder.SmallOrderReturnRequest;
+import com.wanmi.sbc.order.bean.enums.ReturnType;
+import com.wanmi.sbc.order.bean.vo.TradeItemVO;
+import com.wanmi.sbc.order.returnorder.model.entity.ReturnItem;
+import com.wanmi.sbc.order.returnorder.model.root.ReturnOrder;
+import com.wanmi.sbc.order.trade.model.entity.TradeItem;
+import com.wanmi.sbc.order.trade.model.entity.value.Consignee;
+import com.wanmi.sbc.order.trade.model.root.Trade;
+import com.wanmi.sbc.order.trade.service.TradeService;
+import com.wanmi.sbc.setting.api.provider.platformaddress.PlatformAddressQueryProvider;
+import com.wanmi.sbc.setting.api.request.platformaddress.PlatformAddressListRequest;
+import com.wanmi.sbc.setting.bean.vo.PlatformAddressVO;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.net.http.HttpClient;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+@RefreshScope
+@Service("SmallService")
+@Slf4j
+public class SmallService {
+
+    @Value("${small.domain}")
+    private String smallDomain;
+
+    @Value("${return.small.domain}")
+    private String returnSmallDomain;
+
+    @Value("${small.brand.id:9}")
+    private String smallBrandId;
+
+    @Value("${order.sn.suffix}")
+    private String orderSnSuffix;
+
+    @Autowired
+    private PlatformAddressQueryProvider platformAddressQueryProvider;
+
+    @Autowired
+    private GoodsInfoQueryProvider goodsInfoQueryProvider;
+
+    @Autowired
+    private TradeService tradeService;
+
+    @Autowired
+    @Qualifier("smallOrderExecutor")
+    private ExecutorService executorService;
+
+
+    /**
+     * 调用旧平台下单
+     * @param trades
+     */
+    public BaseResponse createSmallOrder(List<Trade> trades) {
+        log.info("订单数据，开始组装:{}",trades);
+        try {
+            // 校验订单
+            if (CollectionUtils.isEmpty(trades)){
+                log.error("暂无订单数据，无法组装: {}", JSONObject.toJSONString(trades));
+                return BaseResponse.success("暂无订单数据，无法组装");
+            }
+
+            // 组装
+            log.info("订单数据，开始组装数据");
+            List<SmallOrderRequest> smallOrderRequestList = assembleSmallOrderRequest(trades);
+            log.info("订单数据，结束组装数据");
+
+            // 校验订单
+            if (CollectionUtils.isEmpty(smallOrderRequestList)){
+                log.error("订单数据，组装失败: {}", smallOrderRequestList);
+                return BaseResponse.success("订单数据，组装失败");
+            }
+            //判断订单是否是 预约发货的, 预约发货的在这里先不推送订单到旧平台h5
+            if (trades.stream().anyMatch(trade -> trade.getAppointmentShipmentFlag() != null && trade.getAppointmentShipmentFlag()==1)){
+                log.info("订单数据，有预约发货订单，不推送");
+                return BaseResponse.success("订单数据，有预约发货订单，不推送");
+            }
+
+            // 调用
+            log.info("订单数据，开始调用数据");
+            BaseResponse smallOrderResponse = createSmallOrderAsync(smallOrderRequestList);
+            log.info("订单数据，结束调用数据");
+            return smallOrderResponse;
+
+
+        } catch (Exception e){
+            log.error("调用旧平台small下单，异常: {}", e.getMessage());
+        }
+        return null;
+    }
+    public Integer getGiftNum(String phone){
+        String url = returnSmallDomain+ "/miaoRetail/getGiftNum";
+        Map<String,String> ci = new HashMap<>();
+        ci.put("phone",phone);
+
+        log.info("调用旧平台:{}获取礼包数: {}", url, JSONObject.toJSONString(ci));
+        JSONObject response =  doPost(url, JSONObject.toJSONString(ci));
+        log.info("调用旧平台返回结果: {}", response);
+        if (response != null && response.containsKey("code")) {
+            int code = response.getIntValue("code");
+            if (code == 20000) {
+                String data = response.getString("data");
+                log.info("调用旧平台礼包数，成功: {}", data);
+                return Integer.valueOf(data);
+            } else {
+                log.error("调用旧平台礼包数，错误码: {}, 错误信息: {}", code, response.getString("msg"));
+                return 0;
+            }
+        }
+        return null;
+    }
+    public Integer checkFullGift(String phone){
+        String url = returnSmallDomain+ "/miaoRetail/checkGift";
+        Map<String,String> ci = new HashMap<>();
+        ci.put("phone",phone);
+        log.info("调用旧平台:{}激活礼包: {}", url, JSONObject.toJSONString(ci));
+        JSONObject response =  doPost(url, JSONObject.toJSONString(ci));
+        log.info("调用旧平台结果: {}", response);
+        if (response != null && response.containsKey("code")) {
+            int code = response.getIntValue("code");
+            if (code == 20000) {
+                String data = response.getString("data");
+                log.info("调用旧平台激活礼包，成功: {}", data);
+                return Integer.valueOf(data);
+            } else {
+                log.error("调用旧平台激活礼包，错误码: {}, 错误信息: {}", code, response.getString("msg"));
+                return 0;
+            }
+        }
+        return null;
+    }
+    private List<SmallOrderRequest> assembleSmallOrderRequest(List<Trade> trades) {
+        List<SmallOrderRequest> smallOrderRequestList = new ArrayList<>();
+
+        // 地图数据
+        List<String> addrIds = new ArrayList<>();
+        List<String> goodsInfoIds = new ArrayList<>();
+        trades.stream().forEach(preTrade -> {
+            Consignee consignee = preTrade.getConsignee();
+            if (consignee != null) {
+                addrIds.add(Objects.toString(consignee.getProvinceId()));
+                addrIds.add(Objects.toString(consignee.getCityId()));
+                addrIds.add(Objects.toString(consignee.getAreaId()));
+            }
+            preTrade.getTradeItems().stream().forEach(tradeItem -> {
+                goodsInfoIds.add(tradeItem.getSkuId());
+            });
+        });
+
+        log.info("获取地址信息，开始调用");
+        Map<String, String> addrMap = getAddrInfo(addrIds);
+        log.info("获取地址信息，结束调用");
+
+        log.info("获取商品信息，开始调用");
+        Map<String, GoodsInfoVO> goodsMap = getGoodsInfo(goodsInfoIds);
+        log.info("获取商品信息，结束调用");
+
+
+        trades.stream().forEach(trade -> {
+            // 判断是否有
+            SmallOrderRequest smallOrderRequest = new SmallOrderRequest();
+
+            // 订单信息组装
+            smallOrderRequest.setOrderSn(trade.getId() + orderSnSuffix);
+            smallOrderRequest.setPhone(trade.getBuyer().getPhone());
+            smallOrderRequest.setCreateTime(DateUtil.convertToLocalDateTime(trade.getTradeState().getCreateTime()));
+            smallOrderRequest.setPaymentTime((DateUtil.convertToLocalDateTime(trade.getTradeState().getPayTime())));
+
+            List<SmallOrderRequest.MOrderDetailRetail> mOrderDetailRetailList = new ArrayList<>();
+            // 校验品牌
+            List<String> smallBrandList = Arrays.stream(smallBrandId.split(","))
+                    .collect(Collectors.toList());
+            List<TradeItem> tradeItemList = trade.getTradeItems().stream().
+                    filter(tradeItem -> tradeItem.getBrand() != null && smallBrandList.contains(String.valueOf(tradeItem.getBrand()))).collect(Collectors.toList());
+            if  (CollectionUtils.isEmpty(tradeItemList)) {
+                return;
+            }
+
+            // 订单详情组装
+            tradeItemList.stream().forEach(tradeItem -> {
+                SmallOrderRequest.MOrderDetailRetail mOrderDetailRetail = new SmallOrderRequest.MOrderDetailRetail();
+                mOrderDetailRetail.setSkuId(tradeItem.getSkuNo());
+                mOrderDetailRetail.setPrice(tradeItem.getPrice());
+                mOrderDetailRetail.setNum(tradeItem.getNum().intValue());
+                mOrderDetailRetail.setBadgeCode(tradeItem.getSchoolBadgeCode());
+                // tradeItem.getPrice()  取 商品划线价格 lineprice
+                GoodsInfoVO goodsInfoVO = goodsMap.get(tradeItem.getSkuId());
+                BigDecimal linePrice = getLinePrice(tradeItem.getPrice(), goodsInfoVO);
+                BigDecimal itemAmount = linePrice.multiply(new BigDecimal(tradeItem.getNum()));
+                BigDecimal itemDiscountAmount = getDiscountAmount(itemAmount, tradeItem.getSplitPrice());
+
+                mOrderDetailRetail.setAmount(itemAmount);
+                mOrderDetailRetail.setDiscountAmount(itemDiscountAmount);
+
+
+                mOrderDetailRetailList.add(mOrderDetailRetail);
+            });
+            smallOrderRequest.setmOrderDetailRetailList(mOrderDetailRetailList);
+
+
+            // 自营订单价格组装
+            // 订单总金额为实际付款金额，订单金额（不含运费）为自营商品的原价（优惠和积分前的金额）
+            //订单金额(不含服务费)
+            BigDecimal amount = mOrderDetailRetailList.stream().
+                    map(x -> x.getAmount()).
+                    reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            //订单总金额
+            BigDecimal orderAmount = tradeItemList.stream().
+                    map(tradeItem -> tradeItem.getSplitPrice() != null ? tradeItem.getSplitPrice() : BigDecimal.ZERO).
+                    reduce(BigDecimal.ZERO, BigDecimal::add);
+            //优惠卷金额
+            BigDecimal discountAmount = getDiscountAmount(amount, orderAmount);
+
+
+            smallOrderRequest.setAmount(amount);
+            smallOrderRequest.setOrderAmount(orderAmount);
+            smallOrderRequest.setDiscountAmount(discountAmount);
+            smallOrderRequest.setPostAge(trade.getFreight().getSupplierFreight());
+
+
+            // 地址信息组装
+            Consignee consignee = trade.getConsignee();
+            SmallOrderRequest.MOrderAddressRetail  mOrderAddressRetail = new SmallOrderRequest.MOrderAddressRetail();
+            mOrderAddressRetail.setTel(consignee.getPhone());
+
+            mOrderAddressRetail.setProvince(addrMap.get(Objects.toString(consignee.getProvinceId())));
+            mOrderAddressRetail.setCity(addrMap.get(Objects.toString(consignee.getCityId())));
+            mOrderAddressRetail.setArea(addrMap.get(Objects.toString(consignee.getAreaId())));
+            mOrderAddressRetail.setAddress(consignee.getAddress());
+            mOrderAddressRetail.setConsignee(consignee.getName());
+            mOrderAddressRetail.setAddressId(0);
+            mOrderAddressRetail.setAddress(consignee.getAddress());
+            smallOrderRequest.setmOrderAddressRetail(mOrderAddressRetail);
+
+            smallOrderRequestList.add(smallOrderRequest);
+
+        });
+
+        log.info("数据组装完毕: {}", JSONObject.toJSONString(smallOrderRequestList));
+        return smallOrderRequestList;
+    }
+
+    private BigDecimal getLinePrice(BigDecimal price, GoodsInfoVO goodsInfoVO) {
+        if (goodsInfoVO != null && goodsInfoVO.getLinePrice() != null) {
+            return goodsInfoVO.getLinePrice();
+        }
+        if (goodsInfoVO != null && goodsInfoVO.getMarketPrice() != null) {
+            return goodsInfoVO.getMarketPrice();
+        }
+
+        return price;
+    }
+
+    private Map<String, GoodsInfoVO> getGoodsInfo(List<String> goodsInfoIds) {
+        Map<String, GoodsInfoVO> goodsInfoVOMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(goodsInfoIds)) {
+            //根据Id获取地址信息
+            List<GoodsInfoVO> voList = goodsInfoQueryProvider.listByIds(GoodsInfoListByIdsRequest.builder()
+                    .goodsInfoIds(goodsInfoIds).build()).getContext().getGoodsInfos();
+
+
+            if (CollectionUtils.isNotEmpty(voList)) {
+                goodsInfoVOMap = voList.stream().collect(Collectors.toMap(GoodsInfoVO::getGoodsInfoId, Function.identity()));
+            }
+
+        }
+        return goodsInfoVOMap;
+    }
+
+    private static BigDecimal getDiscountAmount(BigDecimal originPrice, BigDecimal totalPrice) {
+        if (totalPrice == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return originPrice.subtract(totalPrice);
+    }
+
+    public Map<String, String> getAddrInfo(List<String> addrIds) {
+        Map<String, String> addrMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(addrIds)) {
+            //根据Id获取地址信息
+            List<PlatformAddressVO> voList = platformAddressQueryProvider.list(PlatformAddressListRequest.builder()
+                    .addrIdList(addrIds).build()).getContext().getPlatformAddressVOList();
+
+
+            if (CollectionUtils.isNotEmpty(voList)) {
+                addrMap = voList.stream().collect(Collectors.toMap(PlatformAddressVO::getAddrId, PlatformAddressVO::getAddrName));
+            }
+
+        }
+        return addrMap;
+    }
+
+
+    private BaseResponse createSmallOrderAsync(List<SmallOrderRequest> smallOrderRequestList){
+        //CompletableFuture.runAsync(() -> {
+            try {
+                BaseResponse result = toCreateSmallOrder(smallOrderRequestList);
+                return result;
+            } catch (Exception ex) {
+                log.error("调用small下订单异常", ex); // 记录完整堆栈
+            }
+        //}, executorService);
+        return BaseResponse.success("调用small下订单异常");
+    }
+
+
+
+    /**
+     * 调用旧平台下单
+     * @param smallOrderRequestList
+     * @return
+     */
+    public BaseResponse toCreateSmallOrder(List<SmallOrderRequest> smallOrderRequestList) {
+        String url = smallDomain+ "/miaoRetail/sbcSaleOrderCreate";
+
+        log.info("调用旧平台:{}下单请求参数: {}", url, JSONObject.toJSONString(smallOrderRequestList));
+        JSONObject response = doPost(url, JSONObject.toJSONString(smallOrderRequestList));
+        log.info("调用旧平台下单返回结果: {}", response);
+        if (response != null && response.containsKey("code")) {
+            int code = response.getIntValue("code");
+            if (code == 20000) {
+                String data = response.getString("data");
+                log.info("调用旧平台small下单，成功: {}", data);
+                return BaseResponse.SUCCESSFUL();
+            } else {
+                log.error("调用旧平台small下单，错误码: {}, 错误信息: {}", code, response.getString("msg"));
+                return BaseResponse.success(response.getString("msg"));
+            }
+        }
+        return BaseResponse.info(CommonErrorCodeEnum.K000060.getCode(),CommonErrorCodeEnum.K000060.getMsg());
+    }
+
+
+    /**
+     * post请求
+     *
+     * @param url     请求地址
+     * @param jsonStr json格式的参数
+     * @return JSONObject返回对象
+     */
+    public JSONObject doPost(String url, String jsonStr) {
+        CloseableHttpClient httpClient = HttpClientBuilder.create().setConnectionTimeToLive(2, TimeUnit.SECONDS).build();
+        HttpPost post = new HttpPost(url);
+        JSONObject response = null;
+        try {
+            post.addHeader("Content-type", "application/json; charset=utf-8");
+            post.setHeader("Accept", "application/json");
+            post.setEntity(new StringEntity(jsonStr, Charset.forName("UTF-8")));
+            HttpResponse res = httpClient.execute(post);
+            if (res.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                String result = EntityUtils.toString(res.getEntity());
+                response = JSONObject.parseObject(result);
+            }
+        } catch (Exception e) {
+            log.error("post请求异常", e);
+        } finally {
+            try {
+                httpClient.close();
+            } catch (IOException e) {
+                log.error("httpClient.close异常", e);
+            }
+        }
+        return response;
+    }
+
+    /**
+     * 调用旧平台退单
+     * @param orderSn
+     * @param type
+     */
+    public void returnSmallOrder(String orderSn, Integer type) {
+
+        try {
+            // 校验参数
+            if (StringUtils.isEmpty(orderSn)){
+                log.error("订单号不能为空: {}", orderSn);
+                return;
+            }
+            // 校验参数
+            if (null == type){
+                log.error("类型不能为空: {}", type);
+                return;
+            }
+
+            // 校验订单
+            Trade trade = tradeService.detail(orderSn);
+            if (null == trade){
+                log.error("订单不存在: {}", orderSn);
+                return;
+            }
+
+            // 校验商品
+            List<TradeItem> tradeItemList = trade.getTradeItems();
+            if (CollectionUtils.isEmpty(tradeItemList)){
+                log.error("商品不存在: {}", orderSn);
+                return;
+            }
+
+            // 校验品牌
+            List<String> smallBrandList = Arrays.stream(smallBrandId.split(","))
+                    .collect(Collectors.toList());
+            List<TradeItem> smallTradeItemList = tradeItemList.stream().
+                    filter(tradeItem -> tradeItem.getBrand() != null && smallBrandList.contains(String.valueOf(tradeItem.getBrand()))).collect(Collectors.toList());
+            if  (CollectionUtils.isEmpty(smallTradeItemList)) {
+                log.error("small对应商品不存在: {}", orderSn);
+                return;
+            }
+
+            // 调用
+            log.info("退单数据，开始调用数据");
+            String returnOrderSn = orderSn + orderSnSuffix;
+            returnSmallOrderAsync(returnOrderSn, type);
+            log.info("退单数据，结束调用数据");
+
+        } catch (Exception e){
+            log.error("调用旧平台small退单，异常: {}", e.getMessage());
+        }
+    }
+
+
+    private void returnSmallOrderAsync(String returnOrderSn, Integer type){
+        CompletableFuture.runAsync(() -> {
+            try {
+                toReturnSmallOrder(returnOrderSn, type);
+            } catch (Exception ex) {
+                log.error("调用small退单异常", ex); // 记录完整堆栈
+            }
+        }, executorService);
+    }
+
+    /**
+     * 调用旧平台退单
+     * @param returnOrderSn
+     * @param type
+     * @return
+     */
+    public String toReturnSmallOrder(String returnOrderSn, Integer type) {
+        String url = returnSmallDomain+ "/miaoRetail/order/sbcRefund";
+        Map<String, Object> params = new HashMap<>();
+        params.put("orderSn", returnOrderSn);
+        params.put("type", type);
+        log.info("调用旧平台:{}退单: {}", url, JSONObject.toJSONString(params));
+        JSONObject response = doPost(url, JSONObject.toJSONString(params));
+        log.info("调用旧平台退单返回结果: {}", response);
+        if (response != null && response.containsKey("code")) {
+            int code = response.getIntValue("code");
+            if (code == 20000) {
+                String data = response.getString("data");
+                log.info("调用旧平台small退单，成功: {}", data);
+                return "success";
+            } else {
+                log.error("调用旧平台small退单，错误码: {}, 错误信息: {}", code, response.getString("message"));
+                return "";
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 新调用旧平台退单
+     * @param returnOrderList
+     * @return
+     */
+    public BaseResponse newReturnSmallOrder(List<ReturnOrder> returnOrderList) {
+        try {
+            log.info("调用旧平台退单 newReturnSmallOrder方法开始,参数为:{}", returnOrderList);
+            if (CollectionUtils.isNotEmpty(returnOrderList)) {
+                for (ReturnOrder returnOrder : returnOrderList) {
+                    List<SmallOrderReturnRequest> smallOrderReturnRequestList = new ArrayList<>();
+                    if (returnOrder.getTradeVO() == null || CollectionUtils.isEmpty(returnOrder.getTradeVO().getTradeItems())) {
+                        log.info("订单{}不存在商品", returnOrder.getTid());
+                        continue;
+                    }
+                    List<TradeItemVO> tradeItems = returnOrder.getTradeVO().getTradeItems();
+                    List<ReturnItem> returnItems = returnOrder.getReturnItems();
+                    List<ReturnItem> pushReturnItemList = filterReturnItem(returnItems, tradeItems);
+                    if (CollectionUtils.isEmpty(pushReturnItemList)) {
+                        log.info("订单{}不存在要推送到h5的退货商品项", returnOrder.getTid());
+                    }
+                    //设置图片
+                    List<String> images = returnOrder.getImages();
+                    String imageListStr = "";
+                    if (CollectionUtils.isNotEmpty(images)) {
+                        imageListStr = images.stream()
+                                .filter(s -> s != null && !s.isEmpty()).map(JSON::parseObject).map(jsonObject -> jsonObject.getString("url"))
+                                .collect(Collectors.joining(","));
+                    }
+                    for (ReturnItem returnItem : pushReturnItemList) {
+                        SmallOrderReturnRequest smallOrderReturnRequest = new SmallOrderReturnRequest();
+                        smallOrderReturnRequest.setOrderSn(returnOrder.getTid() + orderSnSuffix);
+                        smallOrderReturnRequest.setSkuNo(returnItem.getSkuNo());
+                        smallOrderReturnRequest.setRefundNum(returnItem.getNum());
+                        smallOrderReturnRequest.setLogisticName(returnOrder.getReturnLogistics() == null ? null : returnOrder.getReturnLogistics().getCompany());
+                        smallOrderReturnRequest.setLogisticCode(returnOrder.getReturnLogistics() == null ? null : returnOrder.getReturnLogistics().getNo());
+                        smallOrderReturnRequest.setDescription(returnOrder.getDescription());
+                        smallOrderReturnRequest.setReason(returnOrder.getRefundCause().getCause());
+                        smallOrderReturnRequest.setRefundType(returnOrder.getReturnType() == ReturnType.REFUND ? 1 : 2);
+                        smallOrderReturnRequest.setTotalRefundAmount(returnOrder.getReturnPrice().getApplyPrice());
+                        smallOrderReturnRequest.setImgList(imageListStr);
+                        smallOrderReturnRequest.setRefundId(returnOrder.getId());
+                        smallOrderReturnRequestList.add(smallOrderReturnRequest);
+                    }
+                    if (CollectionUtils.isNotEmpty(smallOrderReturnRequestList)) {
+                        String url = smallDomain + "/miaoRetail/newRefundSmallOrder";
+
+                        log.info("调用旧平台:{} 新退款接口: {}", url, JSONObject.toJSONString(smallOrderReturnRequestList));
+                        JSONObject response = doPost(url, JSONObject.toJSONString(smallOrderReturnRequestList));
+                        log.info("调用旧平台 新退款接口返回结果: {}", response);
+                        if (response != null && response.containsKey("code")) {
+                            int code = response.getIntValue("code");
+                            if (code == 20000) {
+                                String data = response.getString("data");
+                                log.info("新退款接口small退单 newReturnSmallOrder方法，成功: {}", data);
+                                return BaseResponse.success(data);
+                            } else {
+                                log.info("新退款接口small退单 newReturnSmallOrder方法，错误码: {}, 错误信息: {}", code, response.getString("message"));
+                                return BaseResponse.success(response.getString("message"));
+                            }
+                        }else {
+                            return BaseResponse.info(CommonErrorCodeEnum.K000060.getCode(),CommonErrorCodeEnum.K000060.getMsg());
+                        }
+                    }
+
+                }
+            }
+        } catch (Exception e) {
+            log.error("调用旧平台small退单 newReturnSmallOrder方法，异常: {}", e.getMessage());
+        }
+        return BaseResponse.success("调用旧平台small退单 newReturnSmallOrder方法，异常");
+    }
+
+
+    /**
+     * 过滤品牌要推送到h5退货商品项
+     *
+     * @param returnItems 退货商品项列表
+     * @param tradeItems 交易商品项列表
+     * @return 过滤后的退货商品项列表
+     */
+    private  List<ReturnItem> filterReturnItem(List<ReturnItem> returnItems, List<TradeItemVO> tradeItems){
+        // 校验品牌
+        List<String> smallBrandList = Arrays.stream(smallBrandId.split(","))
+                .collect(Collectors.toList());
+        List<String> skuNoList = tradeItems.stream().filter(tradeItem -> tradeItem.getBrand() != null && smallBrandList.contains(String.valueOf(tradeItem.getBrand()))).map(TradeItemVO::getSkuNo).collect(Collectors.toList());
+        List<ReturnItem> resultReturnItems = returnItems.stream().filter(returnItem -> skuNoList.contains(returnItem.getSkuNo())).collect(Collectors.toList());
+        return resultReturnItems;
+    }
+
+    public Boolean checkOrderIsAfterSale(String orderSn) {
+        String url = smallDomain + "/miaoRetail/checkOrderIsAfterSale";
+        Map<String, String> ci = new HashMap<>();
+        ci.put("orderSn", orderSn);
+        log.info("调用旧平台:{},查询订单是否过了售后时间: {}", url, JSONObject.toJSONString(ci));
+        try {
+            JSONObject response = doPost(url, JSONObject.toJSONString(ci));
+            log.info("调用旧平台查询订单是否过了售后时间返回结果: {}", response);
+            if (response != null && response.containsKey("code")) {
+                int code = response.getIntValue("code");
+                if (code == 20000) {
+                    Boolean isAfterSale = response.getBoolean("data");
+                    return isAfterSale;
+                } else {
+                    log.error("调用旧平台查询订单是否过了售后时间，错误码: {}, 错误信息: {}", code, response.getString("message"));
+                    return Boolean.FALSE;
+                }
+            }
+        } catch (Exception e) {
+            log.error("调用旧平台查询订单是否过了售后时间，异常: {}", e.getMessage());
+            return Boolean.FALSE;
+        }
+        return Boolean.FALSE;
+    }
+}

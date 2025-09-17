@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: order
+    name: order-deployment
+  name: order
+  namespace: sbc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order
+  template:
+    metadata:
+      labels:
+        app: order
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - image: {{IMAGE_NAME}}
+          imagePullPolicy: Always
+          name: order
+          ports:
+            - containerPort: 8970
+              name: tomcat-port
+          livenessProbe:
+            httpGet:
+              path: /act/health
+              port: 8971
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 30
+          env:
+            - name: JAVA_OPTS
+              value: {{JAVA_ENV_PARAMS}}
+            - name: NACOS_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: sbc-config
+                  key: nacosAddress
+            - name: RESTART_
+              value: {{DATE}}
+#          resources:
+#            limits:
+#              cpu: '1'
+#              memory: 3Gi
+#            requests:
+#              cpu: '1'JAVA_ENV_PARAMS
+#              memory: 3Gi
+          volumeMounts:
+            - mountPath: /data/server/log
+              name: order-logs
+      volumes:
+        - name: order-logs
+          hostPath:
+            path: /data/sbc/logs/order
+      hostNetwork: false
+---

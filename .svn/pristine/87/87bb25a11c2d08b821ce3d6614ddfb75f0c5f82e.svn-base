@@ -1,0 +1,16 @@
+##1、redis 清理 服务器上执行 默认只会清除redis的db0库，若放到其他库，需清除
+```properties
+redis-cli keys "marketing_plugin_cache*" | xargs redis-cli del
+```
+执行完优惠券活动店铺类型修改后刷新优惠券活动es
+
+##2、修改es的客户端链接
+修改 elasticsearch 连接为 （es、common、mq）:
+```properties
+spring.elasticsearch.uris=127.0.0.1:9200
+```
+改为：
+```properties
+ spring.elasticsearch.rest.uris=127.0.0.1:9200
+```
+##3、限时抢购魔方脚本需要执行.

@@ -1,0 +1,22 @@
+db.getCollection("widget_infos").insert({
+  "_id": "62872cbdad37ec410e0265a7",
+  "envCode": "test1",
+  "key": "@wanmi/wechat-recommendFooter",
+  "systemCode": "d2cStore",
+  "__v": 0,
+  "cssFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendFooter/dist/view.css",
+  "jsFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendFooter/dist/view.js",
+  "jsMetaFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendFooter/dist/edit.js",
+  "type": "BAR"
+})
+db.getCollection("widget_infos").insert({
+  "_id": "62872cbdad37ec410e0265a1",
+  "envCode": "test1",
+  "key": "@wanmi/wechat-recommendFooter",
+  "systemCode": "",
+  "__v": 0,
+  "cssFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendFooter/dist/view.css",
+  "jsFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendFooter/dist/view.js",
+  "jsMetaFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendFooter/dist/edit.js",
+  "type": "BAR"
+})

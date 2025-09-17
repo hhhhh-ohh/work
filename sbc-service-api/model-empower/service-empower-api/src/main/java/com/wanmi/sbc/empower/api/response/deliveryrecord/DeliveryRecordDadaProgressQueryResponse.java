@@ -1,0 +1,55 @@
+package com.wanmi.sbc.empower.api.response.deliveryrecord;
+
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+
+/**
+ * <p>达达配送城市列表结果</p>
+ * @author dyt
+ * @date 2019-07-30 14:08:26
+ */
+@Schema
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class DeliveryRecordDadaProgressQueryResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    @Schema(description = "店铺经度")
+    private Double storeLng;
+
+    @Schema(description = "店铺纬度")
+    private Double storeLat;
+
+    @Schema(description = "收货人经度")
+    private BigDecimal customerLng;
+
+    @Schema(description = "收货人纬度")
+    private BigDecimal customerLat;
+
+    @Schema(description = "骑手姓名")
+    private String transporterName;
+
+    @Schema(description = "骑手电话")
+    private String transporterPhone;
+
+    @Schema(description = "骑手经度")
+    private String transporterLng;
+
+    @Schema(description = "骑手纬度")
+    private String transporterLat;
+
+    @Schema(description = "收货码")
+    private String orderFinishCode;
+
+    @Schema(description = "配送距离,单位为米")
+    private Double distance;
+}

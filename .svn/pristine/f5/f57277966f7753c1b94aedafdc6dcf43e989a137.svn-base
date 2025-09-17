@@ -1,0 +1,852 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.marketing.bargain.dao.GoodsBargainStatisticsMapper">
+
+    <resultMap id="GoodsBargainOverViewMap" type="com.wanmi.ares.response.GoodsBargainOverview">
+        <result property="payROI" column="pay_roi"/>
+        <result property="payMoney" column="pay_money"/>
+        <result property="discountMoney" column="discount_money"/>
+        <result property="payGoodsCount" column="pay_goods_count"/>
+        <result property="payTradeCount" column="pay_trade_count"/>
+        <result property="jointRate" column="joint_rate"/>
+        <result property="newCustomerCount" column="new_customer"/>
+        <result property="oldCustomerCount" column="old_customer"/>
+        <result property="payCustomerCount" column="pay_customer_count"/>
+        <result property="customerPrice" column="customer_price"/>
+        <result property="day" column="day"/>
+        <result property="week" column="week"/>
+        <result property="pv" column="pv"/>
+        <result property="uv" column="uv"/>
+        <result property="uvPayRate" column="uVPayRate"/>
+    </resultMap>
+
+    <resultMap id="GoodsBargainActiveName" type="com.wanmi.ares.response.MarketingInfoResp">
+        <result property="marketingId" column="id"/>
+        <result property="marketingName" column="activity_name"/>
+        <result property="startDatetime" column="begin_time"/>
+        <result property="endDatetime" column="end_time"/>
+        <result property="storeId" column="store_id"/>
+        <result property="storeName" column="store_name"/>
+    </resultMap>
+
+    <resultMap id="GoodsBargainReportMap" type="com.wanmi.ares.response.GoodsBargainReport">
+        <result property="payROI" column="pay_roi"/>
+        <result property="payMoney" column="pay_money"/>
+        <result property="discountMoney" column="discount_money"/>
+        <result property="payGoodsCount" column="pay_goods_count"/>
+        <result property="payTradeCount" column="pay_trade_count"/>
+        <result property="jointRate" column="joint_rate"/>
+        <result property="newCustomerCount" column="new_customer"/>
+        <result property="oldCustomerCount" column="old_customer"/>
+        <result property="payCustomerCount" column="pay_customer_count"/>
+        <result property="customerPrice" column="customer_price"/>
+        <result property="day" column="day"/>
+        <result property="week" column="week"/>
+        <result property="goodsInfoName" column="goods_info_name"/>
+        <result property="goodsInfoNo" column="goods_info_no"/>
+        <result property="goodsInfoId" column="goods_info_id"/>
+        <result property="pv" column="pv"/>
+        <result property="uv" column="uv"/>
+        <result property="uvPayRate" column="uVPayRate"/>
+        <result property="supplyPrice" column="supply_price"/>
+    </resultMap>
+
+
+    <insert id="insertBargainGoodsOverViewByTrade"
+            parameterType="com.wanmi.ares.request.marketing.MarketingAnalysisJobRequest">
+        insert into bargain_sale(marketing_id, store_id, customer_id, pay_money, discount_money, pay_goods_count,
+        goods_info_id, goods_info_name, goods_info_no, boss_customer_flag,
+        boss_customer_flag_week, store_customer_flag, store_customer_flag_week,
+        create_time)
+        SELECT b.bargain_goods_id,
+        b.store_id,
+        f.customer_id,
+        f.total_pay_cash,
+        if(((b.original_price - b.price) * b.num) &lt;= 0, 0, ((b.original_price - b.price) * b.num)) as discount_money,
+        b.num,
+        b.sku_id,
+        b.sku_name,
+        b.sku_no,
+        <![CDATA[
+        case when date_format(d.first_pay_time, '%Y-%m-%d') < date_format(f.pay_time, '%Y-%m-%d') then 1 else 0 end     as boss_customer_flag,
+        case
+        when d.first_pay_time_week < date_format(f.pay_time, '%x%v') then 1
+        else 0 end                                                                                as boss_customer_flag_week,
+        case when date_format(e.first_pay_time, '%Y-%m-%d') < date_format(f.pay_time, '%Y-%m-%d') then 1 else 0 end     as store_customer_flag,
+        case
+        when e.first_pay_time_week < date_format(f.pay_time, '%x%v') then 1
+        else 0 end                                                                                as store_customer_flag_week,
+        ]]>
+        f.pay_time
+        FROM replay_trade f
+        LEFT JOIN replay_trade_item b ON f.tid = b.tid
+
+        left join (select min(first_pay_time) as first_pay_time,
+        min(date_format(first_pay_time, '%x%v')) as first_pay_time_week,
+        customer_id
+        from customer_first_pay
+        group by customer_id) d on f.customer_id = d.customer_id
+
+        left join (select min(first_pay_time) as first_pay_time,
+        min(date_format(first_pay_time, '%x%v')) as first_pay_time_week,
+        customer_id,
+        store_id
+        from customer_first_pay
+        group by store_id, customer_id) e
+        on f.customer_id = e.customer_id and e.store_id = f.store_id
+
+        WHERE f.pay_state = 2
+        AND f.bargain = 1
+        <if test="initDate != null and initDate != ''">
+            AND date_format(f.pay_time, '%Y-%m-%d') = #{initDate}
+        </if>
+        <if test="initDate == null || initDate == ''">
+            AND date_format(f.pay_time, '%Y-%m-%d') = DATE_SUB(curdate(),INTERVAL 1 DAY)
+        </if>
+    </insert>
+
+    <!-- 查询营销概况：支付ROI & 营销支付金额 & 营销优惠金额 & 营销支付件数 & 营销支付订单数 & 连带率 & 营销支付人数 & 客单价 -->
+    <select id="queryBargainGoodsOverView" resultMap="GoodsBargainReportMap"
+            parameterType="com.wanmi.ares.request.marketing.MarketingQueryRequest">
+        select
+        sum(a.pay_roi) as pay_roi,
+        sum(a.pay_money) as pay_money,
+        sum(a.discount_money) as discount_money,
+        sum(a.pay_goods_count) as pay_goods_count,
+        sum(a.pay_trade_count) as pay_trade_count,
+        sum(a.joint_rate) as joint_rate,
+        sum(a.new_customer) as new_customer,
+        sum(a.old_customer) as old_customer,
+        sum(a.pay_customer_count) as pay_customer_count,
+        sum(a.customer_price) as customer_price,
+        COALESCE(sum(a.pv),0) as pv,
+        COALESCE(sum(a.uv),0) as uv,
+        truncate(sum(a.pay_customer_count) / sum(a.uv),4) as uVPayRate
+        from
+        (
+        select truncate(sum(f.pay_money) / sum(f.discount_money), 2) as pay_roi,
+        sum(f.pay_money) as pay_money,
+        sum(f.discount_money) as discount_money,
+        count(f.id) as pay_goods_count,
+        count(f.id) as pay_trade_count,
+        1 as joint_rate,
+        count(distinct case when c.customer_id is null then f.customer_id end) as new_customer,
+        count(distinct case when c.customer_id is not null then f.customer_id end) as old_customer,
+        count(distinct f.customer_id) as pay_customer_count,
+        truncate(sum(f.pay_money) / count(distinct f.customer_id), 2) as customer_price,
+        0 as pv,
+        0 as uv
+        from bargain_sale f
+        <if test="storeId == null || storeId == ''">
+            left join (select distinct customer_id
+            from customer_first_pay
+            where <![CDATA[date_format(first_pay_time, '%Y-%m-%d') < #{queryDate}]]>) c on c.customer_id = f.customer_id
+        </if>
+        <if test="storeId != null and storeId != ''">
+            left join customer_first_pay c on f.customer_id = c.customer_id and f.store_id = c.store_id
+            and
+            <![CDATA[date_format(c.first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+        </if>
+        where
+        <![CDATA[
+            date_format(f.create_time, '%Y-%m-%d') >= #{queryDate}
+            and date_format(f.create_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)
+        ]]>
+        <if test="storeId != null and storeId != ''">
+            and f.store_id = #{storeId}
+        </if>
+        <if test="marketingIds != null and marketingIds.size > 0">
+            and f.marketing_id in
+            <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+
+
+        union all
+
+        SELECT
+        0 as pay_roi,
+        0 as pay_money,
+        0 as discount_money,
+        0 as pay_goods_count,
+        0 as pay_trade_count,
+        0 as joint_rate,
+        0 as new_customer,
+        0 as old_customer,
+        0 as pay_customer_count,
+        0 as customer_price,
+        SUM( p.pv ) as pv,
+        0 as uv
+        FROM
+        replay_marketing_sku_pv p
+
+        LEFT JOIN replay_bargain_goods g ON p.sku_id = g.goods_info_id and p.marketing_id = g.bargain_goods_id
+
+        <where>
+            p.marketing_type = 11
+            <![CDATA[
+                      and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                   ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.bargain_goods_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+
+        union all
+
+        SELECT
+        0 as pay_roi,
+        0 as pay_money,
+        0 as discount_money,
+        0 as pay_goods_count,
+        0 as pay_trade_count,
+        0 as joint_rate,
+        0 as new_customer,
+        0 as old_customer,
+        0 as pay_customer_count,
+        0 as customer_price,
+        0 as pv,
+        COUNT(DISTINCT u.customer_id) as uv
+        FROM
+        replay_marketing_sku_uv u
+
+        LEFT JOIN replay_bargain_goods g ON u.sku_id = g.goods_info_id and u.marketing_id = g.bargain_goods_id
+
+        <where>
+            u.marketing_type = 11
+            <![CDATA[
+                      and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                   ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.bargain_goods_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        ) a
+    </select>
+
+    <select id="queryBargainByDay" resultMap="GoodsBargainOverViewMap"
+            parameterType="com.wanmi.ares.request.marketing.MarketingQueryRequest">
+        select
+        sum(a.pay_roi) as pay_roi,
+        sum(a.pay_money) as pay_money,
+        sum(a.discount_money) as discount_money,
+        sum(a.pay_goods_count) as pay_goods_count,
+        sum(a.pay_trade_count) as pay_trade_count,
+        sum(a.joint_rate) as joint_rate,
+        sum(a.new_customer) as new_customer,
+        sum(a.old_customer) as old_customer,
+        sum(a.pay_customer_count) as pay_customer_count,
+        sum(a.customer_price) as customer_price,
+        COALESCE(sum(a.pv),0) as pv,
+        COALESCE(sum(a.uv),0) as uv,
+        truncate(sum(a.pay_customer_count) / sum(a.uv),4) as uVPayRate,
+        a.day
+        from
+        (
+        select truncate(sum(f.pay_money) / sum(f.discount_money), 2) as pay_roi,
+        sum(f.pay_money) as pay_money,
+        sum(f.discount_money) as discount_money,
+        count(f.id) as pay_goods_count,
+        count(f.id) as pay_trade_count,
+        1 as joint_rate,
+        <if test="storeId == null || storeId == ''">
+            count(distinct if(f.boss_customer_flag = 0, f.customer_id, null)) as new_customer,
+            count(distinct if(f.boss_customer_flag = 1, f.customer_id, null)) as old_customer,
+        </if>
+        <if test="storeId != null and storeId != ''">
+            count(distinct if(f.store_customer_flag = 0, f.customer_id, null)) as new_customer,
+            count(distinct if(f.store_customer_flag = 1, f.customer_id, null)) as old_customer,
+        </if>
+        count(distinct f.customer_id) as pay_customer_count,
+        truncate(sum(f.pay_money) / count(distinct f.customer_id), 2) as customer_price,
+        0 as pv,
+        0 as uv,
+        date_format(f.create_time, '%Y-%m-%d') as day
+        from bargain_sale f
+        where
+        <![CDATA[
+            date_format(f.create_time, '%Y-%m-%d') >= #{queryDate}
+        ]]>
+        <if test="storeId != null and storeId != ''">
+            and f.store_id = #{storeId}
+        </if>
+        <if test="marketingIds != null and marketingIds.size > 0">
+            and f.marketing_id in
+            <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        group by day
+
+        union all
+
+        SELECT
+        0 as pay_roi,
+        0 as pay_money,
+        0 as discount_money,
+        0 as pay_goods_count,
+        0 as pay_trade_count,
+        0 as joint_rate,
+        0 as new_customer,
+        0 as old_customer,
+        0 as pay_customer_count,
+        0 as customer_price,
+        SUM( p.pv ) as pv,
+        0 as uv,
+        date_format(p.stat_date, '%Y-%m-%d') as day
+        FROM
+        replay_marketing_sku_pv p
+
+        LEFT JOIN replay_bargain_goods g ON p.sku_id = g.goods_info_id and p.marketing_id = g.bargain_goods_id
+
+        <where>
+            p.marketing_type = 11
+            <![CDATA[
+                          and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                       ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.bargain_goods_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by day
+
+        union all
+
+        SELECT
+        0 as pay_roi,
+        0 as pay_money,
+        0 as discount_money,
+        0 as pay_goods_count,
+        0 as pay_trade_count,
+        0 as joint_rate,
+        0 as new_customer,
+        0 as old_customer,
+        0 as pay_customer_count,
+        0 as customer_price,
+        0 as pv,
+        COUNT(DISTINCT u.customer_id) as uv,
+        date_format(u.stat_date, '%Y-%m-%d') as day
+        FROM
+        replay_marketing_sku_uv u
+
+        LEFT JOIN replay_bargain_goods g ON u.sku_id = g.goods_info_id and u.marketing_id = g.bargain_goods_id
+
+        <where>
+            u.marketing_type = 11
+            <![CDATA[
+                      and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                   ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.bargain_goods_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by day
+        ) a
+
+        GROUP BY a.day
+    </select>
+
+    <select id="queryBargainByWeek" resultMap="GoodsBargainOverViewMap"
+            parameterType="com.wanmi.ares.request.marketing.MarketingQueryRequest">
+        select
+        sum(a.pay_roi) as pay_roi,
+        sum(a.pay_money) as pay_money,
+        sum(a.discount_money) as discount_money,
+        sum(a.pay_goods_count) as pay_goods_count,
+        sum(a.pay_trade_count) as pay_trade_count,
+        sum(a.joint_rate) as joint_rate,
+        sum(a.new_customer) as new_customer,
+        sum(a.old_customer) as old_customer,
+        sum(a.pay_customer_count) as pay_customer_count,
+        sum(a.customer_price) as customer_price,
+        COALESCE(sum(a.pv),0) as pv,
+        COALESCE(sum(a.uv),0) as uv,
+        truncate(sum(a.pay_customer_count) / sum(a.uv),4) as uVPayRate,
+        a.week as week
+        from
+        (
+        select truncate(sum(f.pay_money) / sum(f.discount_money), 2) as pay_roi,
+        sum(f.pay_money) as pay_money,
+        sum(f.discount_money) as discount_money,
+        count(f.id) as pay_goods_count,
+        count(f.id) as pay_trade_count,
+        1 as joint_rate,
+        <if test="storeId == null || storeId == ''">
+            count(distinct if(f.boss_customer_flag_week = 0, f.customer_id, null)) as new_customer,
+            count(distinct if(f.boss_customer_flag_week = 1, f.customer_id, null)) as old_customer,
+        </if>
+        <if test="storeId != null and storeId != ''">
+            count(distinct if(f.store_customer_flag_week = 0, f.customer_id, null)) as new_customer,
+            count(distinct if(f.store_customer_flag_week = 1, f.customer_id, null)) as old_customer,
+        </if>
+        count(distinct f.customer_id) as pay_customer_count,
+        truncate(sum(f.pay_money) / count(distinct f.customer_id), 2) as customer_price,
+        0 as pv,
+        0 as uv,
+        date_format(f.create_time, '%x-%v') as week
+        from bargain_sale f
+        where
+        <![CDATA[
+            date_format(f.create_time, '%Y-%m-%d') >= #{queryDate}
+        ]]>
+        <if test="storeId != null and storeId != ''">
+            and f.store_id = #{storeId}
+        </if>
+        <if test="marketingIds != null and marketingIds.size > 0">
+            and f.marketing_id in
+            <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        group by week
+
+        union all
+
+        SELECT
+        0 as pay_roi,
+        0 as pay_money,
+        0 as discount_money,
+        0 as pay_goods_count,
+        0 as pay_trade_count,
+        0 as joint_rate,
+        0 as new_customer,
+        0 as old_customer,
+        0 as pay_customer_count,
+        0 as customer_price,
+        SUM( p.pv ) as pv,
+        0 as uv,
+        date_format(p.stat_date, '%x-%v') as week
+        FROM
+        replay_marketing_sku_pv p
+
+        LEFT JOIN replay_flash_sale_goods g ON p.sku_id = g.goods_info_id and p.marketing_id =
+        date_format(g.activity_full_time, '%Y%m%d%H%i%S')
+
+        <where>
+            p.marketing_type = 11
+            <![CDATA[
+                          and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                       ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by week
+
+        union all
+
+        SELECT
+        0 as pay_roi,
+        0 as pay_money,
+        0 as discount_money,
+        0 as pay_goods_count,
+        0 as pay_trade_count,
+        0 as joint_rate,
+        0 as new_customer,
+        0 as old_customer,
+        0 as pay_customer_count,
+        0 as customer_price,
+        0 as pv,
+        COUNT(DISTINCT u.customer_id) as uv,
+        date_format(u.stat_date, '%x-%v') as week
+        FROM
+        replay_marketing_sku_uv u
+
+        LEFT JOIN replay_flash_sale_goods g ON u.sku_id = g.goods_info_id and u.marketing_id =
+        date_format(g.activity_full_time, '%Y%m%d%H%i%S')
+
+        <where>
+            u.marketing_type = 11
+            <![CDATA[
+                      and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                   ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by week
+        ) a
+        GROUP BY a.week
+    </select>
+
+
+    <select id="queryBargainGoodsList" resultMap="GoodsBargainActiveName"
+            parameterType="com.wanmi.ares.request.marketing.SelectMarketingRequest">
+        select
+        b.bargain_goods_id as id,
+        g.goods_info_name as activity_name,
+        b.begin_time,
+        b.end_time,
+        b.store_id,
+        c.store_name
+        from replay_bargain_goods b
+        left join replay_goods_info g on b.goods_info_id = g.goods_info_id
+        left join replay_store c on c.store_id = b.store_id
+        where b.audit_status = 1 and b.del_flag = 0 and
+        (<![CDATA[(date_format(b.begin_time, '%Y-%m-%d') >= #{queryDate}
+            and date_format(b.begin_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+        or
+        <![CDATA[(date_format(b.end_time, '%Y-%m-%d') >= #{queryDate}
+            and date_format(b.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+        <if test="marketingName != null and marketingName != ''">
+            and g.goods_info_name like concat('%',#{marketingName},'%')
+        </if>
+        <if test="storeName != null and storeName != ''">
+            and c.store_name like concat('%',#{storeName},'%')
+        </if>
+        <if test="storeId != null and storeId != ''">
+            AND b.store_id = #{storeId}
+        </if>
+        order by b.create_time desc
+    </select>
+
+    <select id="countByPageTotal" parameterType="com.wanmi.ares.request.marketing.SelectMarketingRequest"
+            resultType="java.lang.Long">
+        select count(b.bargain_goods_id)
+        from replay_bargain_goods b
+        left join replay_goods_info g on b.goods_info_id = g.goods_info_id
+        left join replay_store c on c.store_id = b.store_id
+        where b.audit_status = 1 and b.del_flag = 0 and
+        (<![CDATA[(date_format(b.begin_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(b.begin_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+        or
+        <![CDATA[(date_format(b.end_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(b.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+        <if test="marketingName != null and marketingName != ''">
+            and g.goods_info_name like concat('%',#{marketingName},'%')
+        </if>
+        <if test="storeName != null and storeName != ''">
+            and c.store_name like concat('%',#{storeName},'%')
+        </if>
+        <if test="storeId != null and storeId != ''">
+            AND b.store_id = #{storeId}
+        </if>
+    </select>
+
+    <select id="queryGoodsForBargainGoods" parameterType="com.wanmi.ares.request.marketing.EffectPageRequest"
+            resultMap="GoodsBargainReportMap">
+        select
+        a.goods_info_id as goods_info_id,
+        a.goods_info_name as goods_info_name,
+        a.goods_info_no as goods_info_no,
+        a.pay_roi as pay_roi,
+        a.pay_money as pay_money,
+        a.discount_money as discount_money,
+        a.pay_goods_count as pay_goods_count,
+        a.pay_trade_count as pay_trade_count,
+        a.joint_rate as joint_rate,
+        a.new_customer as new_customer,
+        a.old_customer as old_customer,
+        a.pay_customer_count as pay_customer_count,
+        a.customer_price as customer_price,
+        a.supply_price as supply_price,
+        COALESCE(b.pv,0) as pv,
+        COALESCE(c.uv,0) as uv,
+        truncate(a.pay_customer_count / c.uv,4) as uVPayRate
+        from
+        (
+        select truncate(sum(f.pay_money) / sum(f.discount_money), 2) as pay_roi,
+        g.goods_info_id,
+        info.supply_price,
+        min( info.goods_info_name ) AS goods_info_name,
+        min( info.goods_info_no ) AS goods_info_no,
+        sum(f.pay_goods_count) as pay_goods_count,
+        count(distinct f.customer_id) as pay_customer_count,
+        count(f.id) as pay_trade_count,
+        truncate(sum(f.pay_goods_count) / count(f.id), 2) as joint_rate,
+        sum(f.pay_money) as pay_money,
+        sum(f.discount_money) as discount_money,
+        count(distinct case when c.customer_id is null then f.customer_id end) as new_customer,
+        count(distinct case when c.customer_id is not null then f.customer_id end) as old_customer,
+        truncate(sum(f.pay_money) / count(distinct f.customer_id), 2) as customer_price
+        from replay_bargain_goods g
+        left join bargain_sale f on g.bargain_goods_id = f.marketing_id
+        join replay_goods_info info on g.goods_info_id = info.goods_info_id
+        <if test="storeId == null || storeId == ''">
+            left join (select distinct customer_id
+            from customer_first_pay
+            where <![CDATA[date_format(first_pay_time, '%Y-%m-%d') < #{queryDate}]]>) c on c.customer_id = f.customer_id
+        </if>
+        <if test="storeId != null and storeId != ''">
+            left join customer_first_pay c on f.customer_id = c.customer_id and f.store_id = c.store_id
+            and
+            <![CDATA[date_format(c.first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+        </if>
+        where g.del_flag = 0 and g.audit_status = 1 and
+        (<![CDATA[date_format(g.begin_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(g.begin_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>
+        or
+        <![CDATA[date_format(g.end_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(g.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day)]]>)
+        <if test="storeId != null and storeId != ''">
+            and g.store_id = #{storeId}
+        </if>
+        <if test="marketingIds != null and marketingIds.size > 0">
+            and g.bargain_goods_id in
+            <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <if test="goodsInfoName != null and goodsInfoName != ''">
+            and info.goods_info_name like concat('%',#{goodsInfoName},'%')
+        </if>
+        group by g.goods_info_id
+        ) a
+        left join
+        (
+        SELECT
+        sku_id as sku_id,
+        SUM( p.pv ) as pv
+        FROM
+        replay_marketing_sku_pv p
+
+        LEFT JOIN replay_bargain_goods g ON p.sku_id = g.goods_info_id and p.marketing_id = g.bargain_goods_id
+
+        <where>
+            p.marketing_type = 11
+            <![CDATA[
+                              and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                           ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.bargain_goods_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by sku_id
+        ) b on a.goods_info_id = b.sku_id
+
+        left join
+        (
+        SELECT
+        sku_id as sku_id,
+        COUNT(DISTINCT u.customer_id) as uv
+        FROM
+        replay_marketing_sku_uv u
+
+        LEFT JOIN replay_bargain_goods g ON u.sku_id = g.goods_info_id and u.marketing_id = g.bargain_goods_id
+
+        <where>
+            u.marketing_type = 11
+            <![CDATA[
+                          and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                       ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.bargain_goods_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by sku_id
+        ) c on a.goods_info_id = c.sku_id
+
+        <if test="sortName != null and sortName != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortName} ${sortOrder}
+        </if>
+    </select>
+
+
+    <!--   活动导出   -->
+    <select id="exportBargain" parameterType="com.wanmi.ares.request.marketing.EffectPageRequest"
+            resultMap="GoodsBargainReportMap">
+        select
+        a.goods_info_id as goods_info_id,
+        a.supply_price as supply_price,
+        a.pay_roi as pay_roi,
+        a.pay_money as pay_money,
+        a.discount_money as discount_money,
+        a.pay_goods_count as pay_goods_count,
+        a.pay_trade_count as pay_trade_count,
+        a.joint_rate as joint_rate,
+        a.new_customer as new_customer,
+        a.old_customer as old_customer,
+        a.pay_customer_count as pay_customer_count,
+        a.customer_price as customer_price,
+        COALESCE(b.pv,0) as pv,
+        COALESCE(c.uv,0) as uv,
+        truncate(a.pay_customer_count / c.uv,4) as uVPayRate
+        from
+        (
+        select truncate(sum(f.pay_money) / sum(f.discount_money), 2) as pay_roi,
+        g.goods_info_id,
+        info.supply_price,
+        sum(f.pay_goods_count) as pay_goods_count,
+        count(distinct f.customer_id) as pay_customer_count,
+        count(f.id) as pay_trade_count,
+        truncate(sum(f.pay_goods_count) / count(f.id), 2) as joint_rate,
+        sum(f.pay_money) as pay_money,
+        sum(f.discount_money) as discount_money,
+        count(distinct case when c.customer_id is null then f.customer_id end) as new_customer,
+        count(distinct case when c.customer_id is not null then f.customer_id end) as old_customer,
+        truncate(sum(f.pay_money) / count(distinct f.customer_id), 2) as customer_price
+        from replay_bargain_goods g
+        left join bargain_sale f on g.bargain_goods_id = f.marketing_id
+        LEFT JOIN replay_goods_info info on g.goods_info_id = info.goods_info_id
+        <if test="storeId == null || storeId == ''">
+            left join (select distinct customer_id
+            from customer_first_pay
+            where <![CDATA[date_format(first_pay_time, '%Y-%m-%d') < #{queryDate}]]>) c on c.customer_id = f.customer_id
+        </if>
+        <if test="storeId != null and storeId != ''">
+            left join customer_first_pay c on f.customer_id = c.customer_id and f.store_id = c.store_id
+            and
+            <![CDATA[date_format(c.first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+        </if>
+        where g.del_flag = 0 and g.audit_status = 1 and
+        (<![CDATA[(date_format(g.begin_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(g.begin_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+        or
+        <![CDATA[(date_format(g.end_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(g.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+        <if test="storeId != null and storeId != ''">
+            and g.store_id = #{storeId}
+        </if>
+        <if test="marketingIds != null and marketingIds.size > 0">
+            and g.bargain_goods_id in
+            <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        group by g.goods_info_id
+        ) a
+        left join
+        (
+        SELECT
+        sku_id as sku_id,
+        SUM( p.pv ) as pv
+        FROM
+        replay_marketing_sku_pv p
+
+        LEFT JOIN replay_bargain_goods g ON p.sku_id = g.goods_info_id and p.marketing_id = g.bargain_goods_id
+
+        <where>
+            p.marketing_type = 11
+            <![CDATA[
+                              and date_format(p.stat_date, '%Y-%m-%d') >= #{queryDate}
+                           ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.bargain_goods_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by sku_id
+        ) b on a.goods_info_id = b.sku_id
+
+        left join
+        (
+        SELECT
+        sku_id as sku_id,
+        COUNT(DISTINCT u.customer_id) as uv
+        FROM
+        replay_marketing_sku_uv u
+
+        LEFT JOIN replay_bargain_goods g ON u.sku_id = g.goods_info_id and u.marketing_id = g.bargain_goods_id
+
+        <where>
+            u.marketing_type = 11
+            <![CDATA[
+                          and date_format(u.stat_date, '%Y-%m-%d') >= #{queryDate}
+                       ]]>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+            <if test="marketingIds != null and marketingIds.size > 0">
+                and g.bargain_goods_id in
+                <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        group by sku_id
+        ) c on a.goods_info_id = c.sku_id
+
+        <if test="sortName != null and sortName != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortName} ${sortOrder}
+        </if>
+        limit #{beginIndex,jdbcType=INTEGER},#{pageSize,jdbcType=INTEGER}
+    </select>
+
+    <select id="countExportBargain" parameterType="com.wanmi.ares.request.marketing.EffectPageRequest"
+            resultType="java.lang.Long">
+        select count(*) from (select g.goods_info_id
+        from replay_bargain_goods g
+        left join bargain_sale f on g.bargain_goods_id = f.marketing_id
+        <if test="storeId == null || storeId == ''">
+            left join (select distinct customer_id
+            from customer_first_pay
+            where <![CDATA[date_format(first_pay_time, '%Y-%m-%d') < #{queryDate}]]>) c on c.customer_id = f.customer_id
+        </if>
+        <if test="storeId != null and storeId != ''">
+            left join customer_first_pay c on f.customer_id = c.customer_id and f.store_id = c.store_id
+            and
+            <![CDATA[date_format(c.first_pay_time, '%Y-%m-%d') < #{queryDate}]]>
+        </if>
+        where g.del_flag = 0 and g.audit_status = 1 and
+        (<![CDATA[(date_format(g.begin_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(g.begin_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>
+        or
+        <![CDATA[(date_format(g.end_time, '%Y-%m-%d') >= #{queryDate}
+                and date_format(g.end_time, '%Y-%m-%d') <= date_sub(date_format(now(), '%Y-%m-%d'), interval 1 day))]]>)
+        <if test="storeId != null and storeId != ''">
+            and g.store_id = #{storeId}
+        </if>
+        <if test="marketingIds != null and marketingIds.size > 0">
+            and g.bargain_goods_id in
+            <foreach collection="marketingIds" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        group by g.goods_info_id ) as result1
+    </select>
+
+</mapper>

@@ -1,0 +1,30 @@
+package com.wanmi.sbc.customer.api.request.agent;
+
+import com.wanmi.sbc.common.base.BaseRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+
+/**
+ * @program: sbc-micro-service
+ * @description: 添加代理商请求参数
+ * @create: 2020-04-01 15:05
+ **/
+@Schema
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class UpdateCityPosterAgentRequest extends BaseRequest {
+
+    /**
+     * 市ID
+     */
+    @Schema(description = "市ID")
+    @NotNull(message = "市ID不能为空")
+    private Long cityId;
+}

@@ -1,0 +1,68 @@
+{
+  "properties": {
+    "rewardCash": {
+      "type": "double"
+    },
+    "registerTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "rewardRecordedTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "settingAmount": {
+      "type": "double"
+    },
+    "rewardRecorded": {
+      "type": "keyword"
+    },
+    "settingCouponIdsCounts": {
+      "type": "keyword"
+    },
+    "distributor": {
+      "type": "keyword"
+    },
+    "invitedNewCustomerId": {
+      "type": "keyword"
+    },
+    "recordId": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "rewardCoupon": {
+      "type": "keyword"
+    },
+    "requestCustomerId": {
+      "type": "keyword"
+    },
+    "failReasonFlag": {
+      "type": "keyword"
+    },
+    "orderFinishTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "orderCode": {
+      "type": "keyword"
+    },
+    "availableDistribution": {
+      "type": "keyword"
+    },
+    "rewardFlag": {
+      "type": "keyword"
+    },
+    "firstOrderTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "settingCoupons": {
+      "type": "keyword"
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "replayTable" : "replay_trade_marketing",
+  "dispatch" : null,
+  "pk": ["marketing_id"],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "tid",
+        "dataType": 12
+      },
+      {
+        "field": "buyer._id",
+        "replayField": "customer_id",
+        "dataType": 12
+      },
+      {
+        "field": "supplier.storeId",
+        "replayField": "store_id",
+        "dataType": -5
+      },
+      {
+        "field": "tradeState.payState",
+        "replayField": "pay_state",
+        "dataType": 4,
+        "enumType": {
+          "NOT_PAID": 0,
+          "UNCONFIRMED": 1,
+          "PAID": 2,
+          "PAID_EARNEST": 3
+        }
+      },
+      {
+        "field": "tradeState.payTime",
+        "replayField": "pay_time",
+        "dataType": 93
+      }
+    ],
+    "arrayData": {
+      "arrayRoot": "tradeMarketings",
+      "mappingData": {
+        "singleData": [
+          {
+            "field": "marketingId",
+            "replayField": "marketing_id",
+            "dataType": -5
+          },
+          {
+            "field": "marketingType",
+            "replayField": "marketing_type",
+            "dataType": 4,
+            "enumType": {
+              "REDUCTION": 0,
+              "DISCOUNT": 1,
+              "GIFT": 2,
+              "BUYOUT_PRICE": 3,
+              "HALF_PRICE_SECOND_PIECE": 4,
+              "FLASH_SALE": 5,
+              "SUITS": 6,
+              "PREFERENTIAL": 8
+            }
+          },
+          {
+            "field": "discountsAmount",
+            "replayField": "discounts_amount",
+            "dataType": 3
+          },
+          {
+            "field": "realPayAmount",
+            "replayField": "real_pay_amount",
+            "dataType": 3
+          }
+        ]
+      }
+    }
+  }
+}

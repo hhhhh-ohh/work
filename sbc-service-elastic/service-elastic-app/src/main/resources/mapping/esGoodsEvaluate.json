@@ -1,0 +1,178 @@
+{
+  "properties": {
+    "evaluateId": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "storeName": {
+      "type": "keyword"
+    },
+    "goodsId": {
+      "type": "keyword"
+    },
+    "goodsInfoId": {
+      "type": "keyword"
+    },
+    "goodsInfoName": {
+      "type": "keyword"
+    },
+    "orderNo": {
+      "type": "keyword"
+    },
+    "specDetails": {
+      "type": "keyword"
+    },
+    "buyTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "goodsImg": {
+      "type": "keyword"
+    },
+    "customerId": {
+      "type": "keyword"
+    },
+    "customerName": {
+      "type": "keyword"
+    },
+    "customerAccount": {
+      "type": "keyword"
+    },
+    "evaluateScore": {
+      "type": "integer"
+    },
+    "evaluateContent": {
+      "type": "keyword"
+    },
+    "evaluateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "evaluateAnswer": {
+      "type": "keyword"
+    },
+    "evaluateAnswerTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "evaluateAnswerAccountName": {
+      "type": "keyword"
+    },
+    "evaluateAnswerEmployeeId": {
+      "type": "keyword"
+    },
+    "historyEvaluateScore": {
+      "type": "integer"
+    },
+    "historyEvaluateContent": {
+      "type": "keyword"
+    },
+    "historyEvaluateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "historyEvaluateAnswer": {
+      "type": "keyword"
+    },
+    "historyEvaluateAnswerTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "historyEvaluateAnswerAccountName": {
+      "type": "keyword"
+    },
+    "historyEvaluateAnswerEmployeeId": {
+      "type": "keyword"
+    },
+    "goodNum": {
+      "type": "integer"
+    },
+    "isAnonymous": {
+      "type": "integer"
+    },
+    "isAnswer": {
+      "type": "integer"
+    },
+    "isEdit": {
+      "type": "integer"
+    },
+    "isShow": {
+      "type": "integer"
+    },
+    "isUpload": {
+      "type": "integer"
+    },
+    "delFlag": {
+      "type": "integer"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "createPerson": {
+      "type": "keyword"
+    },
+    "updateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "updatePerson": {
+      "type": "keyword"
+    },
+    "delTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "delPerson": {
+      "type": "keyword"
+    },
+    "goodsEvaluateImages": {
+      "type": "nested",
+      "properties": {
+        "imageId": {
+          "type": "keyword"
+        },
+        "evaluateId": {
+          "type": "keyword"
+        },
+        "goodsId": {
+          "type": "keyword"
+        },
+        "imageKey": {
+          "type": "keyword"
+        },
+        "imageName": {
+          "type": "keyword"
+        },
+        "artworkUrl": {
+          "type": "keyword"
+        },
+        "isShow": {
+          "type": "integer"
+        },
+        "createTime": {
+          "format": "yyyy-MM-dd HH:mm:ss.SSS",
+          "type": "date"
+        },
+        "updateTime": {
+          "format": "yyyy-MM-dd HH:mm:ss.SSS",
+          "type": "date"
+        }
+      }
+    },
+    "isSys": {
+      "type": "integer"
+    },
+    "storeType": {
+      "type": "integer"
+    }
+  }
+}

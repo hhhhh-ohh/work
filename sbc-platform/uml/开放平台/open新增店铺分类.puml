@@ -1,0 +1,16 @@
+@startuml
+start
+:新增店铺类目;
+:根据请求头AppKey获取所对应的商户;
+:根据商户的StoreId调用goods服务的新增店铺类目接口;
+if(返回是否成功) then(Y)
+    :根据新增类目的父级类目ID查询是否有绑定的优惠券;
+    if(有绑定的优惠券) then(Y)
+        :新增的类目绑定此优惠券;
+    endif;
+    :MQ记录操作日志;
+else
+    :直接操作失败;
+endif;
+stop
+@enduml

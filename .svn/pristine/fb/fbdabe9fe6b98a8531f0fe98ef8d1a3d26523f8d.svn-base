@@ -1,0 +1,43 @@
+{
+  "properties": {
+    "resourceId": {
+      "type": "long"
+    },
+    "resourceKey": {
+      "type": "keyword"
+    },
+    "createTime": {
+      "type": "keyword"
+    },
+    "artworkUrl": {
+      "type": "keyword"
+    },
+    "cateId": {
+      "type": "keyword"
+    },
+    "storeId": {
+      "type": "keyword"
+    },
+    "companyInfoId": {
+      "type": "keyword"
+    },
+    "serverType": {
+      "type": "keyword"
+    },
+    "resourceName": {
+      "type": "keyword"
+    },
+    "updateTime": {
+      "type": "keyword"
+    },
+    "delFlag": {
+      "type": "keyword"
+    },
+    "resourceType": {
+      "type": "keyword"
+    },
+    "sort": {
+      "type": "integer"
+    }
+  }
+}

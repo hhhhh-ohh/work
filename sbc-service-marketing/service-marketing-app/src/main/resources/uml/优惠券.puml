@@ -1,0 +1,16 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+actor user
+user -> bff: 订单确认页查询
+bff -> order: 查询订单相关数据
+order -> marketing: 营销数据查询
+marketing-> marketing: 优惠券插件
+marketing --> order: 返回优惠券数据
+order -> order: 计算优惠券最优数据
+order --> bff:
+bff -->user :
+
+
+@enduml

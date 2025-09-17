@@ -1,0 +1,29 @@
+@startuml
+interface ChannelLogisticsQueryProvider{
+  getLogisticsList();
+}
+ class ChannelLogisticsQueryController{
+  ChannelServiceFactory channelServiceFactory;
+}
+
+ class ChannelServiceFactory{
+  List<ChannelBaseService> channelBaseServices;
+
+}
+ interface ChannelBaseService
+ interface ChannelGetLogisticsService{
+  getLogisticsList();
+}
+ class LinkedMallGetLogisticsService{
+  getLogisticsList();
+}
+ class VopGetLogisticsService{
+  getLogisticsList();
+}
+ ChannelLogisticsQueryProvider <|-- ChannelLogisticsQueryController
+ ChannelLogisticsQueryController <|.. ChannelServiceFactory
+ ChannelServiceFactory <|.. ChannelBaseService
+ ChannelBaseService <|-- ChannelGetLogisticsService
+ ChannelGetLogisticsService <|-- LinkedMallGetLogisticsService
+ ChannelGetLogisticsService <|-- VopGetLogisticsService
+@enduml

@@ -1,0 +1,263 @@
+package com.wanmi.sbc.order.orderperformance.util;
+
+import com.wanmi.sbc.order.bean.vo.TradeItemVO;
+import com.wanmi.sbc.order.orderperformance.model.root.OrderPerformance;
+import com.wanmi.sbc.order.returnorder.model.entity.ReturnItem;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import java.util.*;
+
+
+@RefreshScope
+@Component
+public class ReturnItemAnalyzer {
+
+    // 小学价格
+    // 春秋装_上衣
+    @Value("${season-clothing-price.elementary-spring-top-price:3.0}")
+    private BigDecimal elementarySpringTopPrice;
+    // 春秋装_裤子
+    @Value("${season-clothing-price.elementary-spring-pants-price:2.0}")
+    private BigDecimal elementarySpringPantsPrice;
+    // 夏装_上衣
+    @Value("${season-clothing-price.elementary-summer-top-price:1.5}")
+    private BigDecimal elementarySummerTopPrice;
+    // 夏装_裤子
+    @Value("${season-clothing-price.elementary-summer-pants-price:1.5}")
+    private BigDecimal elementarySummerPantsPrice;
+    // 冬装_上衣
+    @Value("${season-clothing-price.elementary-winter-top-price:6.0}")
+    private BigDecimal elementaryWinterTopPrice;
+    // 冬装_裤子
+    @Value("${season-clothing-price.elementary-winter-pants-price:2.0}")
+    private BigDecimal elementaryWinterPantsPrice;
+
+
+    // 中学价格
+    // 春秋装_上衣
+    @Value("${season-clothing-price.middle-spring-top-price:3.0}")
+    private BigDecimal middleSpringTopPrice;
+    // 春秋装_裤子
+    @Value("${season-clothing-price.middle-spring-pants-price:2.0}")
+    private BigDecimal middleSpringPantsPrice;
+    // 夏装_上衣
+    @Value("${season-clothing-price.middle-summer-top-price:2.0}")
+    private BigDecimal middleSummerTopPrice;
+    // 夏装_裤子
+    @Value("${season-clothing-price.middle-summer-pants-price:2.0}")
+    private BigDecimal middleSummerPantsPrice;
+    // 冬装_上衣
+    @Value("${season-clothing-price.middle-winter-top-price:6.5}")
+    private BigDecimal middleWinterTopPrice;
+    // 冬装_裤子
+    @Value("${season-clothing-price.middle-winter-pants-price:2.5}")
+    private BigDecimal middleWinterPantsPrice;
+
+
+    // 季节映射表：将原始季节名称映射
+    private static final Map<String, String> SEASON_MAPPING = new HashMap<>();
+    static {
+        SEASON_MAPPING.put("春季", "春秋装");
+        SEASON_MAPPING.put("秋季", "春秋装");
+        SEASON_MAPPING.put("春秋季", "春秋装");
+        SEASON_MAPPING.put("夏季", "夏装");
+        SEASON_MAPPING.put("冬季", "冬装");
+        SEASON_MAPPING.put("春秋装", "春秋装");
+        SEASON_MAPPING.put("夏装", "夏装");
+        SEASON_MAPPING.put("冬装", "冬装");
+    }
+
+    // 标准季节列表（用于匹配）
+    private static final List<String> STANDARD_SEASONS = Arrays.asList("春秋装", "夏装", "冬装");
+
+    // 服装类型
+    // 服装类型映射表
+    private static final Map<String, String> CLOTHING_TYPE_MAPPING = new HashMap<>();
+    static {
+        CLOTHING_TYPE_MAPPING.put("长裤", "裤子");
+        CLOTHING_TYPE_MAPPING.put("裤裙", "裤子");
+        CLOTHING_TYPE_MAPPING.put("裙裤", "裤子");
+        CLOTHING_TYPE_MAPPING.put("短裤", "裤子");
+        CLOTHING_TYPE_MAPPING.put("上衣", "上衣");
+    }
+
+    // 修改原有的 CLOTHING_TYPES 为包含所有具体类型的列表
+    private static final List<String> CLOTHING_TYPE_LIST = Arrays.asList("上衣", "长裤", "裤裙", "裙裤","短裤");
+
+    // 尺寸列表（80~205，步长5）
+    private static final List<String> SIZES = IntStream.rangeClosed(80, 205)
+            .filter(i -> (i - 50) % 5 == 0)
+            .mapToObj(String::valueOf)
+            .collect(Collectors.toList());
+
+    private static final int SCHOOL_LEVEL_THRESHOLD = 165;
+
+
+    /**
+     * 分析退货项并计算价格
+     */
+    public BigDecimal analyzeReturnItems(List<ReturnItem> returnItems) {
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (ReturnItem returnItem : returnItems) {
+            String schoolLevel = extractSchoolLevel(returnItem.getSpecDetails());
+            if (StringUtils.isBlank(schoolLevel)) continue;
+
+            Optional<String> seasonOpt = extractSeason(returnItem.getSkuName());
+            if (!seasonOpt.isPresent()) continue;
+
+            List<String> clothingTypes = extractClothingTypes(returnItem.getSpecDetails());
+            if (clothingTypes.isEmpty()) continue;
+
+            BigDecimal itemPrice = calculateItemPrice(seasonOpt.get(), clothingTypes, schoolLevel);
+            BigDecimal itemTotalPrice = itemPrice.multiply(new BigDecimal(returnItem.getNum()));
+            totalAmount = totalAmount.add(itemTotalPrice);
+        }
+
+        return totalAmount;
+    }
+
+    /**
+     * 提取学校类型（小学/中学）
+     */
+    public String extractSchoolLevel(String specDetails) {
+        if (StringUtils.isBlank(specDetails)) return "";
+
+        for (String size : SIZES) {
+            String regex = "(?<!\\d)" + Pattern.quote(size) + "(?!\\d)";
+            if (Pattern.compile(regex).matcher(specDetails).find()) {
+                try {
+                    int sizeValue = Integer.parseInt(size);
+                    return sizeValue > SCHOOL_LEVEL_THRESHOLD ? "中学" : "小学";
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+            }
+        }
+        return "";
+    }
+
+    /**
+     * 提取季节信息，并进行标准化映射
+     */
+    public Optional<String> extractSeason(String skuName) {
+        if (StringUtils.isBlank(skuName)) return Optional.empty();
+
+        for (String season : SEASON_MAPPING.keySet()) {
+            if (skuName.contains(season)) {
+                return Optional.of(SEASON_MAPPING.get(season));
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * 提取服装类型
+     */
+    /**
+     * 提取服装类型
+     */
+    public List<String> extractClothingTypes(String specDetails) {
+        return CLOTHING_TYPE_LIST.stream()
+                .filter(specDetails::contains)
+                .map(type -> CLOTHING_TYPE_MAPPING.getOrDefault(type, type))
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+
+    /**
+     * 根据季节、服装类型、学校类型计算单价
+     */
+    public BigDecimal calculateItemPrice(String season, List<String> clothingTypes, String schoolLevel) {
+        BigDecimal totalPrice = BigDecimal.ZERO;
+
+        for (String clothingType : clothingTypes) {
+            BigDecimal price = getPriceBySeasonAndType(season, clothingType, schoolLevel);
+            totalPrice = totalPrice.add(price);
+        }
+
+        return totalPrice;
+    }
+
+    /**
+     * 获取指定季节、服装类型、学校类型的价格
+     */
+    /**
+     * 获取指定季节、服装类型、学校类型的价格
+     */
+    public BigDecimal getPriceBySeasonAndType(String season, String clothingType, String schoolLevel) {
+        if (!STANDARD_SEASONS.contains(season)) {
+            return BigDecimal.ZERO;
+        }
+
+        boolean isMiddle = "中学".equals(schoolLevel);
+
+        // 构造 key: season_clothingType
+        String key = season + "_" + clothingType;
+
+        // 根据 key 查找对应字段名
+        switch (key) {
+            case "春秋装_上衣":
+                return isMiddle ? middleSpringTopPrice : elementarySpringTopPrice;
+            case "春秋装_裤子":
+                return isMiddle ? middleSpringPantsPrice: elementarySpringPantsPrice;
+            case "夏装_上衣":
+                return isMiddle ? middleSummerTopPrice : elementarySummerTopPrice;
+            case "夏装_裤子":
+                return isMiddle ? middleSummerPantsPrice : elementarySummerPantsPrice;
+            case "冬装_上衣":
+                return isMiddle ? middleWinterTopPrice : elementaryWinterTopPrice;
+            case "冬装_裤子":
+                return isMiddle ? middleWinterPantsPrice : elementaryWinterPantsPrice;
+            default:
+                return BigDecimal.ZERO;
+        }
+    }
+
+    /**
+     * 批量分析学校制服金额（原方法保留）
+     */
+    public BigDecimal analyzeReturnItemsSchoolUniformAmount(List<ReturnItem> returnItems, List<TradeItemVO> tradeItems) {
+        Map<String, BigDecimal> decimalMap = tradeItems.stream()
+                .collect(Collectors.toMap(
+                        TradeItemVO::getSkuId,
+                        TradeItemVO::getPrice,
+                        (existing, replacement) -> existing // 保留第一个值，忽略后续重复值
+                ));
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (ReturnItem returnItem : returnItems) {
+            String schoolLevel = extractSchoolLevel(returnItem.getSpecDetails());
+            if (StringUtils.isBlank(schoolLevel)) continue;
+
+            Optional<String> season = extractSeason(returnItem.getSkuName());
+            if (!season.isPresent()) continue;
+
+            List<String> clothingTypes = extractClothingTypes(returnItem.getSpecDetails());
+            if (clothingTypes.isEmpty())
+                continue;
+
+            if (!decimalMap.containsKey(returnItem.getSkuId()))
+                continue;
+
+            BigDecimal itemPrice = decimalMap.get(returnItem.getSkuId());
+            BigDecimal itemTotalPrice = itemPrice.multiply(new BigDecimal(returnItem.getNum()));
+            totalAmount = totalAmount.add(itemTotalPrice);
+        }
+
+        return totalAmount;
+    }
+
+}

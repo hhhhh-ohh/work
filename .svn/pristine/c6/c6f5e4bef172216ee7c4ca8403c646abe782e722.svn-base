@@ -1,0 +1,19 @@
+db.getCollection("bar_package_infos").insert({
+  "_id": "62872cbe54cce751d868b5be",
+  "updatedAt": "2022-05-20T05:53:02.053Z",
+  "createdAt": "2022-05-20T05:53:02.021Z",
+  "name": "@wanmi/wechat-recommendFooter",
+  "type": "BAR",
+  "systemCode": "d2cStore",
+  "versions": [
+    {
+      "version": "0.0.1",
+      "createTime": "2022-05-20T05:53:02.013Z",
+      "_id": "62872cbe54cce751d868b5bf"
+    }
+  ],
+  "refs": [
+    "test1"
+  ],
+  "__v": 0
+})

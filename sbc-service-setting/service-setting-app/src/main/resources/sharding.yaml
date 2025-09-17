@@ -1,0 +1,37 @@
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://172.19.25.118:3306/sbc-setting?characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&autoReconnect=true&failOverReadOnly=false&connectTimeout=0&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    username: root
+    password: Wmi@2023
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://172.19.25.118:3306/sbc-setting?characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&autoReconnect=true&failOverReadOnly=false&connectTimeout=0&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    username: root
+    password: Wmi@2023
+
+rules:
+- !READWRITE_SPLITTING
+  dataSources:
+    readwrite_ds:
+      writeDataSourceName: ds_0
+      readDataSourceNames:
+        - ds_1
+      transactionalReadQueryStrategy: PRIMARY
+      loadBalancerName: round_robin
+  loadBalancers:
+    round_robin:
+      type: ROUND_ROBIN
+- !SINGLE
+  tables:
+    - "*.*"
+  defaultDataSource: ds_0
+
+#transaction:
+#  defaultType: BASE
+#  providerType: Seata
+
+props:
+  sql-show: true

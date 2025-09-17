@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.marketing.marketingtaskrecord.dao.MarketingTaskRecordMapper">
+    <resultMap id="resultMap" type="com.wanmi.ares.marketing.marketingtaskrecord.model.MarketingTaskRecord">
+        <result property="id" column="id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="marketingType" column="marketing_type"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.wanmi.ares.marketing.marketingtaskrecord.model.MarketingTaskRecord">
+        insert into marketing_task_record(create_time, marketing_type) values (#{createTime}, #{marketingType})
+    </insert>
+    
+    <select id="list" resultMap="resultMap" parameterType="com.wanmi.ares.request.marketing.MarketingTaskRecordQueryRequest">
+        select * from marketing_task_record m
+        where 1=1
+        <if test="createTime != null">
+            and m.create_time = #{createTime}
+        </if>
+        <if test="createTimeBegin != null">
+            and <![CDATA[m.create_time >= #{createTimeBegin}]]>
+        </if>
+        <if test="createTimeEnd != null">
+            and <![CDATA[m.create_time <= #{createTimeEnd}]]>
+        </if>
+        <if test="marketingType != null">
+            and m.marketing_type = #{marketingType}
+        </if>
+        order by m.create_time desc
+    </select>
+
+    <select id="queryEarliestTime" resultType="java.time.LocalDate" parameterType="com.wanmi.ares.request.marketing.MarketingTaskRecordQueryRequest">
+        select min(create_time)
+        from marketing_task_record m
+        where 1=1
+        <if test="createTime != null">
+            and m.create_time = #{createTime}
+        </if>
+        <if test="createTimeBegin != null">
+            and <![CDATA[m.create_time >= #{createTimeBegin}]]>
+        </if>
+        <if test="createTimeEnd != null">
+            and <![CDATA[m.create_time <= #{createTimeEnd}]]>
+        </if>
+        <if test="marketingType != null">
+            and m.marketing_type = #{marketingType}
+        </if>
+    </select>
+
+    <select id="count" parameterType="com.wanmi.ares.request.marketing.MarketingTaskRecordQueryRequest"
+            resultType="java.lang.Long">
+        select count(m.id) from marketing_task_record m
+        where 1=1
+        <if test="createTime != null">
+            and m.create_time = #{createTime}
+        </if>
+        <if test="createTimeBegin != null">
+            and <![CDATA[m.create_time >= #{createTimeBegin}]]>
+        </if>
+        <if test="createTimeEnd != null">
+            and <![CDATA[m.create_time <= #{createTimeEnd}]]>
+        </if>
+        <if test="marketingType != null">
+            and m.marketing_type = #{marketingType}
+        </if>
+    </select>
+</mapper>

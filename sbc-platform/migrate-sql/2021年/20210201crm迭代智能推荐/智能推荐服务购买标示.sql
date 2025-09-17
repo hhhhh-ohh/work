@@ -1,0 +1,1 @@
+INSERT INTO `sbc-setting`.`system_config`(`config_key`, `config_type`, `config_name`, `remark`, `status`, `context`, `create_time`, `update_time`, `del_flag`) VALUES ('value_added_services', 'vas_recommend_setting', '增值服务-智能推荐', '判断商城是否购买增值服务-智能推荐', 1, NULL, '2021-01-23 09:00:00', '2021-01-23 09:00:00', 0);

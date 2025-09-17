@@ -1,0 +1,43 @@
+db.getCollection("bus_bar_infos").insert({
+  "_id": "6283572f2d1bae684198ecfc",
+  "envCode": "test1",
+  "key": "@wanmi/wechat-recommendInfo",
+  "platform": "weixin",
+  "systemCode": "d2cStore",
+  "__v": 0,
+  "addible": false,
+  "cateId": "",
+  "classify": "",
+  "createdAt": "2022-05-17T08:05:03.352Z",
+  "deletable": false,
+  "deleted": false,
+  "dependencies": [
+    "@wanmi/wechat-recommendInfo"
+  ],
+  "img": "",
+  "isAdvanced": true,
+  "isCommon": true,
+  "packageName": "@wanmi/wechat-recommendInfo",
+  "props": {
+    "props": {
+      "color": "#999999",
+      "linkText": "查看更多",
+      "titleColor": "#333333",
+      "style": "full-1",
+      "hasThemeColor": false,
+      "imageStyle": "show",
+      "version": "0.0.1",
+      "title": "主标题",
+      "subTitle": "副标题",
+      "type": "full",
+      "link": "",
+      "image": "//wanmi-b2b-x-site.oss-cn-shanghai.aliyuncs.com/default-recommend.png"
+    },
+    "widgetNameSpace": "@wanmi/wechat-recommendInfo"
+  },
+  "replicable": false,
+  "title": "种草页标题",
+  "type": "COMMON",
+  "updatedAt": "2022-05-17T08:34:23.564Z",
+  "version": "0.0.1"
+})

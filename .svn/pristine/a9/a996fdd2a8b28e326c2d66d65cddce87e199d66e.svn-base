@@ -1,0 +1,284 @@
+package com.wanmi.sbc.customer.agent.model.root;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.wanmi.sbc.common.annotation.CanEmpty;
+import com.wanmi.sbc.common.enums.DeleteFlag;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeDeserializer;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeSerializer;
+import jakarta.persistence.*;
+import lombok.Data;
+import org.hibernate.annotations.GenericGenerator;
+import org.springframework.data.jpa.convert.threeten.Jsr310JpaConverters;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * 代理商实体类
+ */
+@Entity
+@Table(name = "agent")
+@Data
+public class Agent implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 代理商主键ID（UUID）
+     */
+    @Id
+    @GeneratedValue(generator = "system-uuid")
+    @GenericGenerator(name = "system-uuid", strategy = "uuid")
+    @Column(name = "agent_id")
+    private String agentId;
+
+    /**
+     * 代理商名称
+     */
+    @Column(name = "agent_name")
+    private String agentName;
+
+    /**
+     * 系统唯一码（不可重复）
+     */
+    @Column(name = "agent_unique_code")
+    private String agentUniqueCode;
+
+    /**
+     * 代理商类型：1小B 2一级代理商 3二级代理商 4一级合作商
+     */
+    @Column(name = "type")
+    private Integer type;
+
+    /**
+     * 代理商上级唯一码
+     */
+    @Column(name = "agent_parent_unique_code")
+    private String agentParentUniqueCode;
+
+    /**
+     * 客户ID
+     */
+    @Column(name = "customer_id")
+    private String customerId;
+
+    /**
+     * 省ID
+     */
+    @Column(name = "province_id")
+    @CanEmpty
+    private Long provinceId;
+
+    /**
+     * 市ID
+     */
+    @Column(name = "city_id")
+    @CanEmpty
+    private Long cityId;
+
+    /**
+     * 区
+     */
+    @Column(name = "area_id")
+    private Long areaId;
+
+    /**
+     * 街道
+     */
+    @Column(name = "street_id")
+    private Long streetId;
+
+    /**
+     * 省名称
+     */
+    @Column(name = "province_name")
+    @CanEmpty
+    private String provinceName;
+
+    /**
+     * 市名称
+     */
+    @Column(name = "city_name")
+    @CanEmpty
+    private String cityName;
+
+    /**
+     * 区名称
+     */
+    @Column(name = "area_name")
+    private String areaName;
+
+    /**
+     * 街道名称
+     */
+    @Column(name = "street_name")
+    private String streetName;
+
+
+    /**
+     * 学校名称
+     */
+    @Column(name = "school_name")
+    private String schoolName;
+
+    /**
+     * 店铺名称
+     */
+    @Column(name = "shop_name")
+    private String shopName;
+
+
+    /**
+     * 店铺属性
+     */
+    @Column(name = "shop_attribute")
+    private String shopAttribute;
+
+
+    /**
+     * 店铺地址
+     */
+    @Column(name = "shop_address")
+    private String shopAddress;
+
+    /**
+     * 店铺负责人
+     */
+    @Column(name = "contact_person")
+    private String contactPerson;
+
+    /**
+     * 联系电话
+     */
+    @Column(name = "contact_phone")
+    private String contactPhone;
+
+    /**
+     * 营业执照URL/编号
+     */
+    @Column(name = "business_license")
+    private String businessLicense;
+
+    /**
+     * 开户行
+     */
+    @Column(name = "bank_open")
+    private String bankOpen;
+
+    /**
+     * 银行卡号
+     */
+    @Column(name = "bank_account")
+    private String bankAccount;
+
+    /**
+     * 有效开始时间
+     */
+    @Convert(converter = Jsr310JpaConverters.LocalDateTimeConverter.class)
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    @Column(name = "valid_start")
+    private LocalDateTime validStart;
+
+    /**
+     * 有效结束时间
+     */
+    @Convert(converter = Jsr310JpaConverters.LocalDateTimeConverter.class)
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    @Column(name = "valid_end")
+    private LocalDateTime validEnd;
+
+    /**
+     * 首单银卡会员等级佣金价格
+     */
+    @Column(name = "silver_card_level_price")
+    private BigDecimal silverCardLevelPrice;
+
+    /**
+     * 首单金卡会员等级佣金价格
+     */
+    @Column(name = "gold_card_level_price")
+    private BigDecimal goldCardLevelPrice;
+
+    /**
+     * 首单钻卡会员等级佣金价格
+     */
+    @Column(name = "diamond_card_level_price")
+    private BigDecimal diamondCardLevelPrice;
+
+    /**
+     * 续购佣金比例
+     */
+    @Column(name = "renewal_ratio")
+    private BigDecimal renewalRatio;
+
+    /**
+     * 审核状态 0已创建 1待审核 2通过 3驳回
+     */
+    @Column(name = "audit_status")
+    private Integer auditStatus;
+
+    /**
+     * 二维码地址
+     */
+    @Column(name = "qr_code_address")
+    private String qrCodeAddress;
+
+    /**
+     * 二维码地址
+     */
+    @Column(name = "poster_address")
+    private String posterAddress;
+
+    /**
+     * 驳回原因
+     */
+    @Column(name = "reject_reason")
+    private String rejectReason;
+
+    /**
+     * 展示状态 0不显示 1显示
+     */
+    @Column(name = "is_show")
+    private Integer isShow;
+
+    /**
+     * 删除标志 0正常 1已删除
+     */
+    @Column(name = "del_flag")
+    @Enumerated
+    private DeleteFlag delFlag;
+
+    /**
+     * 创建时间
+     */
+    @Convert(converter = Jsr310JpaConverters.LocalDateTimeConverter.class)
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    @Column(name = "create_time")
+    private LocalDateTime createTime;
+
+    /**
+     * 创建人
+     */
+    @Column(name = "create_person")
+    private String createPerson;
+
+    /**
+     * 更新时间
+     */
+    @Convert(converter = Jsr310JpaConverters.LocalDateTimeConverter.class)
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    @Column(name = "update_time")
+    private LocalDateTime updateTime;
+
+    /**
+     * 更新人
+     */
+    @Column(name = "update_person")
+    private String updatePerson;
+}

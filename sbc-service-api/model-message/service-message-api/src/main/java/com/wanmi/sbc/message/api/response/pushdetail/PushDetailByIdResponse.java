@@ -1,0 +1,32 @@
+package com.wanmi.sbc.message.api.response.pushdetail;
+
+import com.wanmi.sbc.common.base.BasicResponse;
+import com.wanmi.sbc.message.bean.vo.PushDetailVO;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+/**
+ * <p>根据id查询任意（包含已删除）推送详情信息response</p>
+ * @author Bob
+ * @date 2020-01-08 17:16:17
+ */
+@Schema
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PushDetailByIdResponse extends BasicResponse {
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 推送详情信息
+     */
+    @Schema(description = "推送详情信息")
+    private PushDetailVO pushDetailVO;
+}

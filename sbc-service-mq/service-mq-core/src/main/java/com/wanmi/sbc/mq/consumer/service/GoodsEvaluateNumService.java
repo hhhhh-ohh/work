@@ -1,0 +1,56 @@
+package com.wanmi.sbc.mq.consumer.service;
+
+import com.alibaba.fastjson2.JSONObject;
+import com.wanmi.sbc.common.constant.RedisKeyConstant;
+import com.wanmi.sbc.common.redis.util.RedisUtil;
+import com.wanmi.sbc.elastic.api.provider.goods.EsGoodsInfoElasticProvider;
+import com.wanmi.sbc.elastic.api.request.goods.EsGoodsInfoRequest;
+import com.wanmi.sbc.goods.api.provider.goods.GoodsProvider;
+import com.wanmi.sbc.goods.api.request.goods.GoodsModifyEvaluateNumRequest;
+import io.seata.spring.annotation.GlobalTransactional;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.messaging.Message;
+import org.springframework.stereotype.Service;
+
+import java.util.function.Consumer;
+
+/**
+ * @author lvzhenwei
+ * @className GoodsEvaluateNumService
+ * @description 统计商品评论数
+ * @date 2021/8/16 2:06 下午
+ */
+@Slf4j
+@Service
+public class GoodsEvaluateNumService {
+
+    @Autowired private GoodsProvider goodsProvider;
+
+    @Autowired private EsGoodsInfoElasticProvider esGoodsInfoElasticProvider;
+
+    @Autowired private RedisUtil redisService;
+
+    @Bean
+    public Consumer<Message<String>> mqGoodsEvaluateNumService() {
+        return this::extracted;
+    }
+
+    @GlobalTransactional
+    private void extracted(Message<String> message) {
+        String json = message.getPayload();
+        GoodsModifyEvaluateNumRequest request =
+                JSONObject.parseObject(json, GoodsModifyEvaluateNumRequest.class);
+        // 更新redis商品基本数据
+        String goodsDetailInfo =
+                redisService.getString(RedisKeyConstant.GOODS_DETAIL_CACHE + request.getGoodsId());
+        if (StringUtils.isNotBlank(goodsDetailInfo)) {
+            redisService.delete(RedisKeyConstant.GOODS_DETAIL_CACHE + request.getGoodsId());
+        }
+        goodsProvider.updateGoodsFavorableCommentNum(request);
+        esGoodsInfoElasticProvider.initEsGoodsInfo(
+                EsGoodsInfoRequest.builder().goodsId(request.getGoodsId()).pluginType(request.getPluginType()).build());
+    }
+}

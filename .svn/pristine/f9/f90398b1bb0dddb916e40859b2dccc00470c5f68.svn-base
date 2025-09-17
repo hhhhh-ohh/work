@@ -1,0 +1,12 @@
+1、新增nacos中的mobile、pc、boss、supplier、provider配置项：cors.allowedOrigins=https://s2b.wanmi.com,可根据自身需求自行修改配置属性值,建议开发/测试环境设置为:*
+
+2、在sbc-services-account的nacos配置中添加了授信相关的rabbitmq配置：
+## 授信还款数据变更
+spring.cloud.stream.bindings.credit-state-change-event-input.destination=q.account.service.credit.account.change
+spring.cloud.stream.bindings.credit-state-change-event-output.destination=q.account.service.credit.account.change
+#取消授信还款单生产者
+spring.cloud.stream.bindings.customer-credit-repay-cancel-output.destination=q.account.service.credit.cancel.repay
+spring.cloud.stream.rabbit.bindings.customer-credit-repay-cancel-output.producer.delayed-exchange=true
+#取消授信还款单消费者
+spring.cloud.stream.bindings.customer-credit-repay-cancel-input.destination=q.account.service.credit.cancel.repay
+spring.cloud.stream.rabbit.bindings.customer-credit-repay-cancel-input.consumer.delayed-exchange=true

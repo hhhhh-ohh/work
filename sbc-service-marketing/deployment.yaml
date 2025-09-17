@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: marketing
+    name: marketing-deployment
+  name: marketing
+  namespace: sbc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: marketing
+  template:
+    metadata:
+      labels:
+        app: marketing
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - image: {{IMAGE_NAME}}
+          imagePullPolicy: Always
+          name: marketing
+          ports:
+            - containerPort: 8960
+              name: tomcat-port
+          livenessProbe:
+            httpGet:
+              path: /act/health
+              port: 8961
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 30
+          env:
+            - name: JAVA_OPTS
+              value: {{JAVA_ENV_PARAMS}}
+            - name: NACOS_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: sbc-config
+                  key: nacosAddress
+            - name: RESTART_
+              value: {{DATE}}
+#          resources:
+#            limits:
+#              cpu: '1'
+#              memory: 3Gi
+#            requests:
+#              cpu: '1'JAVA_ENV_PARAMS
+#              memory: 3Gi
+          volumeMounts:
+            - mountPath: /data/server/log
+              name: marketing-logs
+            - name: marketing-sharding
+              mountPath: /data/server/conf/sharding.yaml
+              subPath: sharding.yaml
+      volumes:
+        - name: marketing-logs
+          hostPath:
+            path: /data/sbc/logs/marketing
+        - name: marketing-sharding
+          configMap:
+            name: marketing-sharding
+            items:
+            - key: sharding.yaml
+              path: sharding.yaml
+      hostNetwork: false
+---

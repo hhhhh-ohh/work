@@ -1,0 +1,23 @@
+db.getCollection("widget_infos").insert({
+  "_id": "6283572f2d1bae684198ecfa",
+  "envCode": "test1",
+  "key": "@wanmi/wechat-recommendInfo",
+  "systemCode": "d2cStore",
+  "__v": 0,
+  "cssFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendInfo/dist/view.css",
+  "jsFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendInfo/dist/view.js",
+  "jsMetaFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendInfo/dist/edit.js",
+  "type": "BAR"
+})
+db.getCollection("widget_infos").insert(
+{
+  "_id": "6283572f2d1bae684198ecf4",
+  "envCode": "test1",
+  "key": "@wanmi/wechat-recommendInfo",
+  "systemCode": "",
+  "__v": 0,
+  "cssFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendInfo/dist/view.css",
+  "jsFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendInfo/dist/view.js",
+  "jsMetaFilePath": "/x-site/test1/public/barRepo/@wanmi/wechat-recommendInfo/dist/edit.js",
+  "type": "BAR"
+})

@@ -1,0 +1,12 @@
+
+INSERT INTO `sbc-setting`.`menu_info`(`menu_id`, `system_type_cd`, `parent_menu_id`, `menu_grade`, `menu_name`, `menu_url`, `menu_icon`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817e3316ba017e332e699d0001', 4, 'ff8080817e3316ba017e332d893b0000', 3, '数谋基础设置', '/statistics-setting', NULL, 1, '2022-01-07 14:16:27', 0);
+INSERT INTO `sbc-setting`.`menu_info`(`menu_id`, `system_type_cd`, `parent_menu_id`, `menu_grade`, `menu_name`, `menu_url`, `menu_icon`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817e3316ba017e332d893b0000', 4, 'fc8e07cd3fe311e9828800163e0fc468', 2, '数谋基础设置', NULL, NULL, 4, '2022-01-07 14:15:29', 0);
+INSERT INTO `sbc-setting`.`function_info`(`function_id`, `system_type_cd`, `menu_id`, `function_title`, `function_name`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817e3316ba017e333010af0003', 4, 'ff8080817e3316ba017e332e699d0001', '千米数谋基础设置修改', 'f_qm_statistics_setting_modify', NULL, 1, '2022-01-07 14:18:15', 0);
+INSERT INTO `sbc-setting`.`function_info`(`function_id`, `system_type_cd`, `menu_id`, `function_title`, `function_name`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817e3316ba017e332f154e0002', 4, 'ff8080817e3316ba017e332e699d0001', '千米数谋基础设置', 'f_qm_statistics_setting', NULL, 1, '2022-01-07 14:17:11', 0);
+INSERT INTO `sbc-setting`.`authority`(`authority_id`, `system_type_cd`, `function_id`, `authority_title`, `authority_name`, `authority_url`, `request_type`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817e3316ba017e333113130005', 4, 'ff8080817e3316ba017e333010af0003', '千米数谋配置修改', NULL, '/statistics-setting/modify-qm', 'PUT', NULL, 1, '2022-01-07 14:19:21', 0);
+INSERT INTO `sbc-setting`.`authority`(`authority_id`, `system_type_cd`, `function_id`, `authority_title`, `authority_name`, `authority_url`, `request_type`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817e3316ba017e3330a2c80004', 4, 'ff8080817e3316ba017e332f154e0002', '千米数谋配置查看', NULL, '/statistics-setting/get-qm', 'GET', NULL, 1, '2022-01-07 14:18:52', 0);
+
+update `sbc-setting`.`menu_info` set del_flag = 1  where menu_id = 'ff8080817e3316ba017e332e699d0001';
+update `sbc-setting`.`menu_info` set del_flag = 1  where menu_id = 'ff8080817e3316ba017e332d893b0000';
+UPDATE `sbc-setting`.`function_info` set menu_id='fc8e21a43fe311e9828800163e0fc468' where function_id='ff8080817e3316ba017e333010af0003';
+UPDATE `sbc-setting`.`function_info` set menu_id='fc8e21a43fe311e9828800163e0fc468' where function_id='ff8080817e3316ba017e332f154e0002';

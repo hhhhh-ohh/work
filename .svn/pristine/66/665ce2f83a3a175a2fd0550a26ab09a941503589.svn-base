@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd"
+         updateCheck="false">
+    <diskStore path="java.io.tmpdir/Tmp_EhCache" />
+
+    <defaultCache eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+                  timeToLiveSeconds="60" memoryStoreEvictionPolicy="LRU" />
+
+    <cache name="GOODS_EVALUATE_CONFIG"
+           eternal="false"
+           maxEntriesLocalHeap="0"
+           timeToLiveSeconds="300">
+    </cache>
+
+    <cache name="THIRD_PLATFORM_CONFIG_LINKEDMALL"
+           eternal="false"
+           maxEntriesLocalHeap="0"
+           timeToLiveSeconds="300">
+    </cache>
+
+    <!-- VOP 配置-->
+    <cache name="THIRD_PLATFORM_CONFIG_VOP"
+           eternal="false"
+           maxEntriesLocalHeap="0"
+           timeToLiveSeconds="300">
+    </cache>
+
+    <!-- 无货商品是否展示开关本地缓存，永久有效，删除时会清除该缓存 -->
+    <cache name="GOODS_OUTOFSTOCK_SHOW"
+           eternal="false"
+           maxEntriesLocalHeap="0"
+           timeToLiveSeconds="300">
+    </cache>
+
+    <!-- 注册注销协议缓存 -->
+    <cache name="BASE_CONFIG"
+           eternal="false"
+           maxEntriesLocalHeap="0"
+           timeToLiveSeconds="300">
+    </cache>
+
+</ehcache>

@@ -1,0 +1,28 @@
+package com.wanmi.sbc.customer.api.request.agent;
+
+import com.wanmi.sbc.common.base.BaseRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * @program: sbc-micro-service
+ * @description: 添加代理商请求参数
+ * @create: 2020-04-01 15:05
+ **/
+@Schema
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class DeleteAgentRequest extends BaseRequest {
+
+    /**
+     * 代理商主键ID（UUID）
+     */
+    @Schema(description = "代理商主键ID")
+    private String agentId;
+
+}

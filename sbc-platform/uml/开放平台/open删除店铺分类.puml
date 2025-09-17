@@ -1,0 +1,8 @@
+@startuml
+start
+:删除店铺分类;
+:根据请求头AppKey获取所对应的商户;
+:调用goods服务的删除指定类目接口;
+:同步ES商品库更新商品关联的类目信息;
+stop
+@enduml

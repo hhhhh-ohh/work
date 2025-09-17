@@ -1,0 +1,574 @@
+
+## 1、重建并同步优惠券ES索引
+### 1.1 删除相关索引
+```shell
+curl -XDELETE http://localhost:9200/es_coupon_info
+curl -XDELETE http://localhost:9200/es_activity_coupon
+curl -XDELETE http://localhost:9200/es_coupon_scope
+```
+
+### 1.2 设置 > 初始化ES > 同步数据
+```
+es_coupon_info       优惠券
+es_activity_coupon   活动优惠券
+```
+
+## 2、dbreplay服务的mapping配置
+### 2.1 新增运费券mapping映射json文件
+在 /data/s2b/dbreplay/conf/mongo/data/mapping 新增 trade_coupon_mapping_for_freight.json 文件
+```json
+{
+  "replayTable" : "replay_trade_coupon",
+  "dispatch" :{
+    "dispatch": null,
+    "typeFilter": ["INSERT","UPDATE","DELETE"],
+    "typeDispatch": {}
+  },
+  "pk": ["oid","coupon_code_id"],
+  "replayTypes":["UPDATE_REPLAY"],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "tid",
+        "dataType": 12
+      },
+      {
+        "field": "_id",
+        "replayField": "oid",
+        "dataType": 12
+      },
+      {
+        "field": "freightCoupon.couponCodeId",
+        "replayField": "coupon_code_id",
+        "dataType": 12
+      },
+      {
+        "field": "freightCoupon.couponCode",
+        "replayField": "coupon_code",
+        "dataType": 12
+      },
+      {
+        "field": "freightCoupon.couponType",
+        "replayField": "coupon_type",
+        "dataType": 4,
+        "enumFile": "coupon_type.json"
+      },
+      {
+        "field": "freightCoupon.splitPrice",
+        "replayField": "split_price",
+        "dataType": 3
+      },
+      {
+        "field": "freightCoupon.discountsAmount",
+        "replayField": "reduce_price",
+        "dataType": 3
+      }
+    ]
+  }
+}
+```
+### 2.2 init.json 中 trade 追加运费券映射
+在 /data/s2b/dbreplay/conf/mongo/data/mapping/init.json 的 "trade" 对应的列表末尾，追加 "trade_coupon_mapping_for_freight.json"
+```json
+{
+    "trade" : ["trade_coupon_mapping_for_freight.json"]
+}
+```
+
+## 3、nacos升级
+
+### nacos升级到2.1.2
+
+* 先将老的配置文件进行导出，导出为zip包
+
+* 停止老的nacos服务
+
+* 删除原来的nacos数据库里面的表
+
+* 从https://github.com/alibaba/nacos/releases/download/2.1.2/nacos-server-2.1.2.tar.gz下载nacos-server，并且解压
+
+* 通过解压的文件中conf/mysql-schema.sql执行sql重新建立表，注意数据库的字符集character set=uf8,collation=utf8-bin，如果不按照这个字符集建表会报错
+
+* 修改conf/application.properties的配置
+
+  ```properties
+  spring.datasource.platform=mysql
+  db.num=1
+  db.url.0=jdbc:mysql://127.0.0.1:3306/nacos2?characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC
+  db.user.0=root
+  db.password.0=password
+  ```
+
+* 启动nacos新的服务
+* 重新导入之前的配置文件
+
+## 4、服务器配置文件修改
+
+### 4.1 sbc后端所有服务的conf/application.properties修改
+因为springboot 2.6使用了spring.config.import，所以原来的服务nacos config配置不生效所以现在sbc后端所有服务的conf/application.properties都需要修改，修改为如下格式:
+按照对应的服务修改spring.application.name和引入的配置文件，有些不需要引入的自行过滤(注意：crm和dw服务未进行springboot版本升级，所以对应配置暂不修改)
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-goods
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-goods.properties
+spring.config.import[1]=optional:nacos:mysql-setting.properties
+spring.config.import[2]=optional:nacos:common.properties?&refreshEnabled=true
+spring.config.import[3]=optional:nacos:variable.properties
+```
+
+具体服务配置可参考如下，如有不一样的，需要手动修改：
+sbc-service-ares
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-ares
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-ares.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-boss
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-boss
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-boss.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-callback
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-callback
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-callback.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-mobile
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-mobile
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-mobile.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-perseus
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-perseus
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-perseus.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-provider
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-provider
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-provider.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-pc
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-pc
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-pc.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-supplier
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-supplier
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-supplier.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-service-account
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-account
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-account.properties
+spring.config.import[2]=optional:nacos:common.properties?&refreshEnabled=true
+spring.config.import[1]=optional:nacos:mysql-setting.properties
+```
+sbc-service-customer
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-customer
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-customer.properties
+```
+sbc-service-elastic
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-elastic
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-elastic.properties
+```
+sbc-service-empower
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-empower
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-empower.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-service-goods
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-goods
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-goods.properties
+spring.config.import[2]=optional:nacos:common.properties?&refreshEnabled=true
+spring.config.import[1]=optional:nacos:mysql-setting.properties
+```
+sbc-service-marketing
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-marketing
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-marketing.properties
+```
+bc-service-message
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-message
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-message.properties
+```
+sbc-service-mq
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-mq
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-mq.properties
+spring.config.import[1]=optional:nacos:common.properties?&refreshEnabled=true
+```
+sbc-service-order
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-order
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-order.properties
+spring.config.import[2]=optional:nacos:common.properties?&refreshEnabled=true
+spring.config.import[1]=optional:nacos:mysql-setting.properties
+```
+sbc-service-setting
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-setting
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-setting.properties
+spring.config.import[2]=optional:nacos:common.properties?&refreshEnabled=true
+spring.config.import[1]=optional:nacos:mysql-setting.properties
+```
+ac-service-vas
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sac-service-vas
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-vas.properties
+spring.config.import[2]=optional:nacos:common.properties?&refreshEnabled=true
+spring.config.import[1]=optional:nacos:mysql-setting.properties
+```
+
+sbc-service-open
+```properties
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+spring.application.name=sbc-service-open
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.config.import[0]=optional:nacos:sbc-service-open.properties
+spring.config.import[2]=optional:nacos:common.properties?&refreshEnabled=true
+spring.config.import[1]=optional:nacos:mysql-setting.properties
+```
+
+### 4.2 nacos配置修改
+
+4.2.1 nacos中的common.properties修改
+
+删除配置项
+```properties
+logging.config=classpath:logback.xml
+```
+
+新增一下配置（如果没有引入common.properties的服务自行在服务中新增对应的配置）
+```properties
+spring.main.allow-circular-references=true
+# 关闭spring data 的redis仓库即可
+spring.data.redis.repositories.enabled=false
+logging.level.org.springframework.cloud.openfeign=WARN
+```
+
+4.2.2 统一数据库连接，将原来的数据库连接druid改为hikari，com.zaxxer.hikari.HikariDataSource
+由原先配置
+```
+spring.shardingsphere.datasource.master.type=com.alibaba.druid.pool.DruidDataSource
+spring.shardingsphere.datasource.slave0.type=com.alibaba.druid.pool.DruidDataSource
+```
+改为
+```
+spring.shardingsphere.datasource.master.type=com.zaxxer.hikari.HikariDataSource
+spring.shardingsphere.datasource.slave0.type=com.zaxxer.hikari.HikariDataSource
+```
+
+需要排查nacos数据库连接配置，如果数据库连库接配置是如下的（注意配置项最后url要改为jdbc-url）：
+```
+spring.shardingsphere.datasource.master.url
+spring.shardingsphere.datasource.slave0.url
+```
+则需要改为
+```
+spring.shardingsphere.datasource.master.jdbc-url
+spring.shardingsphere.datasource.slave0.jdbc-url
+```
+
+4.2.3 nacos的sbc-boss.properties增加配置项
+```properties
+spring.mvc.pathmatch.matching-strategy=ant_path_matcher
+```
+
+4.2.4 nacos的sbc-service-customer.properties配置修改
+用以下配置覆盖现有sbc-service-customer.properties配置，同时将服务器 /data/sbc/customer/conf/application.properties将common.properties去除； 
+```properties
+# ----------------------------------------
+# application info
+# ----------------------------------------
+info.app.name=sbc-service-customer
+info.app.description=sbc-service-customer
+info.build.artifact=@project.artifactId@
+info.build.version=@project.version@
+info.app.encoding=@project.build.sourceEncoding@
+# ----------------------------------------
+# actuator settings
+# ----------------------------------------
+manager.mode=s2b
+management.server.port=7941
+management.endpoints.enabled-by-default=false
+management.endpoints.web.base-path=/act
+management.endpoint.info.enabled=true
+management.endpoint.health.enabled=true
+management.endpoint.env.enabled=true
+management.endpoint.mappings.enabled=true
+management.endpoint.health.show-details=always
+management.endpoints.web.exposure.include=health,info,mappings,env
+# ----------------------------------------
+# log config
+# ----------------------------------------
+logging.level.root=INFO
+logging.level.com.wanmi=INFO
+logging.level.org.springframework=WARN
+logging.config=classpath:logback.xml
+# ----------------------------------------
+# interface log config
+# ----------------------------------------
+request.log.enable=true
+request.log.need-result=true
+request.log.log-type=0
+# ----------------------------------------
+# server settings
+# ----------------------------------------
+server.port=7940
+server.servlet.session.timeout=1800
+server.tomcat.threads.max=200
+server.error.whitelabel.enabled=false
+server.error.include-stacktrace=ALWAYS
+server.tomcat.basedir=${user.home}/htdocs/data/sbc/customer1/tmp
+spring.jpa.show-sql=true
+spring.jpa.open-in-view=true
+# ----------------------------------------
+# spring cloud
+# ----------------------------------------
+spring.application.name=sbc-service-customer
+spring.cloud.nacos.discovery.server-addr=127.0.0.1:8848
+
+
+#-----------------------------------------------
+# seata
+#-----------------------------------------------
+seata.registry.type=nacos
+seata.registry.nacos.server-addr=127.0.0.1:8848
+seata.registry.nacos.namespace=public
+seata.registry.nacos.cluster=default
+seata.sharding.enable=true
+seata.enabled=true
+seata.application-id=sbc-service-customer
+#Seata 事务组编号，用于 TC 集群名 Seata 服务配置项，对应 ServiceProperties 类
+seata.tx-service-group=sbc-service-customer-group
+# 虚拟组和分组的映射
+seata.service.vgroup-mapping.sbc-service-customer-group=default
+seata.enableAutoDataSourceProxy=false
+seata.client.rm.lock.retry-interval=10
+seata.client.rm.lock.retryTimes=300
+seata.client.rm.lock.retry-policy-branch-rollback-on-conflict=false
+seata.client.undo.logSerialization=kryo
+
+
+# ----------------------------------------
+# datasource
+# ----------------------------------------
+
+
+wm.mysql.db.master.username=root
+wm.mysql.db.master.password=Wmi@2019
+wm.mysql.db.master.url=127.0.0.1
+wm.mysql.db.slave0.username=root
+wm.mysql.db.slave0.password=Wmi@2019
+wm.mysql.db.slave0.url=127.0.0.1
+
+
+
+spring.shardingsphere.enabled=true
+spring.shardingsphere.datasource.names=master,slave0
+spring.shardingsphere.datasource.master.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.shardingsphere.datasource.master.jdbc-url=jdbc:mysql://${wm.mysql.db.master.url}:3306/sbc-customer?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+spring.shardingsphere.datasource.master.username=${wm.mysql.db.master.username}
+spring.shardingsphere.datasource.master.password=${wm.mysql.db.master.password}
+spring.shardingsphere.datasource.master.type=com.zaxxer.hikari.HikariDataSource
+spring.shardingsphere.datasource.master.filters=stat
+spring.shardingsphere.datasource.master.maxActive=20
+spring.shardingsphere.datasource.master.initialSize=1
+spring.shardingsphere.datasource.master.maxWait=60000
+spring.shardingsphere.datasource.master.minIdle=1
+spring.shardingsphere.datasource.master.timeBetweenEvictionRunsMillis=60000
+spring.shardingsphere.datasource.master.minEvictableIdleTimeMillis=300000
+spring.shardingsphere.datasource.master.validationQuery=select 1
+spring.shardingsphere.datasource.master.testWhileIdle=true
+spring.shardingsphere.datasource.master.testOnBorrow=false
+spring.shardingsphere.datasource.master.testOnReturn=false
+spring.shardingsphere.datasource.master.poolPreparedStatements=true
+spring.shardingsphere.datasource.master.maxOpenPreparedStatements=20
+spring.shardingsphere.datasource.master.removeAbandoned=true
+spring.shardingsphere.datasource.master.removeAbandonedTimeout=60
+spring.shardingsphere.datasource.master.validationInterval=30000
+
+spring.shardingsphere.datasource.slave0.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.shardingsphere.datasource.slave0.jdbc-url=jdbc:mysql://${wm.mysql.db.slave0.url}:3306/sbc-customer?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+spring.shardingsphere.datasource.slave0.username=${wm.mysql.db.slave0.username}
+spring.shardingsphere.datasource.slave0.password=${wm.mysql.db.slave0.password}
+spring.shardingsphere.datasource.slave0.type=com.zaxxer.hikari.HikariDataSource
+spring.shardingsphere.datasource.slave0.filters=stat
+spring.shardingsphere.datasource.slave0.maxActive=20
+spring.shardingsphere.datasource.slave0.initialSize=1
+spring.shardingsphere.datasource.slave0.maxWait=60000
+spring.shardingsphere.datasource.slave0.minIdle=1
+spring.shardingsphere.datasource.slave0.timeBetweenEvictionRunsMillis=60000
+spring.shardingsphere.datasource.slave0.minEvictableIdleTimeMillis=300000
+spring.shardingsphere.datasource.slave0.validationQuery=select 1
+spring.shardingsphere.datasource.slave0.testWhileIdle=true
+spring.shardingsphere.datasource.slave0.testOnBorrow=false
+spring.shardingsphere.datasource.slave0.testOnReturn=false
+spring.shardingsphere.datasource.slave0.poolPreparedStatements=true
+spring.shardingsphere.datasource.slave0.maxOpenPreparedStatements=20
+spring.shardingsphere.datasource.slave0.removeAbandoned=true
+spring.shardingsphere.datasource.slave0.removeAbandonedTimeout=60
+spring.shardingsphere.datasource.slave0.validationInterval=30000
+
+spring.shardingsphere.sharding.tables.goods_footmark.actual-data-nodes=ds0.goods_footmark_$->{0..9}
+spring.shardingsphere.sharding.tables.goods_footmark.table-strategy.standard.sharding-column=customer_id
+spring.shardingsphere.sharding.tables.goods_footmark.table-strategy.standard.precise-algorithm-class-name=com.wanmi.sbc.customer.algorithm.GoodsFootmarkShardingAlgorithm
+spring.shardingsphere.sharding.binding-tables=goods_footmark
+
+
+spring.shardingsphere.sharding.master-slave-rules.ds0.master-data-source-name=master
+spring.shardingsphere.sharding.master-slave-rules.ds0.slave-data-source-names=slave0
+spring.shardingsphere.sharding.master-slave-rules.ds0.load-balance-algorithm-type=round_robin
+
+# 开启SQL显示，默认值: false，注意：仅配置读写分离时不会打印日志
+spring.shardingsphere.props.sql.show=true
+spring.main.allow-bean-definition-overriding=true
+
+
+spring.messages.basename=i18n/ResultCode
+
+####mongo
+#mongo.transaction.enable = true
+#spring.data.mongodb.host=172.19.25.27
+#spring.data.mongodb.port=27017
+#spring.data.mongodb.database=s2b
+#spring.data.mongodb.repositories.type=auto
+
+# ----------------------------------------
+# redis config
+# ----------------------------------------spring.redis.database=0
+spring.redis.host=127.0.0.1
+spring.redis.port=6379
+spring.redis.password=
+spring.redis.database=0
+spring.redis.timeout=5000
+spring.redis.lettuce.pool.max-active=20
+spring.redis.lettuce.pool.max-idle=10
+
+#redisson
+redisson.url=127.0.0.1:6379
+redisson.password=
+redisson.database=0
+redisson.injection=true
+
+# ----------------------------------------
+# json message converter
+# ----------------------------------------
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.serialization.write-null-map-values=true
+com.wanmi.open.sdk.appKey=wm_98324kas
+com.wanmi.open.sdk.appSecret=123ashdka1kdha09
+# ----------------------------------------
+# lcn分布式事务
+# ----------------------------------------
+#由于springcloud默认是开启的重试机制，开启次机制以后会导致当springcloud请求超时时会重复调用>业务模块，从而会引发数据混乱
+ribbon.MaxAutoRetriesNextServer=0
+ribbon.ReadTimeout=60000
+ribbon.ConnectTimeout=5000
+
+# ehcache
+#spring.cache.type=ehcache
+#spring.cache.ehcache.config=classpath:ehcache.xml
+wm.cache.enabled=true
+wm.cache.topic=cache.publish
+wm.cache.default-spec=maximumSize=10,expireTime=300
+wm.cache.configs[0].cache-name=STORE_SIMPLE_INFO
+wm.cache.configs[0].spec=maximumSize=100,expireTime=300
+
+# 使用okhttp
+feign.okhttp.enabled=true
+# 开启请求数据的压缩功能
+feign.compression.request.enabled=false
+# 压缩类型
+feign.compression.request.mime-types=text/xml,application/xml, application/json
+# 最小压缩值标准，当数据大于 1024 才会进行压缩
+feign.compression.request.min-request-size=1024
+feign.compression.response.enabled=true
+
+#拉卡拉-系统所属公司
+system.company.name=南京万米信息技术有限公司
+
+spring.main.allow-circular-references=true
+# 关闭spring data 的redis仓库即可
+spring.data.redis.repositories.enabled=false
+logging.level.org.springframework.cloud.openfeign=WARN
+
+```
+
+## 5、安卓13升级
+### 打包平台报错信息如下，需要手动将node_modules删除
+错误信息如下：
+```
+**ERROR** Failed to apply patch for package react-native-image-picker at path
+
+node_modules/react-native-image-picker
+
+This error was caused because patch-package cannot apply the following patch file:
+
+patches/react-native-image-picker+4.10.0.patch
+```
+## 6、前端密码md5处理
+本次迭代对于前端密码的部分进行了md5加密处理，具体参照wiki: http://wiki.dev.wanmi.com/pages/viewpage.action?pageId=68488010
+
+## 7、营销缓存刷新
+由于sbc功能复测，有修复营销相关bug，会导致部分场景历史营销数据有问题，需要在执行完初始化脚本以后，刷新一下营销缓存接口：
+预约、预售、拼团、秒杀的营销活动新增和修改的时候存入了缓存。
+如果升级之前有历史任务需要重新编辑下，或者调用boss对应的接口
+* /marketing/sycCache/bookingSale
+* /marketing/sycCache/appointmentSale
+* /marketing/sycCache/groupon
+* /marketing/sycCache/flashSale

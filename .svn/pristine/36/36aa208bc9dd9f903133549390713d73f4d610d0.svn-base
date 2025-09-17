@@ -1,0 +1,63 @@
+
+## 1、dbreplay服务的mapping配置
+进入 /data/s2b/dbreplay/conf/mongo/data/mapping 目录，对 json 文件做如下调整：
+```
+trade_item_marketing_mapping.json
+trade_marketing_mapping.json
+trade_marketing_sku_mapping.json
+```
+分别为以上 json 文件 "field": "marketingType" 的 "enumType" 追加 加价购活动类型枚举：
+```shell
+"PREFERENTIAL": 8
+```
+新增后，如下所示：
+```json
+{
+  "field": "marketingType",
+  "replayField": "marketing_type",
+  "dataType": 4,
+  "enumType": {
+    "REDUCTION": 0,
+    "DISCOUNT": 1,
+    "GIFT": 2,
+    "BUYOUT_PRICE": 3,
+    "HALF_PRICE_SECOND_PIECE": 4,
+    "FLASH_SALE": 5,
+    "SUITS": 6,
+    "PREFERENTIAL": 8
+  }
+}
+```
+
+## 2、重建并同步goodsInfo索引、邀新索引
+### 2.1 删除相关索引
+```shell
+curl -XDELETE http://localhost:9200/es_goods_info
+curl -XDELETE http://localhost:9200/es_invite_new_record
+```
+### 2.2 设置 > 初始化ES > 同步数据
+```
+es_goods_info 
+es_goods   
+es_invite_new_record  
+```
+
+## 3、刷新订单老数据
+### 3.1 循环遍历去重出退单，给一个有售后的值
+```每更新一个新环境为了刷新老的订单数据应调一次该接口：
+/trade/update/has/return
+```
+
+## 4、我的足迹mq调整 sbc-service-mq.properties
+### 将已有mq配置中我的足迹中 ${mq.const} 去除 ，最终配置如下
+```properties
+#我的足迹
+spring.cloud.stream.bindings.goods-footmark-output.destination=q.goods.footmark
+#我的足迹
+spring.cloud.stream.bindings.goods-footmark-input.destination=q.goods.footmark
+```
+
+## 5清除营销插件配置缓存(注意账号密码)
+```
+redis-cli keys "marketing_plugin_cache*" | xargs redis-cli del
+```

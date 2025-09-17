@@ -1,0 +1,73 @@
+{
+  "properties": {
+    "customerInvoiceId": {
+      "type": "long"
+    },
+    "customerId": {
+      "type": "keyword"
+    },
+    "customerName": {
+      "type": "keyword"
+    },
+    "companyName": {
+      "type": "keyword"
+    },
+    "taxpayerNumber": {
+      "type": "keyword"
+    },
+    "companyPhone": {
+      "type": "keyword"
+    },
+    "companyAddress": {
+      "type": "keyword"
+    },
+    "bankNo": {
+      "type": "keyword"
+    },
+    "bankName": {
+      "type": "keyword"
+    },
+    "businessLicenseImg": {
+      "type": "keyword"
+    },
+    "taxpayerIdentificationImg": {
+      "type": "keyword"
+    },
+    "checkState": {
+      "type": "integer"
+    },
+    "rejectReason": {
+      "type": "text"
+    },
+    "invalidFlag": {
+      "type": "integer"
+    },
+    "delFlag": {
+      "type": "integer"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "createPerson": {
+      "type": "keyword"
+    },
+    "updateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "updatePerson": {
+      "type": "keyword"
+    },
+    "deleteTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "deletePerson": {
+      "type": "keyword"
+    },
+    "invoiceStyle": {
+      "type": "integer"
+    }
+  }
+}

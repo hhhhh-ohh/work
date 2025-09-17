@@ -1,0 +1,16 @@
+package com.wanmi.sbc;
+
+import java.util.Base64;
+
+/**
+ * @author zhanggaolei
+ * @type Base64Test.java
+ * @desc
+ * @date 2022/11/23 13:53
+ */
+public class Base64Test {
+    public static void main(String[] args) {
+        String encode = "eyJzdWNjZXNzVXJsIjoiaHR0cDovLzE3Mi4xOS4yNS41NS9tb2JpbGUvcGFnZXMvcGFja2FnZS1DL29yZGVyL29yZGVyLXRvb2wvb3JkZXItc3VjY2Vzcy9pbmRleD9wYXJhbT17XCJ0aWRcIjpcIjEzMDMzMzQzMjU3NzA5MzYzMlwiLFwicGFyZW50VGlkXCI6XCI5MzAzMzM0MzI1NzgxNDYzMDRcIixcInBheVN0YXRlXCI6XCJOT1RfUEFJRFwiLFwiYXVkaXRTdGF0ZVwiOlwiQ0hFQ0tFRFwifSIsInRlcm1pbmFsIjoxLCJ0aWQiOiIxMzAzMzM0MzI1NzcwOTM2MzIiLCJwYXJlbnRUaWQiOiI5MzAzMzM0MzI1NzgxNDYzMDQiLCJjaGFubmVsSXRlbUlkIjoxOCwib3BlbklkIjoiIiwidG9rZW4iOiJleUpoYkdjaU9pSklVekkxTmlJc0lucHBjQ0k2SWtSRlJpSjkuZU5xRWtjRnF4Q0FRaHRfRmMxalVKRVp6Sy15bFVIcnFNUkJHbmV6S0doT2lTUXZMdm52Tm9iVGJMZlRpd2UtYl94LVlLNG1ySmkxaE5WZXlsSTFpa2hURVFTSXRFMEpXakNwQkMyTFdtS1lSbDJlYlhRbEttMFlZb2EyUW1sdktoQjVLd1FlRWlqTEZ5YmZfWk15MGh2UlE4TVZmWWNRN3FIN0FJeVp3X3I5S21TdkxmZWQ1RDJyNGdha0RydzkxbmY4U0xxTUw0Ti1tQzRhTXJhS3lzWkx5Q2loRnFhVmxGbXNEVkZnUVVGWjVaSEJMVENfVHlXVl9BQi14SUJ2NEZYdXdGbTBmY2RtY3daakRyaDFKWjdmWWZ2YVFobWtaLTIyYU85SjJCQU5vangwcEhnenZ3aVduak9EOWIzT0QyRHVjYzBOS0xwei13dTlvenBENl9JU0FQdDRwdDd3N2ZzejcyUnBHS2M5bnUzMENBQURfX3cuMVlGV2cyT2M4REJnSEJxNm1uelJmOG9lZDV1a3RtZ1ZNQnB0SllyeVJOWSJ9";
+        System.out.println(new String(Base64.getDecoder().decode(encode)));
+    }
+}

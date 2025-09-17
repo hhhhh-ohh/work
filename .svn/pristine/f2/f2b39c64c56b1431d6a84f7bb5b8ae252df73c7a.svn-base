@@ -1,0 +1,26 @@
+@startuml
+start
+partition 选择收货地址列表 {
+    :查询收货地址列表;
+    :循环判断收货地址是否在门店配送范围内;
+    if(门店状态正常) then (yes)
+     if(门店开启快递配送) then (yes)
+        :配送范围内地址;
+     else
+        if(开启达达配送) then (yes)
+            if(在门店配送范围内，\n在店铺配送范围内) then (yes)
+                :配送范围内地址;
+            else
+                :配送范围外地址;
+            endif;
+        else
+            :配送范围外地址;
+        endif;
+     endif;
+    else
+        :配送范围外地址;
+    endif;
+    :返回收货地址列表;
+}
+stop;
+@enduml

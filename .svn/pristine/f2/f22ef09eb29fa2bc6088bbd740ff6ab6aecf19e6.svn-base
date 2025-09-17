@@ -1,0 +1,380 @@
+package com.wanmi.sbc.order.orderperformance.service;
+
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceByUniqueCodesRequest;
+import com.wanmi.sbc.order.api.response.orderperformance.GetSchooluUniformSalesDataResponse;
+import com.wanmi.sbc.order.bean.vo.TradeItemVO;
+import com.wanmi.sbc.order.orderperformance.model.root.OrderPerformanceDetail;
+import com.wanmi.sbc.order.orderperformance.model.root.SeasonSummary;
+import com.wanmi.sbc.order.orderperformance.repository.OrderPerformanceDetailRepository;
+import com.wanmi.sbc.order.orderperformance.repository.OrderPerformanceRepository;
+import com.wanmi.sbc.order.trade.model.entity.TradeItem;
+import com.wanmi.sbc.order.returnorder.model.entity.ReturnItem;
+import com.wanmi.sbc.order.orderperformance.util.TradeItemAnalyzer;
+import com.wanmi.sbc.order.orderperformance.util.ReturnItemAnalyzer;
+import com.wanmi.sbc.order.orderperformance.model.root.OrderPerformance;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * 订单业绩明细服务类
+ */
+@Slf4j
+@Service
+public class OrderPerformanceDetailService {
+
+    @Autowired
+    private OrderPerformanceDetailRepository orderPerformanceDetailRepository;
+
+    @Autowired
+    private OrderPerformanceRepository orderPerformanceRepository;
+
+    @Autowired
+    private TradeItemAnalyzer tradeItemAnalyzer;
+
+    @Autowired
+    private ReturnItemAnalyzer returnItemAnalyzer;
+
+    /**
+     * 创建购买订单业绩明细
+     * @param orderPerformance 订单业绩
+     * @param tradeItems 交易项列表
+     */
+    public void createPurchaseDetails(OrderPerformance orderPerformance, List<TradeItem> tradeItems) {
+        if (tradeItems == null || tradeItems.isEmpty()) {
+            return;
+        }
+
+        List<OrderPerformanceDetail> details = tradeItems.stream()
+                .filter(tradeItem -> {
+                    // 提取学校级别、季节、服装类型用于过滤判断
+                    String schoolLevel = tradeItemAnalyzer.extractSchoolLevel(tradeItem.getSpecDetails());
+                    Optional<String> season = tradeItemAnalyzer.extractSeason(tradeItem.getSkuName());
+                    List<String> clothingTypes = tradeItemAnalyzer.extractClothingTypes(tradeItem.getSpecDetails());
+
+                    // 过滤掉 schoolLevel、season 或 clothingTypes 为空或 null 的数据
+                    return schoolLevel != null && !schoolLevel.isEmpty()
+                            && season.isPresent() && !season.get().isEmpty()
+                            && clothingTypes != null && !clothingTypes.isEmpty();
+                })
+                .map(tradeItem -> convertTradeItemToDetail(orderPerformance, tradeItem))
+                .collect(Collectors.toList());
+
+        if (CollectionUtils.isNotEmpty(details)) {
+            orderPerformanceDetailRepository.saveAll(details);
+        } else {
+            orderPerformanceRepository.delete(orderPerformance);
+        }
+
+
+    }
+
+    /**
+     * 创建退货订单业绩明细
+     * @param orderPerformance 订单业绩
+     * @param returnItems 退货项列表
+     * @param returnOrderId 退货单ID
+     */
+    public void createReturnDetails(OrderPerformance orderPerformance, List<ReturnItem> returnItems, List<TradeItemVO> tradeItems, String returnOrderId) {
+        if (returnItems == null || returnItems.isEmpty()) {
+            return;
+        }
+
+        Map<String, BigDecimal> decimalMap = tradeItems.stream()
+                .collect(Collectors.toMap(
+                        TradeItemVO::getSkuId,
+                        TradeItemVO::getPrice,
+                        (existing, replacement) -> existing // 保留第一个值，忽略后续重复值
+                ));
+
+        List<OrderPerformanceDetail> details = returnItems.stream()
+                .filter(returnItem -> {
+                    // 提取学校级别、季节、服装类型用于过滤判断
+                    String schoolLevel = returnItemAnalyzer.extractSchoolLevel(returnItem.getSpecDetails());
+                    Optional<String> season = returnItemAnalyzer.extractSeason(returnItem.getSkuName());
+                    List<String> clothingTypes = returnItemAnalyzer.extractClothingTypes(returnItem.getSpecDetails());
+
+                    // 过滤掉 schoolLevel、season 或 clothingTypes 为空或 null 的数据
+                    return schoolLevel != null && !schoolLevel.isEmpty()
+                            && season.isPresent() && !season.get().isEmpty()
+                            && clothingTypes != null && !clothingTypes.isEmpty();
+                })
+                .map(returnItem -> convertReturnItemToDetail(orderPerformance, returnItem, returnOrderId, decimalMap))
+                .collect(Collectors.toList());
+        orderPerformanceDetailRepository.saveAll(details);
+    }
+
+    /**
+     * 转换交易项为订单业绩明细
+     * @param orderPerformance 订单业绩
+     * @param tradeItem 交易项
+     * @return 订单业绩明细
+     */
+    public OrderPerformanceDetail convertTradeItemToDetail(OrderPerformance orderPerformance, TradeItem tradeItem) {
+        OrderPerformanceDetail detail = new OrderPerformanceDetail();
+
+        detail.setPerformanceId(orderPerformance.getId().toString());
+        detail.setDetailType(1); // 购买商品
+        detail.setOrderId(orderPerformance.getOrderId());
+        detail.setOId(tradeItem.getOid());
+        detail.setSpuId(tradeItem.getSpuId());
+        detail.setSkuId(tradeItem.getSkuId());
+        detail.setSkuName(tradeItem.getSkuName());
+        detail.setSkuNo(tradeItem.getSkuNo());
+        detail.setSpecDetails(tradeItem.getSpecDetails());
+
+        // 提取学校级别、季节、服装类型
+        String schoolLevel = tradeItemAnalyzer.extractSchoolLevel(tradeItem.getSpecDetails());
+        Optional<String> season = tradeItemAnalyzer.extractSeason(tradeItem.getSkuName());
+        List<String> clothingTypes = tradeItemAnalyzer.extractClothingTypes(tradeItem.getSpecDetails());
+
+        detail.setSchoolLevel(schoolLevel);
+        detail.setSeason(season.orElse(""));
+        detail.setClothingTypes(String.join(",", clothingTypes));
+
+        detail.setQuantity(tradeItem.getNum().intValue());
+
+        // 计算校园校服单价和总金额
+        detail.setUniformUnitPrice(tradeItem.getPrice());
+        detail.setUniformTotalAmount(tradeItem.getPrice().multiply(new BigDecimal(tradeItem.getNum())));
+
+        // 计算佣金单价和总金额
+        BigDecimal unitPrice = tradeItemAnalyzer.calculateItemPrice(
+                season.orElse(""), clothingTypes, schoolLevel);
+        detail.setUnitPrice(unitPrice);
+        detail.setTotalAmount(unitPrice.multiply(new BigDecimal(tradeItem.getNum())));
+
+        // 佣金计算
+        detail.setCommissionAmount(detail.getTotalAmount());
+
+        detail.setAgentUniqueCode(orderPerformance.getAgentUniqueCode());
+        detail.setAgentId(orderPerformance.getAgentId());
+        detail.setCustomerId(orderPerformance.getCustomerId());
+
+        detail.setCreateTime(LocalDateTime.now());
+        detail.setUpdateTime(LocalDateTime.now());
+
+        return detail;
+    }
+
+    /**
+     * 转换退货项为订单业绩明细
+     * @param orderPerformance 订单业绩
+     * @param returnItem 退货项
+     * @param returnOrderId 退货单ID
+     * @return 订单业绩明细
+     */
+    private OrderPerformanceDetail convertReturnItemToDetail(OrderPerformance orderPerformance, ReturnItem returnItem, String returnOrderId, Map<String, BigDecimal> decimalMap) {
+        OrderPerformanceDetail detail = new OrderPerformanceDetail();
+
+        detail.setPerformanceId(orderPerformance.getId().toString());
+        detail.setDetailType(2); // 退货商品
+        detail.setOrderId(orderPerformance.getOrderId());
+        detail.setReturnOrderId(returnOrderId);
+        detail.setSpuId(returnItem.getSpuId());
+        detail.setSkuId(returnItem.getSkuId());
+        detail.setSkuName(returnItem.getSkuName());
+        detail.setSkuNo(returnItem.getSkuNo());
+        detail.setSpecDetails(returnItem.getSpecDetails());
+
+        // 提取学校级别、季节、服装类型
+        String schoolLevel = returnItemAnalyzer.extractSchoolLevel(returnItem.getSpecDetails());
+        Optional<String> season = returnItemAnalyzer.extractSeason(returnItem.getSkuName());
+        List<String> clothingTypes = returnItemAnalyzer.extractClothingTypes(returnItem.getSpecDetails());
+
+        detail.setSchoolLevel(schoolLevel);
+        detail.setSeason(season.orElse(""));
+        detail.setClothingTypes(String.join(",", clothingTypes));
+
+        detail.setQuantity(returnItem.getNum());
+
+        // 计算校园校服单价和总金额
+        BigDecimal uniformUnitPrice = decimalMap.get(returnItem.getSkuId());
+        BigDecimal uniformTotalAmount = uniformUnitPrice
+                .multiply(new BigDecimal(returnItem.getNum()))
+                .multiply(new BigDecimal(-1));
+        detail.setUniformUnitPrice(uniformUnitPrice);
+        detail.setUniformTotalAmount(uniformTotalAmount);
+
+
+        // 计算单价和总金额
+        BigDecimal unitPrice = returnItemAnalyzer.calculateItemPrice(
+                season.orElse(""), clothingTypes, schoolLevel);
+        detail.setUnitPrice(unitPrice);
+        detail.setTotalAmount(unitPrice.multiply(new BigDecimal(returnItem.getNum())));
+
+        // 退货佣金为负值
+        detail.setCommissionAmount(detail.getTotalAmount().multiply(new BigDecimal("-1")));
+
+        detail.setAgentUniqueCode(orderPerformance.getAgentUniqueCode());
+        detail.setAgentId(orderPerformance.getAgentId());
+        detail.setCustomerId(orderPerformance.getCustomerId());
+
+        detail.setCreateTime(LocalDateTime.now());
+        detail.setUpdateTime(LocalDateTime.now());
+
+        return detail;
+    }
+
+    /**
+     * 根据业绩ID查询明细
+     * @param performanceId 业绩ID
+     * @return 订单业绩明细列表
+     */
+    public List<OrderPerformanceDetail> findByPerformanceId(String performanceId) {
+        return orderPerformanceDetailRepository.findByPerformanceId(performanceId);
+    }
+
+    /**
+     * 根据订单ID查询明细
+     * @param orderId 订单ID
+     * @return 订单业绩明细列表
+     */
+    public List<OrderPerformanceDetail> findByOrderId(String orderId) {
+        return orderPerformanceDetailRepository.findByOrderId(orderId);
+    }
+
+    /**
+     * 根据退货单ID查询明细
+     * @param returnOrderId 退货单ID
+     * @return 订单业绩明细列表
+     */
+    public List<OrderPerformanceDetail> findByReturnOrderId(String returnOrderId) {
+        return orderPerformanceDetailRepository.findByReturnOrderId(returnOrderId);
+    }
+
+    /**
+     * 根据代理ID查询明细
+     * @param agentId 代理ID
+     * @return 订单业绩明细列表
+     */
+    public List<OrderPerformanceDetail> findByAgentId(String agentId) {
+        return orderPerformanceDetailRepository.findByAgentId(agentId);
+    }
+
+    /**
+     * 根据客户ID查询明细
+     * @param customerId 客户ID
+     * @return 订单业绩明细列表
+     */
+    public List<OrderPerformanceDetail> findByCustomerId(String customerId) {
+        return orderPerformanceDetailRepository.findByCustomerId(customerId);
+    }
+
+    /**
+     * 根据明细类型查询明细
+     * @param detailType 明细类型（1-购买商品，2-退货商品）
+     * @return 订单业绩明细列表
+     */
+    public List<OrderPerformanceDetail> findByDetailType(Integer detailType) {
+        return orderPerformanceDetailRepository.findByDetailType(detailType);
+    }
+
+    /**
+     * 根据代理唯一码查询明细
+     * @param agentUniqueCode 代理唯一码
+     * @return 订单业绩明细列表
+     */
+    public List<OrderPerformanceDetail> findByAgentUniqueCode(String agentUniqueCode) {
+        return orderPerformanceDetailRepository.findByAgentUniqueCode(agentUniqueCode);
+    }
+
+    /**
+     * 根据订单ID列表查询明细
+     * @param orderIds 订单ID列表
+     * @return 订单业绩明细列表
+     */
+    public List<OrderPerformanceDetail> findByOrderIdIn(List<String> orderIds) {
+        return orderPerformanceDetailRepository.findByOrderIdIn(orderIds);
+    }
+
+    public List<GetSchooluUniformSalesDataResponse> getSchooluUniformSalesData(OrderPerformanceByUniqueCodesRequest request) {
+        List<OrderPerformanceDetail> orderPerformanceDetailList = orderPerformanceDetailRepository.findListByAgentUniqueCodeAndTime(request.getUniqueCodes(), request.getStartTime(), request.getEndTime());
+        if (orderPerformanceDetailList.isEmpty()){
+            return new ArrayList<>();
+        }
+        orderPerformanceDetailList = orderPerformanceDetailList.stream().map(orderPerformanceDetail -> {
+            if (orderPerformanceDetail.getDetailType()==2){
+                orderPerformanceDetail.setQuantity(-orderPerformanceDetail.getQuantity());
+            }
+            return orderPerformanceDetail;
+        }).collect(Collectors.toList());
+        // 首先按代理唯一码分组，然后对每个组内的季节进行汇总
+        Map<String, Map<String, SeasonSummary>>  groupedByAgentUniqueCodeBySeasonMap = orderPerformanceDetailList.stream()
+                .collect(Collectors.groupingBy(
+                        OrderPerformanceDetail::getAgentUniqueCode, // 第一级分组：按代理唯一码
+                        Collectors.toMap(
+                                OrderPerformanceDetail::getSeason, // 第二级的键：季节
+                                entity -> new SeasonSummary(entity.getQuantity(), entity.getCommissionAmount(),entity.getUniformTotalAmount()), // 第二级的值：创建汇总对象
+                                (existing, newOne) -> new SeasonSummary( // 合并函数：如果季节相同，则合并数量和金额
+                                        existing.getQuantity() + newOne.getQuantity(),
+                                        existing.getCommissionAmount().add(newOne.getCommissionAmount()), existing.getSaleAmount().add(newOne.getSaleAmount())
+                                )
+                        )
+                ));
+        List<GetSchooluUniformSalesDataResponse> getSchooluUniformSalesDataResponses = convertToResponseListStream(groupedByAgentUniqueCodeBySeasonMap);
+        return getSchooluUniformSalesDataResponses;
+    }
+    // 或者使用 Stream API 的版本
+    private List<GetSchooluUniformSalesDataResponse> convertToResponseListStream(Map<String, Map<String, SeasonSummary>> resultMap) {
+        return resultMap.entrySet().stream()
+                .map(entry -> {
+                    String agentUniqueCode = entry.getKey();
+                    Map<String, SeasonSummary> seasonMap = entry.getValue();
+
+                    GetSchooluUniformSalesDataResponse response = new GetSchooluUniformSalesDataResponse();
+                    response.setAgentUniqueCode(agentUniqueCode);
+
+                    // 初始化所有字段
+                    response.setSummerNum(0);
+                    response.setAutumnNum(0);
+                    response.setWinterNum(0);
+                    response.setSummerCommission(BigDecimal.ZERO);
+                    response.setAutumnCommission(BigDecimal.ZERO);
+                    response.setWinterCommission(BigDecimal.ZERO);
+                    response.setAutumnSaleAmount(BigDecimal.ZERO);
+                    response.setSummerSaleAmount(BigDecimal.ZERO);
+                    response.setWinterSaleAmount(BigDecimal.ZERO);
+                    response.setTotalCommission(BigDecimal.ZERO);
+
+                    // 填充季节数据
+                    seasonMap.forEach((season, summary) -> {
+                        if ("夏装".equals(season)) {
+                            response.setSummerNum(summary.getQuantity());
+                            response.setSummerCommission(summary.getCommissionAmount());
+                            response.setSummerSaleAmount(summary.getSaleAmount());
+                        } else if ("春秋装".equals(season)) {
+                            response.setAutumnNum(summary.getQuantity());
+                            response.setAutumnCommission(summary.getCommissionAmount());
+                            response.setAutumnSaleAmount(summary.getSaleAmount());
+                        } else if ("冬装".equals(season)) {
+                            response.setWinterNum(summary.getQuantity());
+                            response.setWinterCommission(summary.getCommissionAmount());
+                            response.setWinterSaleAmount(summary.getSaleAmount());
+                        }
+                    });
+
+                    // 计算总计
+                    response.setTotalNum(response.getSummerNum() + response.getAutumnNum() + response.getWinterNum());
+                    response.setTotalCommission(
+                            response.getSummerCommission()
+                                    .add(response.getAutumnCommission())
+                                    .add(response.getWinterCommission())
+                    );
+                    response.setTotalSaleAmount(
+                            response.getSummerSaleAmount()
+                                    .add(response.getAutumnSaleAmount())
+                                    .add(response.getWinterSaleAmount())
+                    );
+
+                    return response;
+                })
+                .collect(Collectors.toList());
+    }
+}

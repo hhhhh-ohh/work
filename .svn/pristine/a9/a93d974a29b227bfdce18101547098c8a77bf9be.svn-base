@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.report.paymember.dao.PayMemberGrowReportMapper">
+    <resultMap id="payMemberReport" type="com.wanmi.ares.report.paymember.model.root.PayMemberGrowReport">
+        <id property="id" column="id"/>
+        <result property="baseDate" column="base_date"/>
+        <result property="allCount" column="all_count"/>
+        <result property="dayGrowthCount" column="day_growth_count"/>
+        <result property="dayRenewalCount" column="day_renewal_count"/>
+        <result property="dayOvertimeCount" column="day_overtime_count"/>
+        <result property="createDate" column="create_tm"/>
+    </resultMap>
+
+    <insert id="savePayMemberGrowthReport">
+        INSERT INTO paymember_grow (<include refid="commonAddColSql"></include> ) VALUES
+          (
+          uuid(), #{report.baseDate}, #{report.allCount}, #{report.dayGrowthCount},
+          #{report.dayRenewalCount}, #{report.dayOvertimeCount}, now()
+          )
+    </insert>
+
+    <sql id="commonAddColSql">
+        id,base_date, all_count, day_growth_count, day_renewal_count, day_overtime_count, create_tm
+    </sql>
+
+    <delete id="deletePayMemberGrowthReportByDate">
+        delete from paymember_grow WHERE base_date = #{deleteDate}
+    </delete>
+
+    <select id="queryGrowthTotal" resultType="java.lang.Integer">
+        SELECT count(1)
+        FROM paymember_grow
+        WHERE
+          <![CDATA[
+          base_date >= #{request.startDate} AND base_date <= #{request.endDate}
+          ]]>
+    </select>
+
+    <select id="findAllGrowReport" resultMap="payMemberReport">
+        SELECT base_date, all_count, day_growth_count, day_renewal_count, day_overtime_count
+        FROM paymember_grow
+        WHERE
+            <![CDATA[
+            base_date >= #{request.startDate} AND base_date <= #{request.endDate}
+            ]]>
+        <if test="request.sortField != null">
+            order by ${request.sortField} ${request.sortTypeText}
+        </if>
+        limit #{pageRequest.start,jdbcType=INTEGER} , #{pageRequest.pageSize,jdbcType=INTEGER}
+    </select>
+
+    <select id="findAllGrowReportByDate" resultMap="payMemberReport">
+        SELECT  base_date, all_count, day_growth_count, day_renewal_count, day_overtime_count
+        FROM paymember_grow
+        WHERE
+        <![CDATA[
+            base_date >= #{startDate} AND base_date <= #{endDate}
+            ]]>
+        ORDER BY base_date asc
+    </select>
+
+    <select id="findAllGrowReportByWeek" resultMap="payMemberReport">
+        SELECT
+               max(base_date) as base_date,
+               sum(all_count) as all_count,
+               sum(day_growth_count) as day_growth_count,
+               sum(day_renewal_count) as day_renewal_count,
+               sum(day_overtime_count) as day_overtime_count
+        FROM paymember_grow
+        WHERE
+        <![CDATA[
+            base_date >= #{startDate} AND base_date <= #{endDate}
+            ]]>
+    </select>
+
+</mapper>

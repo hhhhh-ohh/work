@@ -1,0 +1,575 @@
+package com.wanmi.sbc.order.provider.impl.returnorder;
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.base.MicroServicePage;
+import com.wanmi.sbc.common.enums.StoreType;
+import com.wanmi.sbc.common.enums.ThirdPlatformType;
+import com.wanmi.sbc.common.util.Constants;
+import com.wanmi.sbc.common.util.GeneratorService;
+import com.wanmi.sbc.common.util.KsBeanUtil;
+import com.wanmi.sbc.empower.api.provider.channel.base.ChannelRefundProvider;
+import com.wanmi.sbc.empower.api.provider.channel.linkedmall.order.LinkedMallOrderProvider;
+import com.wanmi.sbc.empower.api.request.channel.base.ChannelRefundQueryStatusRequest;
+import com.wanmi.sbc.empower.api.request.channel.linkedmall.LinkedMallOrderListQueryRequest;
+import com.wanmi.sbc.empower.api.response.channel.base.ChannelRefundQueryStatusResponse;
+import com.wanmi.sbc.empower.api.response.channel.linkedmall.LinkedMallOrderListQueryResponse;
+import com.wanmi.sbc.order.api.provider.returnorder.ReturnOrderQueryProvider;
+import com.wanmi.sbc.order.api.request.refund.RefundOrderRequest;
+import com.wanmi.sbc.order.api.request.returnorder.*;
+import com.wanmi.sbc.order.api.response.returnorder.*;
+import com.wanmi.sbc.order.bean.enums.ReturnFlowState;
+import com.wanmi.sbc.order.bean.enums.ReturnType;
+import com.wanmi.sbc.order.bean.vo.CreditPayInfoVO;
+import com.wanmi.sbc.order.bean.vo.ReturnOrderVO;
+import com.wanmi.sbc.order.bean.vo.TradeVO;
+import com.wanmi.sbc.order.refund.model.root.RefundOrder;
+import com.wanmi.sbc.order.refund.service.RefundOrderService;
+import com.wanmi.sbc.order.returnorder.model.entity.ReturnItem;
+import com.wanmi.sbc.order.returnorder.model.root.ReturnOrder;
+import com.wanmi.sbc.order.returnorder.request.ReturnQueryRequest;
+import com.wanmi.sbc.order.returnorder.service.ReturnOrderService;
+import com.wanmi.sbc.order.returnorder.service.ReturnTradeIncision;
+import com.wanmi.sbc.order.trade.model.entity.CreditPayInfo;
+import com.wanmi.sbc.order.trade.model.root.ProviderTrade;
+import com.wanmi.sbc.order.trade.model.root.Trade;
+import com.wanmi.sbc.order.trade.request.ProviderTradeQueryRequest;
+import com.wanmi.sbc.order.trade.service.ProviderTradeService;
+import com.wanmi.sbc.order.trade.service.TradeService;
+
+import jakarta.validation.Valid;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * <p>退单服务查询接口</p>
+ *
+ * @Author: daiyitian
+ * @Description: 退单服务查询接口
+ * @Date: 2018-12-03 15:40
+ */
+@Validated
+@RestController
+@Slf4j
+public class ReturnOrderQueryController implements ReturnOrderQueryProvider {
+
+    @Autowired
+    private ReturnOrderService returnOrderService;
+
+    @Autowired
+    private ProviderTradeService providerTradeService;
+
+    @Autowired
+    private LinkedMallOrderProvider linkedMallOrderProvider;
+
+    @Autowired
+    private ChannelRefundProvider channelRefundProvider;
+
+    @Autowired
+    private TradeService tradeService;
+
+    @Autowired
+    private ReturnTradeIncision returnTradeIncision;
+
+    @Autowired
+    private RefundOrderService refundOrderService;
+
+
+    /**
+     * 根据userId获取退单快照
+     *
+     * @param request 根据userId获取退单快照请求结构 {@link ReturnOrderTransferByUserIdRequest}
+     * @return 退单快照 {@link ReturnOrderTransferByUserIdResponse}
+     */
+    @Override
+    public BaseResponse<ReturnOrderTransferByUserIdResponse> getTransferByUserId(@RequestBody @Valid
+                                                                                         ReturnOrderTransferByUserIdRequest
+                                                                                         request) {
+        ReturnOrder returnOrder = returnOrderService.findTransfer(request.getUserId());
+        if (Objects.nonNull(returnOrder)) {
+            return BaseResponse.success(KsBeanUtil.convert(returnOrder, ReturnOrderTransferByUserIdResponse.class));
+        }
+        return BaseResponse.SUCCESSFUL();
+    }
+
+    /**
+     * 根据动态条件统计退单
+     *
+     * @param request 根据动态条件统计退单请求结构 {@link ReturnCountByConditionRequest}
+     * @return 退单数 {@link ReturnCountByConditionResponse}
+     */
+    @Override
+    public BaseResponse<ReturnCountByConditionResponse> countByCondition(@RequestBody @Valid
+                                                                                 ReturnCountByConditionRequest
+                                                                                 request) {
+        Long count = returnOrderService.countNum(KsBeanUtil.convert(request, ReturnQueryRequest.class));
+        return BaseResponse.success(ReturnCountByConditionResponse.builder().count(count).build());
+    }
+
+    /**
+     * 根据动态条件查询退单分页列表
+     *
+     * @param request 根据动态条件查询退单分页列表请求结构 {@link ReturnOrderPageRequest}
+     * @return 退单分页列表 {@link ReturnOrderPageResponse}
+     */
+    @Override
+    public BaseResponse<ReturnOrderPageResponse> page(@RequestBody @Valid ReturnOrderPageRequest request) {
+        ReturnQueryRequest returnQueryRequest = KsBeanUtil.convert(request, ReturnQueryRequest.class);
+        if (StringUtils.isNotBlank(request.getDeliverNo())) {
+            returnQueryRequest.setReturnLogisticNos(Arrays.stream(request.getDeliverNo().split(",")).toList());
+        }
+        Page<ReturnOrder> orderPage = returnOrderService.page(returnQueryRequest);
+        MicroServicePage<ReturnOrderVO> returnOrderVOS = KsBeanUtil.convertPage(orderPage, ReturnOrderVO.class);
+        List<ReturnOrderVO> list=returnOrderVOS.getContent();
+
+        //优化填充Trade，仅处理含有pTid的退单
+        if (CollectionUtils.isNotEmpty(list) && list.stream().anyMatch(r -> Objects.nonNull(r.getPtid()))) {
+            List<String> pTidList =
+                    list.stream()
+                            .filter(r -> Objects.nonNull(r.getPtid()))
+                            .map(ReturnOrderVO::getPtid)
+                            .collect(Collectors.toList());
+            ProviderTradeQueryRequest queryRequest = new ProviderTradeQueryRequest();
+            queryRequest.setIds(pTidList.toArray(new String[] {}));
+            Map<String, List<TradeVO>> providerTradeMap =
+                    providerTradeService.queryAll(queryRequest).stream()
+                            .map(r -> KsBeanUtil.convert(r, TradeVO.class))
+                            .collect(Collectors.groupingBy(TradeVO::getId));
+            if (MapUtils.isNotEmpty(providerTradeMap)) {
+                list.stream()
+                        .filter(r -> providerTradeMap.containsKey(r.getPtid()))
+                        .forEach(
+                                r -> r.setTradeVO(providerTradeMap.get(r.getPtid()).get(0)));
+            }
+        }
+        List<String> tidList = list.stream().map(ReturnOrderVO::getTid).collect(Collectors.toList());
+        List<Trade> details = tradeService.details(tidList);
+        Map<String, Trade> tradeVoMap = Optional.ofNullable(details)
+                .orElseGet(Collections::emptyList).stream()
+                .collect(Collectors.toMap(Trade::getId, Function.identity()));
+        List<ReturnOrderVO> newList = list.stream().peek(returnOrder -> {
+            if (MapUtils.isNotEmpty(tradeVoMap)) {
+                Trade trade = tradeVoMap.get(returnOrder.getTid());
+                if(Objects.nonNull(trade)) {
+                    CreditPayInfo creditPayInfo = trade.getCreditPayInfo();
+                    returnOrder.setCreditPayInfo(KsBeanUtil.convert(creditPayInfo, CreditPayInfoVO.class));
+                    returnOrder.setTradeVO(KsBeanUtil.convert(trade, TradeVO.class));
+                    returnOrder.setCanReturnFee(returnOrderService.getCanReturnFee(returnOrder.getTid(),
+                        returnOrder.getProviderId(), request.getStoreType()));
+                }
+            }
+        }).collect(Collectors.toList());
+        returnOrderVOS.setContent(newList);
+        return BaseResponse.success(ReturnOrderPageResponse.builder()
+                .returnOrderPage(returnOrderVOS).build());
+    }
+
+    /**
+     * 根据动态条件查询退单列表
+     *
+     * @param request 根据动态条件查询退单列表请求结构 {@link ReturnOrderByConditionRequest}
+     * @return 退单列表 {@link ReturnOrderByConditionResponse}
+     */
+    @Override
+    public BaseResponse<ReturnOrderByConditionResponse> listByCondition(@RequestBody @Valid
+                                                                                ReturnOrderByConditionRequest
+                                                                                request) {
+        List<ReturnOrder> orderList = returnOrderService.findByCondition(KsBeanUtil.convert(request,
+                ReturnQueryRequest.class));
+        List<ReturnOrderVO> orderVOList = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(orderList)) {
+            orderVOList = KsBeanUtil.convert(orderList, ReturnOrderVO.class);
+        }
+        return BaseResponse.success(ReturnOrderByConditionResponse.builder().returnOrderList(orderVOList).build());
+    }
+
+    /**
+     * 根据id查询退单
+     *
+     * @param request 根据id查询退单请求结构 {@link ReturnOrderByIdRequest}
+     * @return 退单信息 {@link ReturnOrderByIdResponse}
+     */
+    @Override
+    public BaseResponse<ReturnOrderByIdResponse> getById(@RequestBody @Valid ReturnOrderByIdRequest
+                                                                 request) {
+        ReturnOrder returnOrder;
+        String rid = request.getRid();
+        // 判断是否为退单尾款单号
+        if (rid.startsWith(GeneratorService._PREFIX_RETURN_TRADE_TAIL_ID)) {
+            returnOrder = returnOrderService.findByBusinessTailId(request.getRid());
+        } else {
+            returnOrder = returnOrderService.findById(request.getRid());
+        }
+        this.fillActualReturnPrice(returnOrder);
+        ProviderTrade providerTrade = providerTradeService.findbyId(returnOrder.getPtid());
+        String tid = returnOrder.getTid();
+        Trade trade = tradeService.detail(tid);
+        if (Objects.nonNull(providerTrade)) {
+            returnOrder.setTradeVO(KsBeanUtil.convert(providerTrade, TradeVO.class));
+        } else {
+            returnOrder.setTradeVO(KsBeanUtil.convert(trade, TradeVO.class));
+        }
+        ReturnOrderByIdResponse returnOrderByIdResponse = KsBeanUtil.convert(returnOrder, ReturnOrderByIdResponse.class);
+        // 从订单中获得店铺类型
+        StoreType storeType = Objects.nonNull(trade.getSupplier()) ? trade.getSupplier().getStoreType() : null;
+        // 计算每个退货sku的已退数量
+        List<ReturnOrder> returnOrders = returnOrderService.findByCondition(ReturnQueryRequest.builder()
+                .tid(tid)
+                .storeType(storeType).build())
+                .stream()
+                .filter(rOrder -> {
+                    boolean stateFlag;
+                    ReturnFlowState returnFlowState = rOrder.getReturnFlowState();
+                    if (rOrder.getReturnType().equals(ReturnType.RETURN)) {
+                        stateFlag = returnFlowState == ReturnFlowState.INIT || returnFlowState == ReturnFlowState.AUDIT || returnFlowState == ReturnFlowState.DELIVERED || returnFlowState == ReturnFlowState.RECEIVED
+                                || returnFlowState == ReturnFlowState.REFUNDED || returnFlowState == ReturnFlowState.COMPLETED || returnFlowState == ReturnFlowState.REFUND_FAILED || returnFlowState == ReturnFlowState.REJECT_REFUND;
+                    } else {
+                        stateFlag = returnFlowState == ReturnFlowState.INIT || returnFlowState == ReturnFlowState.AUDIT || returnFlowState == ReturnFlowState.DELIVERED || returnFlowState == ReturnFlowState.RECEIVED
+                                || returnFlowState == ReturnFlowState.REFUNDED || returnFlowState == ReturnFlowState.COMPLETED || returnFlowState == ReturnFlowState.REFUND_FAILED;
+                    }
+                    return stateFlag;
+                }).collect(Collectors.toList());
+        List<ReturnItem> returnItemList = returnOrders.stream().flatMap(order -> order.getReturnItems().stream()).collect(Collectors.toList());
+        List<ReturnItem> returnGiftsList = returnOrders.stream().flatMap(order -> order.getReturnGifts().stream()).collect(Collectors.toList());
+        List<ReturnItem> returnPreferentialList =
+                returnOrders.stream().flatMap(order -> order.getReturnPreferential().stream()).collect(Collectors.toList());
+        returnOrderByIdResponse.getReturnItems().forEach(returnItemVO -> {
+                    Integer count = returnItemList.stream().filter(item -> StringUtils.equals(item.getSkuId(), returnItemVO.getSkuId()))
+                            .map(ReturnItem::getNum).reduce(Integer::sum).orElse(Constants.ZERO);
+                    returnItemVO.setAlreadyReturnNum(count);
+        });
+        returnOrderByIdResponse.getReturnGifts().forEach(returnItemVO -> {
+            Integer count = returnGiftsList.stream().filter(item -> StringUtils.equals(item.getSkuId(), returnItemVO.getSkuId()))
+                    .map(ReturnItem::getNum).reduce(Integer::sum).orElse(Constants.ZERO);
+            returnItemVO.setAlreadyReturnNum(count);
+        });
+        returnOrderByIdResponse.getReturnPreferential().forEach(returnItemVO -> {
+            Integer count = returnPreferentialList.stream().filter(item -> StringUtils.equals(item.getSkuId(),
+                            returnItemVO.getSkuId()) && Objects.equals(item.getMarketingId(),
+                            returnItemVO.getMarketingId()))
+                    .map(ReturnItem::getNum).reduce(Integer::sum).orElse(Constants.ZERO);
+            returnItemVO.setAlreadyReturnNum(count);
+        });
+        returnOrderByIdResponse.setPayWay(trade.getPayWay());
+        // 非linkedmall退单 或者 已填充linkedmall商家留言，直接返回
+        if (!ThirdPlatformType.LINKED_MALL.equals(returnOrder.getThirdPlatformType()) ||
+                (ThirdPlatformType.LINKED_MALL.equals(returnOrder.getThirdPlatformType()) &&
+                        StringUtils.isNotBlank(returnOrder.getThirdSellerAgreeMsg()))) {
+            return BaseResponse.success(returnOrderByIdResponse);
+        }
+
+        // 当前linkedmall退单中，未填充商品/赠品对应 第三方渠道订单号 的商品总数
+        long count = Stream.concat(returnOrder.getReturnItems().stream(), returnOrder.getReturnGifts().stream())
+                .filter(returnItem -> StringUtils.isBlank(returnItem.getThirdPlatformSubOrderId()) &&
+                        ThirdPlatformType.LINKED_MALL.equals(returnItem.getThirdPlatformType())).count();
+        // 获取当前退单中商品/赠品对应 第三方渠道订单号 集合
+        List<String> subLmOrderIdList = new ArrayList<>();
+        // 更新标记
+        AtomicReference<Boolean> updateFlag = new AtomicReference<>(Boolean.FALSE);
+
+        // 查询linkedmall 退单 对应订单详情，填充商品/赠品 对应 第三方渠道订单号
+        if (ThirdPlatformType.LINKED_MALL.equals(returnOrder.getThirdPlatformType()) &&
+                StringUtils.isNotBlank(returnOrder.getThirdPlatformOrderId()) && count > 0) {
+            LinkedMallOrderListQueryResponse response = linkedMallOrderProvider.queryOrderDetail(LinkedMallOrderListQueryRequest.builder()
+                    .lmOrderList(Collections.singletonList(returnOrder.getThirdPlatformOrderId()))
+                    .bizUid(returnOrder.getBuyer().getId()).build()).getContext();
+            //只有当有LM商品和申请原因时，才可以查LM退单详情
+            if (Objects.nonNull(response) && CollectionUtils.isNotEmpty(response.getLmOrderList())) {
+                // 获取当前退单中商品对应的 第三方渠道订单号 集合
+                if (CollectionUtils.isNotEmpty(returnOrder.getReturnItems())) {
+                    returnOrder.getReturnItems().forEach(returnItem -> {
+                        response.getLmOrderList().get(0).getSubOrderList().forEach(subOrderListItem -> {
+                            if (String.valueOf(subOrderListItem.getItemId()).equals(returnItem.getThirdPlatformSpuId()) &&
+                                    String.valueOf(subOrderListItem.getSkuId()).equals(returnItem.getThirdPlatformSkuId())) {
+                                subLmOrderIdList.add(String.valueOf(subOrderListItem.getLmOrderId()));
+                                // 填充渠道商品订单号
+                                if (StringUtils.isBlank(returnItem.getThirdPlatformSubOrderId())) {
+                                    returnItem.setThirdPlatformSubOrderId(String.valueOf(subOrderListItem.getLmOrderId()));
+                                    updateFlag.set(Boolean.TRUE);
+                                }
+                            }
+                        });
+                    });
+                }
+                // 获取当前退单中赠品对应的 第三方渠道订单号 集合
+                if (CollectionUtils.isNotEmpty(returnOrder.getReturnGifts())) {
+                    returnOrder.getReturnGifts().forEach(returnItem -> {
+                        response.getLmOrderList().get(0).getSubOrderList().forEach(subOrderListItem -> {
+                            if (String.valueOf(subOrderListItem.getItemId()).equals(returnItem.getThirdPlatformSpuId()) &&
+                                    String.valueOf(subOrderListItem.getSkuId()).equals(returnItem.getThirdPlatformSkuId())) {
+                                subLmOrderIdList.add(String.valueOf(subOrderListItem.getLmOrderId()));
+                                // 填充渠道商品订单号
+                                if (StringUtils.isBlank(returnItem.getThirdPlatformSubOrderId())) {
+                                    returnItem.setThirdPlatformSubOrderId(String.valueOf(subOrderListItem.getLmOrderId()));
+                                    updateFlag.set(Boolean.TRUE);
+                                }
+                            }
+                        });
+                    });
+                }
+            }
+        } else if (ThirdPlatformType.LINKED_MALL.equals(returnOrder.getThirdPlatformType()) && count == 0) {
+            subLmOrderIdList.addAll(Stream.concat(returnOrder.getReturnItems().stream(), returnOrder.getReturnGifts().stream())
+                    .filter(returnItem -> ThirdPlatformType.LINKED_MALL.equals(returnItem.getThirdPlatformType()))
+                    .map(ReturnItem::getThirdPlatformSubOrderId).collect(Collectors.toList()));
+        }
+
+        // 查询linkedmall 退单 的 linkedmall商家留言信息
+        if(CollectionUtils.isNotEmpty(subLmOrderIdList) && !(ReturnFlowState.INIT == returnOrder.getReturnFlowState()) &&
+                Objects.isNull(returnOrder.getThirdSellerAgreeMsg()) && Objects.nonNull(returnOrder.getThirdReasonId())) {
+            // 当前退单对应所有linkedmall子单号
+            List<String> subLmOrderIds = subLmOrderIdList.stream().distinct().collect(Collectors.toList());
+            // 获取当前退单商品对应 所有 商家留言信息 去重后的集合
+            List<String> lmSellAgreeMsgs = subLmOrderIds.stream().map(s -> {
+                try {
+                    ChannelRefundQueryStatusResponse context =
+                            channelRefundProvider.queryRefundStatus(ChannelRefundQueryStatusRequest.builder()
+                                    .bizUid(returnOrder.getBuyer().getId()).subChannelOrderId(s).thirdPlatformType(returnOrder.getThirdPlatformType()).build()).getContext();
+                    if (Objects.nonNull(context) && StringUtils.isNotBlank(context.getSellerAgreeMsg())) {
+                        return context.getSellerAgreeMsg();
+                    }
+                } catch (Exception e) {
+                    return null;
+                }
+
+                return null;
+            }).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+
+            // 如果商家留言信息 只有一个，设置当前退单的退货地址并更新到 数据库中
+            if (CollectionUtils.isNotEmpty(lmSellAgreeMsgs) && lmSellAgreeMsgs.size() == 1) {
+                returnOrder.setThirdSellerAgreeMsg(lmSellAgreeMsgs.get(0));
+                updateFlag.set(Boolean.TRUE);
+            }
+        }
+        if (updateFlag.get()) {
+            // 更新退单信息
+            returnOrderService.updateReturnOrder(returnOrder);
+        }
+
+        //设置退单收件人手机号 查询退单物流需要用
+        if(Objects.nonNull(returnOrderByIdResponse) &&
+                Objects.nonNull(returnOrderByIdResponse.getReturnAddress()) &&
+                Objects.nonNull(returnOrderByIdResponse.getReturnLogistics())
+        ){
+            returnOrderByIdResponse.getReturnLogistics().setPhone(returnOrderByIdResponse.getReturnAddress().getPhone());
+        }
+
+        return BaseResponse.success(returnOrderByIdResponse);
+    }
+
+    /**
+     * 填充实际退款金额，捕获异常，避免影响主流程
+     *
+     * @param returnOrder
+     */
+    private void fillActualReturnPrice(ReturnOrder returnOrder) {
+        try {
+            // 如果有已退款的，查询退款流水的金额
+            if (ObjectUtils.notEqual(returnOrder.getReturnFlowState(), ReturnFlowState.COMPLETED)) {
+                return;
+            }
+            RefundOrderRequest request = new RefundOrderRequest();
+            request.setReturnOrderCode(returnOrder.getId());
+            // 查询退款单信息
+            List<RefundOrder> refundOrderList = refundOrderService.findAll(request);
+            if (!CollectionUtils.isEmpty(refundOrderList)) {
+                refundOrderList.stream()
+                        .filter(o -> Objects.equals(returnOrder.getId(), o.getReturnOrderCode()))
+                        .findFirst()
+                        .ifPresent(o -> {
+                            if (Objects.nonNull(o.getRefundBill())) {
+                                //定金预售查询尾款实退金额
+                                RefundOrder tailOrder = null;
+                                if (StringUtils.isNotBlank(returnOrder.getBusinessTailId())) {
+                                    tailOrder = refundOrderService.findRefundOrderByReturnOrderNo(returnOrder.getBusinessTailId());
+                                }
+                                BigDecimal tailActualReturnPrice = Objects.nonNull(tailOrder) ? tailOrder.getRefundBill().getActualReturnPrice() : BigDecimal.ZERO;
+                                returnOrder.getReturnPrice().setActualReturnPrice(o.getRefundBill()
+                                        .getActualReturnPrice().add(tailActualReturnPrice));
+                            }
+                        });
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
+    }
+
+    /**
+     * 查询所有退货方式
+     *
+     * @return 退货方式列表 {@link ReturnWayListResponse}
+     */
+    @Override
+    public BaseResponse<ReturnWayListResponse> listReturnWay() {
+        return BaseResponse.success(ReturnWayListResponse.builder().returnWayList(returnOrderService.findReturnWay())
+                .build());
+    }
+
+    /**
+     * 查询所有退货原因
+     *
+     * @return 退货原因列表 {@link ReturnReasonListResponse}
+     */
+    @Override
+    public BaseResponse<ReturnReasonListResponse> listReturnReason() {
+        return BaseResponse.success(ReturnReasonListResponse.builder()
+                .returnReasonList(returnOrderService.findReturnReason()).build());
+    }
+
+    /**
+     * 查询可退金额
+     *
+     * @param request 查询可退金额请求结构 {@link ReturnOrderQueryRefundPriceRequest}
+     * @return 可退金额 {@link ReturnOrderQueryRefundPriceResponse}
+     */
+    @Override
+    public BaseResponse<ReturnOrderQueryRefundPriceResponse> queryRefundPrice(@RequestBody @Valid
+                                                                                      ReturnOrderQueryRefundPriceRequest
+                                                                                      request) {
+        return BaseResponse.success(ReturnOrderQueryRefundPriceResponse.builder()
+                .refundPrice(returnOrderService.queryRefundPrice(request.getRid())).build());
+    }
+
+    /**
+     * 根据订单id查询含可退商品的交易信息
+     *
+     * @param request 根据订单id查询可退商品数请求结构 {@link CanReturnItemNumByTidRequest}
+     * @return 含可退商品的交易信息 {@link CanReturnItemNumByTidResponse}
+     */
+    @Override
+    public BaseResponse<CanReturnItemNumByTidResponse> queryCanReturnItemNumByTid(@RequestBody @Valid
+                                                                                          CanReturnItemNumByTidRequest
+                                                                                          request) {
+        Trade trade = returnOrderService.queryCanReturnItemNumByTid(request.getTid());
+        // 额外处理并校验可退商品
+        returnTradeIncision.handleCanReturnItems(trade);
+        CanReturnItemNumByTidResponse response = KsBeanUtil.convert(trade, CanReturnItemNumByTidResponse.class);
+        Objects.requireNonNull(response).setIsReturn(tradeService.verifyAfterProcessing(trade.getId()));
+        return BaseResponse.success(response);
+    }
+
+    /**
+     * 根据退单id查询含可退商品的退单信息
+     *
+     * @param request 根据退单id查询可退商品数请求结构 {@link CanReturnItemNumByIdRequest}
+     * @return 含可退商品的退单信息 {@link CanReturnItemNumByIdResponse}
+     */
+    @Override
+    public BaseResponse<CanReturnItemNumByIdResponse> queryCanReturnItemNumById(@RequestBody @Valid
+                                                                                        CanReturnItemNumByIdRequest
+                                                                                        request) {
+        return BaseResponse.success(KsBeanUtil.convert(returnOrderService.queryCanReturnItemNumById(request.getRid()),
+                CanReturnItemNumByIdResponse.class));
+    }
+
+    /**
+     * 根据订单id查询退单列表(不包含已作废状态以及拒绝收货的退货单与拒绝退款的退款单)
+     *
+     * @param request 查询退单列表请求结构 {@link ReturnOrderNotVoidByTidRequest}
+     * @return 退单列表 {@link ReturnOrderNotVoidByTidResponse}
+     */
+    @Override
+    public BaseResponse<ReturnOrderNotVoidByTidResponse> listNotVoidByTid(@RequestBody @Valid
+                                                                                  ReturnOrderNotVoidByTidRequest
+                                                                                  request) {
+        List<ReturnOrder> orders = returnOrderService.findReturnsNotVoid(request.getTid());
+        return BaseResponse.success(ReturnOrderNotVoidByTidResponse.builder()
+                .returnOrderList(KsBeanUtil.convert(orders, ReturnOrderVO.class)).build());
+    }
+
+    /**
+     * 根据订单id查询所有退单
+     *
+     * @param request 根据订单id查询请求结构 {@link ReturnOrderListByTidRequest}
+     * @return 退单列表 {@link ReturnOrderListByTidResponse}
+     */
+    @Override
+    public BaseResponse<ReturnOrderListByTidResponse> listByTid(@RequestBody @Valid ReturnOrderListByTidRequest
+                                                                        request) {
+        List<ReturnOrder> orderList = returnOrderService.findReturnByTid(request.getTid());
+        List<ReturnOrderVO> orderVOList = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(orderList)) {
+            orderVOList = KsBeanUtil.convert(orderList, ReturnOrderVO.class);
+        }
+        return BaseResponse.success(ReturnOrderListByTidResponse.builder().returnOrderList(orderVOList).build());
+    }
+
+    /**
+     * 根据结束时间统计退单
+     *
+     * @param request 根据结束时间统计退单请求结构 {@link ReturnOrderCountByEndDateRequest}
+     * @return 退单数 {@link ReturnOrderCountByEndDateResponse}
+     */
+    @Override
+    public BaseResponse<ReturnOrderCountByEndDateResponse> countByEndDate(@RequestBody @Valid
+                                                                                  ReturnOrderCountByEndDateRequest
+                                                                                  request) {
+        return BaseResponse.success(ReturnOrderCountByEndDateResponse.builder()
+                .count(returnOrderService.countReturnOrderByEndDate(request.getEndDate(), request.getReturnFlowState()))
+                .build());
+    }
+
+    /**
+     * 根据结束时间查询退单列表
+     *
+     * @param request 根据结束时间查询退单列表请求结构 {@link ReturnOrderListByEndDateRequest}
+     * @return 退单列表 {@link ReturnOrderListByEndDateResponse}
+     */
+    @Override
+    public BaseResponse<ReturnOrderListByEndDateResponse> listByEndDate(@RequestBody @Valid
+                                                                                ReturnOrderListByEndDateRequest
+                                                                                request) {
+        List<ReturnOrder> orderList = returnOrderService.queryReturnOrderByEndDate(request.getEndDate(),
+                request.getStart(), request.getEnd(), request.getReturnFlowState());
+        List<ReturnOrderVO> orderVOList = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(orderList)) {
+            orderVOList = KsBeanUtil.convert(orderList, ReturnOrderVO.class);
+        }
+        return BaseResponse.success(ReturnOrderListByEndDateResponse.builder().returnOrderList(orderVOList).build());
+    }
+
+    @Override
+    public BaseResponse<ReturnOrderByIdResponse> getByReturnTailId(@Valid ReturnOrderByIdRequest request) {
+        ReturnOrder returnOrder = returnOrderService.findByBusinessTailId(request.getRid());
+
+        ReturnOrderByIdResponse returnOrderByIdResponse = KsBeanUtil.convert(returnOrder, ReturnOrderByIdResponse.class);
+        return BaseResponse.success(returnOrderByIdResponse);
+    }
+
+    @Override
+    public BaseResponse<BigDecimal> getCanReturnFee(@RequestBody @Valid ReturnOrderListByTidRequest request) {
+        return BaseResponse.success(returnOrderService.getCanReturnFee(request.getTid(), request.getProviderId(), request.getStoreType()));
+    }
+
+    /**
+     * 根据状态统计退单
+     *
+     * @param request 根据状态统计退单请求结构 {@link ReturnOrderCountByFlowStateRequest}
+     * @return 退单数 {@link ReturnOrderCountByFlowStateResponse}
+     */
+//    @Override
+//    public BaseResponse<ReturnOrderCountByFlowStateResponse> countByFlowState(@RequestBody @Valid
+//                                                                                      ReturnOrderCountByFlowStateRequest
+//                                                                                      request) {
+//        ReturnOrderTodoReponse todoReponse = returnOrderService.countReturnOrderByFlowState(
+//                KsBeanUtil.convert(request, ReturnQueryRequest.class));
+//        return BaseResponse.success(KsBeanUtil.convert(todoReponse, ReturnOrderCountByFlowStateResponse.class));
+//    }
+}

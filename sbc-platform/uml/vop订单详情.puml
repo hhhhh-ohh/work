@@ -1,0 +1,12 @@
+@startuml
+start
+partition BOSS/supplier端订单详情 {
+        if(订单类型) then (京东订单)
+         :展示京东订单号、京东子单号、\n京东运费、物流;
+        else
+         :其他订单信息;
+        endif;
+        :操作成功;
+}
+stop
+@enduml

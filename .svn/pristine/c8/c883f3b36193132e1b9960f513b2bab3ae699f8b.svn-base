@@ -1,0 +1,102 @@
+package com.wanmi.sbc.customer.provider.impl.agent;
+
+
+import com.wanmi.ares.response.AppointmentAnalysisOverview;
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.util.KsBeanUtil;
+import com.wanmi.sbc.customer.agent.model.root.Agent;
+import com.wanmi.sbc.customer.agent.model.root.AgentAuditLog;
+import com.wanmi.sbc.customer.agent.service.AgentAuditLogService;
+import com.wanmi.sbc.customer.agent.service.AgentService;
+import com.wanmi.sbc.customer.api.provider.agent.AgentAuditLogQueryProvider;
+import com.wanmi.sbc.customer.api.request.agent.GetAgentRequest;
+import com.wanmi.sbc.customer.api.response.agent.GetAgentAuditLogListResponse;
+import com.wanmi.sbc.customer.bean.vo.AgentAuditLogBaseVO;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+@RestController
+@Validated
+public class AgentAuditLogQueryController implements AgentAuditLogQueryProvider {
+
+    @Autowired
+    private AgentAuditLogService agentAuditLogService;
+
+    @Autowired
+    private AgentService agentService;
+
+    @Override
+    public BaseResponse<GetAgentAuditLogListResponse> getAgentAuditLogList(@RequestBody GetAgentRequest request) {
+        List<AgentAuditLog> agentAuditLogs;
+        if (request.getAuditStatus() != null) {
+            agentAuditLogs = agentAuditLogService.findByAgentIdAndAuditStatus(request.getAgentId(), request.getAuditStatus());
+        } else {
+            agentAuditLogs = agentAuditLogService.findByAgentId(request.getAgentId());
+        }
+        if (CollectionUtils.isEmpty(agentAuditLogs)) {
+            return BaseResponse.success(new GetAgentAuditLogListResponse());
+        }
+
+        Agent agent = agentService.findOne(request.getAgentId());
+
+        List<AgentAuditLogBaseVO> copyListProperties = KsBeanUtil.copyListProperties(agentAuditLogs, AgentAuditLogBaseVO.class);
+        if (agent != null) {
+            copyListProperties.forEach(agentAuditLogBaseVO -> {
+                agentAuditLogBaseVO.setShopName(agent.getShopName());
+                agentAuditLogBaseVO.setContactPerson(agent.getContactPerson());
+                agentAuditLogBaseVO.setContactPhone(agent.getContactPhone());
+                agentAuditLogBaseVO.setCreateTime(agent.getCreateTime());
+            });
+        }
+
+        return BaseResponse.success(new GetAgentAuditLogListResponse(copyListProperties));
+
+    }
+
+
+    @Override
+    public BaseResponse<GetAgentAuditLogListResponse> getUserAuditLogList(@RequestBody GetAgentRequest request) {
+        List<Agent> agentList = agentService.findByAreaIdList(request.getAreaIdList());
+        if (CollectionUtils.isEmpty(agentList)) {
+            return BaseResponse.success(new GetAgentAuditLogListResponse());
+        }
+
+        // 代理商信息
+        Map<String, Agent> agentMap = agentList.stream().collect(Collectors.toMap(Agent::getAgentId, Function.identity()));
+
+        // 代理商id
+        List<String> agentIds = agentList.stream().map(Agent::getAgentId).toList();
+
+        List<AgentAuditLog> agentAuditLogs;
+        if (request.getAuditStatus() != null) {
+            agentAuditLogs = agentAuditLogService.findByAgentIdInAndAuditStatus(agentIds, request.getAuditStatus());
+        } else {
+            agentAuditLogs = agentAuditLogService.findByAgentIdIn(agentIds);
+        }
+        if (CollectionUtils.isEmpty(agentAuditLogs)) {
+            return BaseResponse.success(new GetAgentAuditLogListResponse());
+        }
+
+        List<AgentAuditLogBaseVO> copyListProperties = KsBeanUtil.copyListProperties(agentAuditLogs, AgentAuditLogBaseVO.class);
+        copyListProperties.forEach(agentAuditLogBaseVO -> {
+            Agent agent = agentMap.get(agentAuditLogBaseVO.getAgentId());
+            if (agent != null) {
+                agentAuditLogBaseVO.setShopName(agent.getShopName());
+                agentAuditLogBaseVO.setContactPerson(agent.getContactPerson());
+                agentAuditLogBaseVO.setContactPhone(agent.getContactPhone());
+                agentAuditLogBaseVO.setCreateTime(agent.getCreateTime());
+            }
+        });
+
+        return BaseResponse.success(new GetAgentAuditLogListResponse(copyListProperties));
+
+    }
+}

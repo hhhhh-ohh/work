@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wanmi.ares.marketing.coupon.dao.CouponInfoEffectRecentMapper">
+    <select id="selectList" resultType="com.wanmi.ares.view.coupon.CouponInfoEffectView">
+        select cer.store_id                                           storeId,
+               cer.coupon_id                                          couponId,
+               rci.coupon_name                                        couponName,
+               rci.denomination                                       denomination,
+               cer.pay_money                                          payMoney,
+               cer.discount_money                                     discountMoney,
+               cer.pay_goods_count                                    payGoodsCount,
+               cer.pay_trade_count                                    payTradeCount,
+               cer.old_customer_count                                 oldCustomerCount,
+               cer.new_customer_count                                 newCustomerCount,
+               concat(acquire_customer_count, '/', cer.acquire_count) acquireData,
+               concat(cer.use_customer_count, '/', cer.use_count)     useData,
+               cer.pay_customer_count                                 payCustomerCount,
+               cer.roi                                                roi,
+               cer.joint_rate                                         jointRate,
+               cer.use_rate                                           useRate,
+               cer.customer_price                                     customerPrice,
+               cer.supply_price                                       supplyPrice,
+               rci.coupon_marketing_type                              couponMarketingType,
+               rci.coupon_discount_mode                               couponDiscountMode,
+               rci.max_discount_limit                                 maxDiscountLimit,
+               rci.fullbuy_price                                      fullBuyPrice,
+               rci.fullbuy_type                                       fullbuyType
+        from coupon_info_effect_recent cer
+                     join
+                     replay_coupon_info rci on cer.coupon_id = rci.coupon_id
+        where cer.stat_type = #{statType}
+        <if test="storeId != null">
+            and cer.store_id=#{storeId,jdbcType=BIGINT}
+        </if>
+        <if test="id != null">
+            and cer.coupon_id=#{id,jdbcType=VARCHAR}
+        </if>
+        <if test="name != null  and name!=''">
+            <bind name="pattern" value="'%' + name + '%'" />
+            and rci.coupon_name like #{pattern}
+        </if>
+        <if test="sortColumn != null">
+            order by ${sortColumn} ${sort}
+        </if>
+
+    </select>
+
+    <select id="selectListByActivityId" resultType="com.wanmi.ares.view.coupon.CouponInfoEffectView">
+        select cer.store_id                                           storeId,
+        cer.coupon_id                                          couponId,
+        rci.coupon_name                                        couponName,
+        rci.denomination                                       denomination,
+        cer.pay_money                                          payMoney,
+        cer.discount_money                                     discountMoney,
+        cer.pay_goods_count                                    payGoodsCount,
+        cer.pay_trade_count                                    payTradeCount,
+        cer.old_customer_count                                 oldCustomerCount,
+        cer.new_customer_count                                 newCustomerCount,
+        concat(acquire_customer_count, '/', cer.acquire_count) acquireData,
+        concat(cer.use_customer_count, '/', cer.use_count)     useData,
+        cer.pay_customer_count                                 payCustomerCount,
+        cer.roi                                                roi,
+        cer.joint_rate                                         jointRate,
+        cer.use_rate                                           useRate,
+        cer.customer_price                                     customerPrice,
+        cer.supply_price                                       supplyPrice,
+        rci.coupon_marketing_type                              couponMarketingType,
+        rci.coupon_discount_mode                               couponDiscountMode,
+        rci.max_discount_limit                                 maxDiscountLimit,
+        rci.fullbuy_price                                      fullBuyPrice,
+        rci.fullbuy_type                                       fullbuyType
+        from coupon_info_effect_recent cer
+        join
+        replay_coupon_info rci on cer.coupon_id = rci.coupon_id
+        join replay_coupon_activity_config rcac on cer.coupon_id = rcac.coupon_id
+        where cer.stat_type = #{statType}
+        <if test="storeId != null">
+            and cer.store_id=#{storeId,jdbcType=BIGINT}
+        </if>
+        <if test="id != null">
+            and rcac.activity_id=#{id,jdbcType=VARCHAR}
+        </if>
+        <if test="name != null and name!=''">
+            <bind name="pattern" value="'%' + name + '%'" />
+            and rci.coupon_name like #{pattern}
+        </if>
+        <if test="sortColumn != null">
+            order by ${sortColumn} ${sort}
+        </if>
+
+    </select>
+
+    <select id="couponInfoTotalCount" resultType="java.lang.Long">
+        select count(cer.coupon_id)
+        from
+        coupon_info_effect_recent cer
+        join
+        replay_coupon_info rci on cer.coupon_id = rci.coupon_id
+        where cer.stat_type = #{statType}
+        <if test="storeId != null">
+            and cer.store_id=#{storeId,jdbcType=BIGINT}
+        </if>
+    </select>
+</mapper>

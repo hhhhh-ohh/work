@@ -1,0 +1,52 @@
+# ----------------------------------------
+# application info
+# ----------------------------------------
+info.app.name=Perseus
+info.app.description=Perseus - Data collection and analysis platform
+info.build.artifact=@project.artifactId@
+info.build.version=@project.version@
+
+# ----------------------------------------
+# actuator settings
+# ----------------------------------------
+management.server.port=8591
+
+# ----------------------------------------
+# server settings
+# ----------------------------------------
+server.port=8590
+server.tomcat.basedir=/data/s2b/perseus/tmp
+async.thread-name-prefix=perseus-async-executor-
+async.queueCapacity=2048
+
+#-----------------------------------------
+# kafka config
+# ----------------------------------------
+kafka.send.enabled=true
+
+##\u5EFA\u8BAE\u6539\u6210\u5916\u7F51ip\u5730\u5740####
+spring.kafka.bootstrap-servers=127.0.0.1:9092
+##\u5EFA\u8BAE\u6539\u6210\u5916\u7F51ip\u5730\u5740end####
+
+spring.kafka.producer.retries=0
+spring.kafka.producer.batch-size=16384
+spring.kafka.producer.buffer-memory=33554432
+spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
+spring.kafka.producer.value-serializer=org.apache.kafka.common.serialization.StringSerializer
+spring.kafka.producer.properties.linger.ms=1
+
+
+### xxl-job admin address list, such as "http://address" or "http://address01,http://address02"
+xxl.job.admin.addresses=http://127.0.0.1:8990/xxl-job-admin
+### xxl-job, access token
+xxl.job.accessToken=b5f7ed32b2e24789bdce1308afcafebe
+
+### xxl-job executor address
+xxl.job.executor.appname=xxl-job-perseus
+xxl.job.executor.ip=
+xxl.job.executor.port=9988
+
+### xxl-job log path
+xxl.job.executor.logpath=./log/jobhandler
+### xxl-job log retention days
+xxl.job.executor.logretentiondays=-1

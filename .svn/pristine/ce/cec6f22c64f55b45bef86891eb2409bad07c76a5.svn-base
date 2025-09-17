@@ -1,0 +1,106 @@
+{
+  "replayTable" : "replay_return_item",
+  "dispatch" :{
+    "typeFilter": ["INSERT","DELETE"],
+    "typeDispatch": {
+      "INSERT": "ReturnOrderDispatch"
+    }
+  },
+  "pk": ["sku_id"],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "rid",
+        "dataType": 12
+      }
+    ],
+    "arrayData": {
+      "arrayRoot": "returnItems",
+      "mappingData": {
+        "singleData": [
+          {
+            "field": "spuId",
+            "replayField": "spu_id",
+            "dataType": 12
+          },
+          {
+            "field": "spuName",
+            "replayField": "spu_name",
+            "dataType": 12
+          },
+          {
+            "field": "skuId",
+            "replayField": "sku_id",
+            "dataType": 12
+          },
+          {
+            "field": "skuName",
+            "replayField": "sku_name",
+            "dataType": 12
+          },
+          {
+            "field": "skuNo",
+            "replayField": "sku_no",
+            "dataType": 12
+          },
+          {
+            "field": "cateId",
+            "replayField": "cate_id",
+            "dataType": -5
+          },
+          {
+            "field": "cateName",
+            "replayField": "cate_name",
+            "dataType": 12
+          },
+          {
+            "field": "brand",
+            "replayField": "brand",
+            "dataType": -5
+          },
+          {
+            "field": "num",
+            "replayField": "num",
+            "dataType": -5
+          },
+          {
+            "field": "unit",
+            "replayField": "unit",
+            "dataType": 12
+          },
+          {
+            "field": "price",
+            "replayField": "price",
+            "dataType": 3
+          },
+          {
+            "field": "splitPrice",
+            "replayField": "split_price",
+            "dataType": 3
+          },
+          {
+            "field": "orderSplitPrice",
+            "replayField": "order_split_price",
+            "dataType": 3
+          },
+          {
+            "field": "pic",
+            "replayField": "pic",
+            "dataType": 12
+          },
+          {
+            "field": "splitPrice",
+            "replayField": "spec_details",
+            "dataType": 3
+          },
+          {
+            "field": "canReturnNum",
+            "replayField": "can_return_num",
+            "dataType": 4
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>model-dw</artifactId>
+        <groupId>com.wanmi.sbc</groupId>
+        <version>5.1.0-RELEASE</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>service-dw-bean</artifactId>
+    <properties>
+        <service.common.version>5.1.0-RELEASE</service.common.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wanmi.sbc</groupId>
+            <artifactId>service-common</artifactId>
+            <version>${service.common.version}</version>
+            <!-- 这个版本不能动 -->
+<!--            <version>4.1.5-RELEASE</version>-->
+            <exclusions>
+               <!-- <exclusion>
+                    <artifactId>commons-io</artifactId>
+                    <groupId>commons-io</groupId>
+                </exclusion>-->
+                <exclusion>
+                    <groupId>com.codingapi.txlcn</groupId>
+                    <artifactId>txlcn-txmsg-netty</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.codingapi.txlcn</groupId>
+                    <artifactId>txlcn-tc</artifactId>
+                </exclusion>
+
+            </exclusions>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.data</groupId>-->
+<!--            <artifactId>spring-data-commons</artifactId>-->
+<!--            <scope>compile</scope>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.3</version>
+        </dependency>
+    </dependencies>
+
+</project>

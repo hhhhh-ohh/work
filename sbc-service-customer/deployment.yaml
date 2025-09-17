@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: customer
+    name: customer-deployment
+  name: customer
+  namespace: sbc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: customer
+  template:
+    metadata:
+      labels:
+        app: customer
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - image: {{IMAGE_NAME}}
+          imagePullPolicy: Always
+          name: customer
+          ports:
+            - containerPort: 8940
+              name: tomcat-port
+          livenessProbe:
+            httpGet:
+              path: /act/health
+              port: 8941
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 30
+          env:
+            - name: JAVA_OPTS
+              value: {{JAVA_ENV_PARAMS}}
+            - name: NACOS_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: sbc-config
+                  key: nacosAddress
+            - name: RESTART_
+              value: {{DATE}}
+#          resources:
+#            limits:
+#              cpu: '1'
+#              memory: 3Gi
+#            requests:
+#              cpu: '1'JAVA_ENV_PARAMS
+#              memory: 3Gi
+          volumeMounts:
+            - mountPath: /data/server/log
+              name: customer-logs
+            - name: customer-sharding
+              mountPath: /data/server/conf/sharding.yaml
+              subPath: sharding.yaml
+      volumes:
+        - name: customer-logs
+          hostPath:
+            path: /data/sbc/logs/customer
+        - name: customer-sharding
+          configMap:
+            name: customer-sharding
+            items:
+            - key: sharding.yaml
+              path: sharding.yaml
+      hostNetwork: false
+---

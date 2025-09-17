@@ -1,0 +1,9 @@
+@startuml
+start
+   :商品编辑;
+   if(不存在商品信息扩展信息) then(yes)
+    :填充商品扩展信息;
+   endif;
+   :调用新增方法保存扩展信息;
+stop
+@enduml

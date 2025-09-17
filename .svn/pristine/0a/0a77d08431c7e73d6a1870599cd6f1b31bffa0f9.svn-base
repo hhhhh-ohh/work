@@ -1,0 +1,87 @@
+package com.wanmi.sbc.setting.api.request.searchterms;
+
+import com.wanmi.sbc.setting.api.request.SettingBaseRequest;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import lombok.*;
+
+import org.hibernate.validator.constraints.Length;
+
+import java.util.List;
+
+/**
+ * <p>联想词VO</p>
+ * @author weiwenhao
+ * @date 2020-04-16
+ */
+@EqualsAndHashCode(callSuper = true)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema
+@Data
+public class AssociationLongTailWordRequest extends SettingBaseRequest {
+
+
+
+    /**
+     * 主键id
+     */
+    @Schema(description = "主键id")
+    private Long associationLongTailWordId;
+
+
+    /**
+     * 联想词
+     */
+    @Schema(description = "联想词")
+    @Length(max = 10)
+    @NotBlank
+    private String associationalWord;
+
+    /**
+     * 长尾词
+     */
+    @Schema(description = "长尾词")
+    @Size(max=3)
+    private List<String> longTailWordList;
+
+    /**
+     * 关联搜索词id
+     */
+    @Schema(description = "关联搜索词id")
+    @NotNull
+    private Long searchAssociationalWordId;
+
+    /**
+     * 排序号
+     */
+    @Schema(description = "排序号")
+    @NotNull
+    private Long sortNumber;
+
+    /**
+     * 创建人
+     */
+    @Schema(description = "创建人")
+    private String createPerson;
+
+    /**
+     * 修改人
+     */
+    @Schema(description = "修改人")
+    private String updatePerson;
+
+    /**
+     * 删除人
+     */
+    @Schema(description = "删除人")
+    private String deletePerson;
+
+
+}

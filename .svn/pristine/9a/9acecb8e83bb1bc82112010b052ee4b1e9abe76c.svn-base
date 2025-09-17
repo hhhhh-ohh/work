@@ -1,0 +1,173 @@
+package com.wanmi.sbc.agent;
+
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.redis.CacheKeyConstant;
+import com.wanmi.sbc.customer.api.provider.agent.AgentAuditLogProvider;
+import com.wanmi.sbc.customer.api.provider.agent.AgentAuditLogQueryProvider;
+import com.wanmi.sbc.customer.api.provider.agent.AgentProvider;
+import com.wanmi.sbc.customer.api.provider.agent.AgentQueryProvider;
+import com.wanmi.sbc.customer.api.request.agent.*;
+import com.wanmi.sbc.customer.api.response.agent.*;
+import com.wanmi.sbc.util.CommonUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@Validated
+@RequestMapping("/agent")
+@Tag(name = "AgentBaseController", description = "S2B web公用-代理商信息API")
+public class AgentBaseController {
+
+    @Autowired
+    private AgentQueryProvider agentQueryProvider;
+
+    @Autowired
+    private AgentProvider agentProvider;
+
+    @Autowired
+    private AgentAuditLogProvider agentAuditLogProvider;
+
+    @Autowired
+    private AgentAuditLogQueryProvider agentAuditLogQueryProvider;
+
+    @Autowired
+    private CommonUtil commonUtil;
+
+    @Operation(summary = "新增代理商")
+    @PostMapping("/add-agent")
+    public BaseResponse addAgent(@RequestBody @Valid AddAgentRequest request) {
+        request.checkParam();
+        request.setUserId(commonUtil.getOperatorId());
+
+        // 累计验证错误次数
+        // String errKey = CacheKeyConstant.YZM_CUSTOMER_LOGIN_NUM.concat(request.getContactPhone());
+        // 校验及封装校验后请求参数
+        // String smsKey = CacheKeyConstant.YZM_CUSTOMER_LOGIN.concat(request.getContactPhone());
+        // 校验短信验证码
+        // commonUtil.verifyCodeMsg(errKey, smsKey, request.getVerifyCode());
+
+        return agentProvider.addAgent(request);
+    }
+
+    @Operation(summary = "修改代理商")
+    @PostMapping("/update-agent")
+    public BaseResponse updateAgent(@RequestBody @Valid UpdateAgentRequest request) {
+        request.checkParam();
+        request.setUserId(commonUtil.getOperatorId());
+        return agentProvider.updateAgent(request);
+    }
+
+    @Operation(summary = "删除代理商")
+    @DeleteMapping("/delete-agent")
+    public BaseResponse deleteAgent(@RequestBody @Valid DeleteAgentRequest request) {
+        request.checkParam();
+        request.setUserId(commonUtil.getOperatorId());
+        return agentProvider.deleteAgent(request);
+    }
+
+    @Operation(summary = "查询代理商")
+    @PostMapping("/get-agent")
+    public BaseResponse<GetAgentResponse> getAgent(@RequestBody @Valid GetAgentRequest request) {
+        request.setUserId(commonUtil.getOperatorId());
+        return agentQueryProvider.getAgent(request);
+    }
+
+    @Operation(summary = "查询代理商")
+    @GetMapping("/get-agent-by-unique-code")
+    public BaseResponse<GetAgentResponse> getAgentByUniqueCode(@RequestBody @Valid GetAgentRequest request) {
+        return agentQueryProvider.getAgentByUniqueCode(request);
+    }
+
+    @Operation(summary = "查询代理商")
+    @GetMapping("/query-agent")
+    public BaseResponse<GetAgentResponse> queryAgent() {
+        GetAgentRequest request = new GetAgentRequest();
+        request.setUserId(commonUtil.getOperatorId());
+        return agentQueryProvider.queryAgent(request);
+    }
+
+    @Operation(summary = "查询代理商审核人区域信息")
+    @GetMapping("/query-user-area-id")
+    public BaseResponse<GetUserAreaIdResponse> queryUserAreaId() {
+        GetAgentRequest request = new GetAgentRequest();
+        request.setUserId(commonUtil.getOperatorId());
+        return agentQueryProvider.queryUserAreaId(request);
+    }
+
+    @Operation(summary = "查询代理商审核信息列表")
+    @PostMapping("/get-user-audit-log-list")
+    public BaseResponse<GetAgentAuditLogListResponse> getUserAuditLogList(@RequestBody GetAgentRequest request) {
+        request.setUserId(commonUtil.getOperatorId());
+        return agentAuditLogQueryProvider.getUserAuditLogList(request);
+    }
+
+    @Operation(summary = "审核代理商")
+    @PostMapping("/audit-agent")
+    public BaseResponse auditAgent(@RequestBody AuditAgentRequest request) {
+        request.setUserId(commonUtil.getOperatorId());
+        return agentProvider.auditAgent(request);
+    }
+
+    @Operation(summary = "查询代理商审核信息列表")
+    @PostMapping("/get-agent-audit-log-list")
+    public BaseResponse<GetAgentAuditLogListResponse> getAgentAuditLogList(@RequestBody GetAgentRequest request) {
+        request.setUserId(commonUtil.getOperatorId());
+        return agentAuditLogQueryProvider.getAgentAuditLogList(request);
+    }
+
+    @Operation(summary = "绑定代理商")
+    @PostMapping("/bind-agent")
+    public BaseResponse bindAgent(@RequestBody @Valid BindAgentRequest request) {
+        request.setUserId(commonUtil.getOperatorId());
+        return agentProvider.bindAgent(request);
+    }
+
+    @Operation(summary = "有效期设置代理商")
+    @PostMapping("/extend-vaild-agent")
+    public BaseResponse extendVaildAgent(@RequestBody @Valid ExtendVaildAgentRequest request) {
+        request.setUserId(commonUtil.getOperatorId());
+        return agentProvider.extendVaildAgent(request);
+    }
+
+    @Operation(summary = "生成二维码")
+    @PostMapping("/create-qr-code")
+    public BaseResponse<CreateQrCodeResponse> createQrCode(@RequestBody @Valid CreateQrCodeRequest request) {
+        return agentProvider.createQrCode(request);
+    }
+
+    @Operation(summary = "生成海报")
+    @PostMapping("/create-poster")
+    public BaseResponse<CreatePosterResponse> createPoster(@RequestBody @Valid CreatePosterRequest request) {
+        return agentProvider.createPoster(request);
+    }
+
+    @Operation(summary = "查询用户申请已绑定代理商")
+    @PostMapping("/query-user-bind-agent")
+    public BaseResponse<GetAgentResponse> queryUserBindAgent() {
+        GetAgentRequest request = new GetAgentRequest();
+        request.setUserId(commonUtil.getOperatorId());
+        return agentQueryProvider.queryUserBindAgent(request);
+    }
+
+    @Operation(summary = "查询用户扫码已绑定代理商")
+    @PostMapping("/query-customer-bind-agent")
+    public BaseResponse<GetAgentResponse> queryCustomerBindAgent() {
+        GetAgentRequest request = new GetAgentRequest();
+        request.setUserId(commonUtil.getOperatorId());
+        return agentQueryProvider.queryCustomerBindAgent(request);
+    }
+
+    @Operation(summary = "刷新城市生成海报")
+    @PostMapping("/update-city-poster")
+    public BaseResponse updateCityPoster(@RequestBody @Valid UpdateCityPosterAgentRequest request) {
+        request.setUserId(commonUtil.getOperatorId());
+        return agentProvider.updateCityPoster(request);
+    }
+
+}

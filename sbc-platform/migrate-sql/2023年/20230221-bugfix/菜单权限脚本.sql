@@ -1,0 +1,2 @@
+-- 客户归属商家的商家名称
+INSERT INTO `sbc-setting`.`authority`(`authority_id`, `system_type_cd`, `function_id`, `authority_title`, `authority_name`, `authority_url`, `request_type`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('2c939929863951030186736bc3d00000', 3, 'fc933b3e3fe311e9828800163e0fc468', '客户归属商家的商家名称', 'f_get_belong_supplier', '/customer/supplier/name/*', 'GET', NULL, 10, '2023-02-21 18:01:28', 0);

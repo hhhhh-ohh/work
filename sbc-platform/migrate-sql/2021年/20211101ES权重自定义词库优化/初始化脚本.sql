@@ -1,0 +1,2 @@
+-- ES商品权重设置
+INSERT INTO `sbc-setting`.`system_config` (`config_key`, `config_type`, `config_name`, `remark`, `status`, `context`, `create_time`, `update_time`, `del_flag`) VALUES ('es_query_setting', 'es_query_boost', 'es查询权重配置', '配置es权重设置', 1, '{\"goodsInfoNameBoost\":5,\"goodsLabelNameBoost\":4,\"goodsPropDetailNestNameBoost\":3,\"specTextBoost\":3,\"brandNameBoost\":2,\"cateNameBoost\":2,\"goodsSubtitleBoost\":1}', '2021-08-23 14:37:06', NULL, 0);

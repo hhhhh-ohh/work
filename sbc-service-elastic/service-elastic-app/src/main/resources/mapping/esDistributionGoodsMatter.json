@@ -1,0 +1,83 @@
+{
+  "properties": {
+    "esObjectGoodsInfo": {
+      "properties": {
+        "goodsInfoBarcode": {
+          "type": "keyword"
+        },
+        "companyInfoId": {
+          "type": "long"
+        },
+        "goodsInfoId": {
+          "type": "keyword"
+        },
+        "goodsInfoImg": {
+          "type": "keyword"
+        },
+        "cateId": {
+          "type": "long"
+        },
+        "distributionGoodsAudit": {
+          "type": "keyword"
+        },
+        "goodsId": {
+          "type": "keyword"
+        },
+        "brandId": {
+          "type": "long"
+        },
+        "goodsInfoName": {
+          "type": "keyword"
+        },
+        "storeId": {
+          "type": "long"
+        },
+        "goodsInfoNo": {
+          "type": "keyword"
+        },
+        "goodsType": {
+          "type": "keyword"
+        }
+      }
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "deleteTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "recommend": {
+      "type": "keyword"
+    },
+    "updateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "id": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "delFlag": {
+      "type": "keyword"
+    },
+    "matter": {
+      "type": "keyword"
+    },
+    "recommendNum": {
+      "type": "integer"
+    },
+    "matterType": {
+      "type": "keyword"
+    },
+    "operatorId": {
+      "type": "keyword"
+    }
+  }
+}

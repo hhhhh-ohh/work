@@ -1,0 +1,482 @@
+[
+  {
+    "controlBehavior": 0,
+    "count": 250,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/spuList",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 107,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 250,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/goods/spuListFront",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 109,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 250,
+
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/flashsalegoods/isProgress",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 110,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 250,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/goods/spu/{skuId}",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 113,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 250,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/goods/unLogin/spu/{skuId}",
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 114,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+ {
+   "controlBehavior": 0,
+   "count": 250,
+   "grade": 1,
+   "limitApp": "default",
+   "maxQueueingTimeMs": 500,
+   "resource": "/goods/unLogin/sku/{skuId}",
+   "warmUpPeriodSec": 10,
+   "clusterMode": true,
+   "clusterConfig": {
+     "flowId": 114,
+     "thresholdType": 1,
+     "fallbackToLocalWhenFail": true
+   }
+ },
+  {
+    "controlBehavior": 0,
+    "count": 250,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/goodsinforelatedgoods/getGoodsRelatedGoodsList/{goodsId}",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 117,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 250,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/marketing/getMoreSuitsInfo",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 116,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 187,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/site/purchaseInfo",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 119,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 625,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/site/purchase",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 132,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 625,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/miniPurchases",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 132,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 125,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/trade/confirm",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 120,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 93,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/trade/commit",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 121,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/coupon-info/goods-list",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 100,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/coupon-info/coupon-goods",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 101,
+      "thresholdType": 0,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/coupon-info/center",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 102,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+  "controlBehavior": 0,
+    "count": 50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/coupon-code/fetch-coupon",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 131,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/coupon-info/front/center",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 103,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+
+    "controlBehavior": 0,
+    "count": 1250,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/coupon-code/my-coupon",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 130,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/flashsaleactivityreform/xsite/homePageList",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 105,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count":50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/flashsalegoods/xsite/page",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 106,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/flashsaleactivityreform/xsite/list",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 122,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/flashsale/rushToBuyFlashSaleGoods",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 123,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 50,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/trade/flashCommit",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 124,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 437,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/goods/skuList",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 124,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 131,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/trade/page",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 134,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 131,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/trade/{tid}",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 135,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 187,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/marketing/{marketingId}",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 136,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 187,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/site/goodsMarketing",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 137,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "controlBehavior": 0,
+    "count": 187,
+    "grade": 1,
+    "limitApp": "default",
+    "maxQueueingTimeMs": 500,
+    "resource": "/site/{marketingId}/calcMarketingByMarketingId",
+    "strategy": 0,
+    "warmUpPeriodSec": 10,
+    "clusterMode": true,
+    "clusterConfig": {
+      "flowId": 138,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  }
+]

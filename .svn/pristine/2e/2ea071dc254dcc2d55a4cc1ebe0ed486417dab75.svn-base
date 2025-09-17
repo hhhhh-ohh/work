@@ -1,0 +1,6 @@
+INSERT INTO `sbc-setting`.`menu_info`(`menu_id`, `system_type_cd`, `parent_menu_id`, `menu_grade`, `menu_name`, `menu_url`, `menu_icon`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817fcdc3eb017fcea7e61d0000', 4, 'fc8e1ac93fe311e9828800163e0fc468', 3, '主题色系', '/theme-color', NULL, 21, '2022-03-28 11:53:04', 0);
+
+INSERT INTO `sbc-setting`.`function_info`(`function_id`, `system_type_cd`, `menu_id`, `function_title`, `function_name`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817fd9256d017fda1f57c50000', 4, 'ff8080817fcdc3eb017fcea7e61d0000', '查询修改主题色系', 'f_theme_color', NULL, 0, '2022-03-30 17:19:22', 0);
+
+INSERT INTO `sbc-setting`.`authority`(`authority_id`, `system_type_cd`, `function_id`, `authority_title`, `authority_name`, `authority_url`, `request_type`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817fd9256d017fda21660b0001', 4, 'ff8080817fd9256d017fda1f57c50000', '查询主题色系', NULL, '/theme-color/get', 'GET', NULL, 0, '2022-03-30 17:21:36', 0);
+INSERT INTO `sbc-setting`.`authority`(`authority_id`, `system_type_cd`, `function_id`, `authority_title`, `authority_name`, `authority_url`, `request_type`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('ff8080817fd9256d017fda2250f60002', 4, 'ff8080817fd9256d017fda1f57c50000', '修改主题色系', NULL, '/theme-color/update', 'POST', NULL, 1, '2022-03-30 17:22:36', 0);

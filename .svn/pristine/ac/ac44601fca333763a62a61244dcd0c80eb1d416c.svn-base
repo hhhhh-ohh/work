@@ -1,0 +1,20 @@
+@startuml
+start
+:校验入参的必填、长度、规格正确性;
+if(商家?)then(yes)
+    :校验市场价;
+else
+    :校验供货价;
+endif;
+:将商品信息转换商品DTO新增信息;
+:将规格文本转换为规格、规格值、规格值与SKU关联等新增信息;
+:将图片列表转换为图片DTO新增信息;
+:调用商品微服务的新增接口;
+if(新增成功?)then(yes)
+   if(商品审核通过? and 供应商?)then(yes)
+      :同步供应商标品库ES;
+   endif;
+   :同步商品ES;
+endif;
+stop
+@enduml

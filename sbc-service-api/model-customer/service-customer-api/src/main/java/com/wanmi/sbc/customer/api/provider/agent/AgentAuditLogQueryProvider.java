@@ -1,0 +1,25 @@
+package com.wanmi.sbc.customer.api.provider.agent;
+
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.customer.api.request.agent.GetAgentRequest;
+import com.wanmi.sbc.customer.api.response.agent.GetAgentAuditLogListResponse;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+@FeignClient(value = "${application.customer.name}", contextId = "AgentAuditLogQueryProvider")
+public interface AgentAuditLogQueryProvider {
+
+    /**
+     * 查询代理商审核信息列表
+     */
+    @PostMapping("/customer/${application.customer.version}/agent-audit-log/get-agent-audit-log-list")
+    BaseResponse<GetAgentAuditLogListResponse> getAgentAuditLogList(@RequestBody GetAgentRequest request);
+
+    /**
+     * 查询代理商审核信息列表
+     */
+    @PostMapping("/customer/${application.customer.version}/agent-audit-log/get-user-audit-log-list")
+    BaseResponse<GetAgentAuditLogListResponse> getUserAuditLogList(@RequestBody GetAgentRequest request);
+}

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.report.paymember.dao.PayMemberAreaDistributeReportMapper">
+    <cache eviction="LRU" flushInterval="10000" size="512"/>
+
+    <insert id="generateBossPayMemberAreaDistribute">
+        INSERT INTO
+            paymember_area_distribute
+            (city_id,num,create_time,target_date)
+        SELECT
+            ifnull( rcd.city_id,-1) as city_id,
+            count( 1 ) as num,
+            now() as create_time,
+            #{targetDate} as target_date
+        FROM
+            replay_paying_member_customer_rel pcl
+                LEFT JOIN replay_customer rc ON pcl.customer_id = rc.customer_id
+                LEFT JOIN replay_customer_detail rcd ON rcd.customer_id = rc.customer_id
+        WHERE
+            rc.check_state = 1
+          AND DATE_FORMAT( pcl.open_time, '%Y-%m-%d' )<![CDATA[ <= ]]> #{targetDate}
+        GROUP BY
+            rcd.city_id;
+    </insert>
+
+    <select id="query" resultType="com.wanmi.ares.report.paymember.model.root.PayMemberAreaDistributeReport">
+        SELECT
+        SUM(c.num) as num,
+        c.city_id AS cityId
+        FROM
+        paymember_area_distribute c
+        WHERE
+        c.target_date = #{date}
+        group by
+        c.city_id,c.create_time
+
+    </select>
+
+    <delete id="deleteReport">
+        DELETE
+        FROM
+            paymember_area_distribute
+        WHERE
+            target_date = #{dateStr};
+    </delete>
+
+</mapper>

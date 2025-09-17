@@ -1,0 +1,30 @@
+@startuml
+start
+if(是否是供应商) then(yes)
+    :返回没有权限错误;
+    stop;
+endif;
+:调用微服务退单详情接口;
+if(退单是否存在) then(no)
+    :返回错误;
+    stop;
+endif;
+if(退单是否属于该商户下的) then(no)
+    :返回错误;
+    stop;
+endif;
+if(linkedMall退单) then(yes)
+    :验证linkedMall的卖家是否操作审核;
+    if(是否审核) then(no)
+        :返回错误;
+        stop;
+    endif;
+endif;
+if(是否审核通过) then(yes)
+    :调用微服务退单审核接口;
+else
+    :调用微服务退单驳回接口;
+endif;
+:审核成功;
+stop
+@enduml

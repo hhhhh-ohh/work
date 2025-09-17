@@ -1,0 +1,27 @@
+## 1、nacos上sbc-service-mq.properties配置
+```properties
+#用户注销延迟MQ
+spring.cloud.stream.bindings.customer-logout-output.destination=q.customer.service.customer.logout
+spring.cloud.stream.rabbit.bindings.customer-logout-output.producer.delayed-exchange=true
+spring.cloud.stream.bindings.customer-logout-input.destination=q.customer.service.customer.logout
+spring.cloud.stream.rabbit.bindings.customer-logout-input.consumer.delayed-exchange=true
+#同步第三方类目映射修改商品库和商品逻辑，通过mq消费完成（商品数据较大会导致超时）
+spring.cloud.stream.bindings.goods_cate_id_sync_input.destination=q.goods.cate.sync
+spring.cloud.stream.bindings.goods_cate_id_sync_output.destination=q.goods.cate.sync
+```
+
+##2、boss端域名/logout/customerRefresh  待注销及注销用户刷新到redis
+
+##3、es_customer_detail重新初始化数据
+索引新加字段logOutStatus，需删除索引或mapping后，重新初始化数据
+
+
+##4、拦截器中如果注销排除redis校验，mobile端及pc端配置文件中配置,默认false，需要校验
+```properties
+jwt.logout-excluded-redis=false
+```
+
+##5、redis 清理 服务器上执行 默认只会清除redis的db0库，若放到其他库，需清除
+```properties
+redis-cli keys "marketing_plugin_cache*" | xargs redis-cli del
+```

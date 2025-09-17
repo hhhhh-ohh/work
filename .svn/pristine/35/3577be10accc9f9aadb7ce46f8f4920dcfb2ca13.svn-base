@@ -1,0 +1,474 @@
+package com.wanmi.sbc.order.mq;
+
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+import com.google.common.collect.Lists;
+import com.wanmi.sbc.common.base.MessageMQRequest;
+import com.wanmi.sbc.common.base.StoreMessageMQRequest;
+import com.wanmi.sbc.common.enums.NodeType;
+import com.wanmi.sbc.common.enums.TriggerNodeType;
+import com.wanmi.sbc.common.enums.node.OrderProcessType;
+import com.wanmi.sbc.common.util.DateUtil;
+import com.wanmi.sbc.common.util.KsBeanUtil;
+import com.wanmi.sbc.empower.api.request.channel.base.ChannelSkuOffAddedSyncRequest;
+import com.wanmi.sbc.empower.api.request.sellplatform.goods.PlatformSendMiniMsgRequest;
+import com.wanmi.sbc.goods.api.request.flashsalegoods.FlashSaleRecordRequest;
+import com.wanmi.sbc.goods.api.request.groupongoodsinfo.GrouponGoodsInfoModifyAlreadyGrouponNumRequest;
+import com.wanmi.sbc.goods.api.request.groupongoodsinfo.GrouponGoodsInfoModifyStatisticsNumRequest;
+import com.wanmi.sbc.marketing.api.request.grouponactivity.GrouponActivityModifyStatisticsNumByIdRequest;
+import com.wanmi.sbc.marketing.bean.enums.GrouponOrderStatus;
+import com.wanmi.sbc.mq.api.provider.MqSendProvider;
+import com.wanmi.sbc.mq.bean.constants.ProducerTopic;
+import com.wanmi.sbc.mq.bean.dto.MqSendDTO;
+import com.wanmi.sbc.mq.bean.dto.MqSendDelayDTO;
+import com.wanmi.sbc.order.api.request.areas.OrderListAddRequest;
+import com.wanmi.sbc.order.api.request.trade.EsOrderInvoiceGenerateRequest;
+import com.wanmi.sbc.order.api.request.trade.TradeBackRestrictedRequest;
+import com.wanmi.sbc.order.api.request.trade.TradeOfCustomerInfoReq;
+import com.wanmi.sbc.order.api.request.wxpayuploadshippinginfo.WxPayUploadShippingInfoSyncRequest;
+import com.wanmi.sbc.order.bean.dto.TradeDTO;
+import com.wanmi.sbc.order.bean.enums.AuditState;
+import com.wanmi.sbc.order.bean.enums.BackRestrictedType;
+import com.wanmi.sbc.order.bean.vo.GrouponInstanceVO;
+import com.wanmi.sbc.order.bean.vo.TradeVO;
+import com.wanmi.sbc.order.trade.model.root.Trade;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.redisson.api.RTopic;
+import org.redisson.api.RedissonClient;
+import org.redisson.codec.SerializationCodec;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @Description: 订单状态变更生产者
+ * @Autho qiaokang
+ * @Date：2019-03-05 17:47:18
+ */
+@Slf4j
+@Service
+public class OrderProducerService {
+
+    @Autowired
+    private MqSendProvider mqSendProvider;
+
+    @Autowired
+    private RedissonClient redissonClient;
+
+    /**
+     * 订单支付后，发送MQ消息
+     * @param tradeVO
+     */
+    public void sendMQForOrderPayed(TradeVO tradeVO) {
+        MqSendDelayDTO mqSendDelayDTO = new MqSendDelayDTO();
+        mqSendDelayDTO.setDelayTime(5000L);
+        mqSendDelayDTO.setTopic(ProducerTopic.ORDER_PAYED);
+        mqSendDelayDTO.setData(JSONObject.toJSONString(tradeVO));
+        mqSendProvider.sendDelay(mqSendDelayDTO);
+    }
+
+    /**
+     * 发送订单支付、订单完成MQ消息
+     * @param tradeVO
+     */
+    public void sendMQForOrderPayedAndComplete(TradeVO tradeVO) {
+        MqSendDTO mqSendDTO = new MqSendDTO();
+        mqSendDTO.setTopic(ProducerTopic.ORDER_PAYED_AND_COMPLETE);
+        mqSendDTO.setData(JSONObject.toJSONString(tradeVO));
+        mqSendProvider.send(mqSendDTO);
+    }
+
+    /**
+     * 订单完成，发送MQ消息
+     * @param tradeId
+     */
+    public void sendMQForOrderComplete(String tradeId) {
+        log.info("送订单完成MQ消息==============={}", tradeId);
+        MqSendDTO mqSendDTO = new MqSendDTO();
+        mqSendDTO.setTopic(ProducerTopic.ORDER_COMPLETE);
+        mqSendDTO.setData(tradeId);
+        mqSendProvider.send(mqSendDTO);
+    }
+
+    /**
+     * 分销订单退款作废后，发送MQ消息
+     * @param tradeVO
+     */
+    public void sendMQForOrderRefundVoid(TradeVO tradeVO) {
+        MqSendDTO mqSendDTO = new MqSendDTO();
+        mqSendDTO.setTopic(ProducerTopic.ORDER_REFUND);
+        mqSendDTO.setData(JSONObject.toJSONString(tradeVO));
+        mqSendProvider.send(mqSendDTO);
+    }
+
+    /**
+     * 订单支付成功后调用第三方平台同步，发送MQ消息
+     * @param businessId 业务id
+     */
+    public void sendMQForThirdPlatformSync(String businessId) {
+        try {
+            MqSendDTO mqSendDTO = new MqSendDTO();
+            mqSendDTO.setTopic(ProducerTopic.THIRD_PLATFORM_SYNC);
+            mqSendDTO.setData(businessId);
+            mqSendProvider.send(mqSendDTO);
+        }catch (Exception e){
+            log.error("订单支付成功后调用发起方MQ异常", e);
+        }
+    }
+
+    /**
+     * 超过一定时间未支付订单，自动取消订单
+     * @param orderId
+     * @param millis
+     * @return
+     */
+    public void cancelOrder(String orderId,Long millis){
+        MqSendDelayDTO mqSendDelayDTO = new MqSendDelayDTO();
+        mqSendDelayDTO.setTopic(ProducerTopic.CANCEL_ORDER);
+        mqSendDelayDTO.setData(orderId);
+        mqSendDelayDTO.setDelayTime(millis);
+        mqSendProvider.sendDelay(mqSendDelayDTO);
+        //超时未支付订单——超时未支付
+//        this.backRestrictedPurchaseNum(orderId,null,BackRestrictedType.ORDER_SETTING_TIMEOUT_CANCEL);
+    }
+
+    /**
+     * 团长开团-开启延迟消息
+     * @param grouponNo
+     * @param millis
+     * @return
+     */
+    public Boolean sendOpenGroupon(String grouponNo,Long millis){
+        MqSendDelayDTO mqSendDelayDTO = new MqSendDelayDTO();
+        mqSendDelayDTO.setTopic(ProducerTopic.OPEN_GROUPON);
+        mqSendDelayDTO.setData(grouponNo);
+        mqSendDelayDTO.setDelayTime(millis);
+        Boolean send = mqSendProvider.sendDelay(mqSendDelayDTO).getContext().getSendFlag();
+        return send;
+    }
+
+    /**
+     * 团长开团- C端消息推送
+     * @param grouponNo
+     * @param grouponActivityId
+     * @return
+     */
+    public Boolean sendOpenGrouponMsgToC(String grouponNo,String grouponActivityId){
+        GrouponInstanceVO grouponInstanceVO = new GrouponInstanceVO();
+        grouponInstanceVO.setGrouponActivityId(grouponActivityId);
+        grouponInstanceVO.setGrouponNo(grouponNo);
+        RTopic topic = redissonClient.getTopic("GROUPON_MESSAGE",new SerializationCodec());
+        topic.publish(grouponInstanceVO);
+        return true;
+    }
+
+
+    /**
+     * 根据不同拼团状态更新不同的统计数据（已成团、待成团、团失败人数）
+     * @param grouponActivityId
+     * @param grouponNum
+     * @param grouponOrderStatus
+     * @return
+     */
+    public Boolean updateStatisticsNumByGrouponActivityId(String grouponActivityId, Integer grouponNum, GrouponOrderStatus grouponOrderStatus){
+        GrouponActivityModifyStatisticsNumByIdRequest request = new GrouponActivityModifyStatisticsNumByIdRequest(grouponActivityId,grouponNum,grouponOrderStatus);
+        MqSendDTO mqSendDTO = new MqSendDTO();
+        mqSendDTO.setTopic(ProducerTopic.GROUPON_STATISTICS_NUM);
+        mqSendDTO.setData(JSONObject.toJSONString(request));
+        return mqSendProvider.send(mqSendDTO).getContext().getSendFlag();
+    }
+
+    /**
+     * 根据活动ID、SKU编号集合批量更新已成团人数
+     * @param grouponActivityId
+     * @param goodsInfoIds
+     * @param alreadyGrouponNum
+     * @return
+     */
+    public Boolean updateAlreadyGrouponNumByGrouponActivityIdAndGoodsInfoId(String grouponActivityId, List<String> goodsInfoIds, Integer alreadyGrouponNum){
+        GrouponGoodsInfoModifyAlreadyGrouponNumRequest request = new GrouponGoodsInfoModifyAlreadyGrouponNumRequest(grouponActivityId,goodsInfoIds,alreadyGrouponNum);
+        MqSendDTO mqSendDTO = new MqSendDTO();
+        mqSendDTO.setTopic(ProducerTopic.UPDATE_ALREADY_GROUPON_NUM);
+        mqSendDTO.setData(JSONObject.toJSONString(request));
+        return mqSendProvider.send(mqSendDTO).getContext().getSendFlag();
+    }
+
+    /**
+     * 根据活动ID、SKU编号更新商品销售量、订单量、交易额
+     * @param grouponActivityId
+     * @param goodsInfoId
+     * @param goodsSalesNum
+     * @param orderSalesNum
+     * @param tradeAmount
+     * @return
+     */
+    public Boolean updateOrderPayStatisticNumByGrouponActivityIdAndGoodsInfoId(String grouponActivityId, String goodsInfoId, Integer goodsSalesNum,
+                                                                       Integer orderSalesNum, BigDecimal tradeAmount){
+        GrouponGoodsInfoModifyStatisticsNumRequest request = new GrouponGoodsInfoModifyStatisticsNumRequest(grouponActivityId,goodsInfoId,goodsSalesNum,orderSalesNum,tradeAmount);
+        MqSendDTO mqSendDTO = new MqSendDTO();
+        mqSendDTO.setTopic(ProducerTopic.UPDATE_GROUPON_ORDER_PAY_STATISTICS);
+        mqSendDTO.setData(JSONObject.toJSONString(request));
+        return mqSendProvider.send(mqSendDTO).getContext().getSendFlag();
+    }
+
+    /**
+     * 拼团订单-支付成功，订单异常，自动退款
+     * @param trade
+     */
+    public void sendGrouponOrderAutoRefund(Trade trade) {
+        MqSendDelayDTO mqSendDelayDTO = new MqSendDelayDTO();
+        mqSendDelayDTO.setTopic(ProducerTopic.GROUPON_ORDER_PAY_SUCCESS_AUTO_REFUND);
+        mqSendDelayDTO.setData(JSONObject.toJSONString(trade));
+        mqSendDelayDTO.setDelayTime(60000L);
+        log.info("sendGrouponOrderAutoRefund start");
+        mqSendProvider.sendDelay(mqSendDelayDTO);
+    }
+
+    /**
+     * 发送push、站内信、短信
+     * @param request
+     */
+    public void sendMessage(MessageMQRequest request){
+        MqSendDTO mqSendDTO = new MqSendDTO();
+        mqSendDTO.setTopic(ProducerTopic.SMS_SERVICE_MESSAGE_SEND);
+        mqSendDTO.setData(JSONObject.toJSONString(request));
+        mqSendProvider.send(mqSendDTO);
+    }
+
+    /**
+     * 小程序订阅消息推送
+     * @param messageRequest 小程序订阅消息入参
+     */
+    public void sendMiniProgramSubscribeMessage(PlatformSendMiniMsgRequest messageRequest){
+        MqSendDelayDTO mqSendDTO = new MqSendDelayDTO();
+        mqSendDTO.setData(JSON.toJSONString(messageRequest));
+        mqSendDTO.setTopic(ProducerTopic.SEND_MINI_PROGRAM_SUBSCRIBE_MSG);
+        mqSendDTO.setDelayTime(6000L);
+        mqSendProvider.sendDelay(mqSendDTO);
+    }
+
+    /**
+     * 小程序物流发货消息
+     * @param tradeId 订单号id
+     */
+    public void sendWxPayShippingMessage(String tradeId){
+        try {
+            WxPayUploadShippingInfoSyncRequest syncRequest = new WxPayUploadShippingInfoSyncRequest();
+            syncRequest.setTradeIds(Collections.singletonList(tradeId));
+            MqSendDelayDTO mqSendDTO = new MqSendDelayDTO();
+            mqSendDTO.setData(JSON.toJSONString(syncRequest));
+            mqSendDTO.setTopic(ProducerTopic.WX_PAY_SHIPPING_SYNC);
+            mqSendDTO.setDelayTime(6000L);
+            mqSendProvider.sendDelay(mqSendDTO);
+        } catch (Exception e) {
+            log.error("小程序物流发货消息失败", e);
+        }
+    }
+
+    /**
+     * 发送商家消息
+     * @param request
+     */
+    public void sendStoreMessage(StoreMessageMQRequest request){
+        log.info("商家消息发送开始，request:{}", request);
+        MqSendDTO mqSendDTO = new MqSendDTO();
+        mqSendDTO.setTopic(ProducerTopic.STORE_MESSAGE_SEND);
+        mqSendDTO.setData(JSONObject.toJSONString(request));
+        mqSendProvider.send(mqSendDTO);
+    }
+
+    /**
+     * 拼团结束3小时前校验拼团人数
+     * @param grouponNo
+     * @param millis
+     * @return
+     */
+    public boolean sendGrouponNumLimit(String grouponNo, Long millis){
+        MqSendDelayDTO mqSendDelayDTO = new MqSendDelayDTO();
+        mqSendDelayDTO.setTopic(ProducerTopic.GROUPON_JOIN_NUM_LIMIT);
+        mqSendDelayDTO.setData(grouponNo);
+        mqSendDelayDTO.setDelayTime(millis);
+        return mqSendProvider.sendDelay(mqSendDelayDTO).getContext().getSendFlag();
+    }
+
+    /**
+     * 返回订单中限售商品
+     *
+     * @param orderId
+     * @param backRestrictedType
+     * @return
+     */
+    public Boolean backRestrictedPurchaseNum(String orderId, String backOrderId, BackRestrictedType backRestrictedType) {
+        TradeBackRestrictedRequest restrictedRequest = TradeBackRestrictedRequest.builder()
+                .tradeId(orderId)
+                .backOrderId(backOrderId)
+                .backRestrictedType(backRestrictedType).build();
+        MqSendDTO mqSendDTO = new MqSendDTO();
+        mqSendDTO.setTopic(ProducerTopic.REDUCE_RESTRICTED_PURCHASE_NUM);
+        mqSendDTO.setData(JSONObject.toJSONString(restrictedRequest));
+        return mqSendProvider.send(mqSendDTO).getContext().getSendFlag();
+    }
+
+    /**
+     * 保存订单开票
+     * @param
+     */
+    public void sendEsSaveInvoice(EsOrderInvoiceGenerateRequest request) {
+        try {
+            MqSendDTO mqSendDTO = new MqSendDTO();
+            mqSendDTO.setTopic(ProducerTopic.ES_ADD_ORDER_INVOICE);
+            mqSendDTO.setData(JSONObject.toJSONString(request));
+            mqSendProvider.send(mqSendDTO);
+        }catch (Exception e){
+            log.error("修改订单开票调用同步esMQ异常", e);
+        }
+    }
+
+    /**
+     * 更新订单状态到开票数据中
+     * @param
+     */
+    public void updateFlowStateOrderInvoice(EsOrderInvoiceGenerateRequest request) {
+        try {
+            MqSendDTO mqSendDTO = new MqSendDTO();
+            mqSendDTO.setTopic(ProducerTopic.ES_UPDATE_FLOW_STATE_ORDER_INVOICE);
+            mqSendDTO.setData(JSONObject.toJSONString(request));
+            mqSendProvider.send(mqSendDTO);
+        }catch (Exception e){
+            log.error("更新订单状态到开票数据同步esMQ异常", e);
+        }
+    }
+
+    /**
+     * s2b_statistics统计库记录用户下单信息
+     * @param
+     */
+    public void sendPayCustomerIdAndStoreId(TradeOfCustomerInfoReq req) {
+        try {
+            MqSendDTO mqSendDTO = new MqSendDTO();
+            mqSendDTO.setTopic(ProducerTopic.ORDER_CUSTOMER_INFO);
+            mqSendDTO.setData(JSONObject.toJSONString(req));
+            mqSendProvider.send(mqSendDTO);
+        }catch (Exception e){
+            log.error("订单支付成功后调用s2b_statistics统计库记录用户下单信息MQ异常", e);
+        }
+    }
+
+    /**
+     * 第三方平台下架SKU商品
+     * @param providerSkuId 供应商商品skuId
+     * @return
+     */
+    public void sendThirdPlatformSkuOffAddedSync(List<String> providerSkuId){
+        try {
+            ChannelSkuOffAddedSyncRequest request = new ChannelSkuOffAddedSyncRequest();
+            request.setProviderSkuId(providerSkuId);
+            MqSendDTO mqSendDTO = new MqSendDTO();
+            mqSendDTO.setTopic(ProducerTopic.THIRD_PLATFORM_SKU_OFF_ADDED_FLAG);
+            mqSendDTO.setData(JSONObject.toJSONString(request));
+            mqSendProvider.send(mqSendDTO);
+        }catch (Exception e){
+            log.error("第三方订单验证调用-下架SKU商品MQ异常", e);
+        }
+    }
+
+    /**
+     * 秒杀订单--异步处理销量和个人购买记录
+     * @param
+     */
+    public void sendFlashTrade(FlashSaleRecordRequest req) {
+        String json = JSONObject.toJSONString(req);
+        try {
+            //发mq异步处理
+            MqSendDTO mqSendDTO = new MqSendDTO();
+            mqSendDTO.setTopic(ProducerTopic.DEAL_FLASH_SALE_RECORD);
+            mqSendDTO.setData(json);
+            mqSendProvider.send(mqSendDTO);
+        }catch (Exception e){
+            log.error("秒杀订单--异步失败producer, param={},e={}", json, e);
+        }
+    }
+
+    /**
+     * 下单异步更新积分增长信息
+     * @param
+     */
+    public void sendOrderPointsIncrease(List<Trade> trades) {
+        List<TradeDTO> tradeDTOS = KsBeanUtil.convert(trades, TradeDTO.class);
+        OrderListAddRequest orderListAddRequest = new OrderListAddRequest();
+        orderListAddRequest.setTradeDTOS(tradeDTOS);
+        String json = JSONObject.toJSONString(orderListAddRequest);
+        try {
+            //发mq异步处理
+            MqSendDTO mqSendDTO = new MqSendDTO();
+            mqSendDTO.setTopic(ProducerTopic.DEAL_ORDER_POINTS_INCREASE);
+            mqSendDTO.setData(json);
+            mqSendProvider.send(mqSendDTO);
+        }catch (Exception e){
+            log.error("下单异步更新积分增长信息--异步失败producer, param={},e={}", json, e);
+        }
+    }
+
+    /**
+     * 第三方平台下架SKU商品
+     * @param tradeId 订单列表
+     * @return
+     */
+    public void sendTradeToH5CreateOrderMessage(String tradeId){
+        try {
+            MqSendDTO mqSendDTO = new MqSendDTO();
+            mqSendDTO.setTopic(ProducerTopic.TRADE_TO_H5_CREATE_ORDER);
+            mqSendDTO.setData(tradeId);
+            mqSendProvider.send(mqSendDTO);
+        }catch (Exception e){
+            log.error("支付回调推送订单到h5 发送MQ异常", e);
+        }
+    }
+
+    public void sendTradeMessage(Trade trade) {
+        MessageMQRequest messageMQRequest = new MessageMQRequest();
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", NodeType.ORDER_PROGRESS_RATE.toValue());
+        map.put("id", trade.getId());
+        if (AuditState.CHECKED == trade.getTradeState().getAuditState()) {
+            messageMQRequest.setNodeCode(OrderProcessType.ORDER_COMMIT_SUCCESS.getType());
+            map.put("node", OrderProcessType.ORDER_COMMIT_SUCCESS.toValue());
+        } else {
+            messageMQRequest.setNodeCode(OrderProcessType.ORDER_COMMIT_SUCCESS_CHECK.getType());
+            map.put("node", OrderProcessType.ORDER_COMMIT_SUCCESS_CHECK.toValue());
+        }
+        messageMQRequest.setNodeType(NodeType.ORDER_PROGRESS_RATE.toValue());
+        messageMQRequest.setParams(Lists.newArrayList(trade.getTradeItems().get(0).getSkuName()));
+        messageMQRequest.setPic(trade.getTradeItems().get(0).getPic());
+        messageMQRequest.setRouteParam(map);
+        messageMQRequest.setCustomerId(trade.getBuyer().getId());
+        messageMQRequest.setMobile(trade.getBuyer().getAccount());
+        sendMessage(messageMQRequest);
+    }
+
+    @Async
+    public void sendOrderDeliveryMiniProgramMsg(String tradeId, LocalDateTime deliverTime, String deliverNo,
+                                                String expressName, String customerId) {
+        try{
+            this.sendMiniProgramSubscribeMessage(PlatformSendMiniMsgRequest.builder()
+                    .triggerNodeId(TriggerNodeType.ORDER_DELIVERY)
+                    .tradeId(tradeId)
+                    .deliverTime(DateUtil.format(deliverTime, DateUtil.FMT_DATE_1))
+                    .deliverNo(deliverNo)
+                    .expressName(expressName)
+                    .customerId(customerId).build());
+        }catch (Exception e){
+            log.error("发货成功通知失败，tradeId={},deliverNo={},expressName={},customerId={}", tradeId, deliverNo,
+                    expressName, customerId);
+        }
+    }
+}

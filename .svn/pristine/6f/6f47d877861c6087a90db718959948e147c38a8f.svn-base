@@ -1,0 +1,1 @@
+package com.wanmi.sbc.goods.bean.vo;

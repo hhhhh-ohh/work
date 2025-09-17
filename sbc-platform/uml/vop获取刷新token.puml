@@ -1,0 +1,23 @@
+@startuml
+start
+partition 调接口获取token {
+        :从缓存中获取token;
+        if(缓存中存在) then (yes)
+         :取缓存;
+        else
+         :调京东接口获取token，并存入缓存;
+        endif;
+        :返回token;
+        :操作成功;
+}
+partition 定时任务 {
+        :开始;
+        if(判断缓存中是否存在token) then (yes)
+         :调京东刷新token接口获取token和refreshToken,\n并放入缓存;
+        else
+         :调京东获取token接口获取token和refreshToken,\n并放入缓存;
+        endif;
+        :操作成功;
+}
+stop
+@enduml

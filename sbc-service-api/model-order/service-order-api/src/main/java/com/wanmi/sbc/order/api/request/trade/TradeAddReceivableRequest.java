@@ -1,0 +1,46 @@
+package com.wanmi.sbc.order.api.request.trade;
+
+import com.wanmi.sbc.common.base.BaseRequest;
+import com.wanmi.sbc.common.base.Operator;
+import com.wanmi.sbc.common.enums.Platform;
+import com.wanmi.sbc.order.bean.dto.ReceivableAddDTO;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+/**
+ * @Author: ZhangLingKe
+ * @Description:
+ * @Date: 2018-12-06 16:17
+ */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Schema
+public class TradeAddReceivableRequest extends BaseRequest {
+
+    /**
+     *收款单
+     */
+    @Schema(description = "收款单")
+    private ReceivableAddDTO receivableAddDTO;
+
+    /**
+     * 平台信息
+     */
+    @Schema(description = "平台信息")
+    private Platform platform;
+
+    /**
+     * 操作人
+     */
+    @Schema(description = "操作人")
+    private Operator operator;
+
+}

@@ -1,0 +1,69 @@
+{
+  "replayTable" : "replay_trade_item_marketing",
+  "dispatch" :{
+    "dispatch": null,
+    "typeFilter": ["INSERT","UPDATE","DELETE"],
+    "typeDispatch": {}
+  },
+  "pk": ["sku_id","marketing_id"],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "tid",
+        "dataType": 12
+      }
+    ],
+    "arrayData": {
+      "arrayRoot": "tradeItems",
+      "mappingData": {
+        "singleData": [
+          {
+            "field": "skuId",
+            "replayField": "sku_id",
+            "dataType": 12
+          }
+	],
+        "arrayData": {
+          "arrayRoot": "marketingSettlements",
+          "mappingData":
+          {
+            "singleData": [
+              {
+                "field": "marketingId",
+                "replayField": "marketing_id",
+                "dataType": -5
+              },
+              {
+                "field": "marketingType",
+                "replayField": "marketing_type",
+                "dataType": 4,
+                "enumType": {
+                   "REDUCTION": 0,
+                   "DISCOUNT": 1,
+                   "GIFT": 2,
+                   "BUYOUT_PRICE": 3,
+                   "HALF_PRICE_SECOND_PIECE": 4,
+                   "FLASH_SALE": 5,
+                   "SUITS": 6,
+                   "PREFERENTIAL": 8
+		}
+              },
+              {
+                "field": "splitPrice",
+                "replayField": "split_price",
+                "dataType": 3
+              },
+              {
+                "field": "discountsAmount",
+                "replayField": "discounts_amount",
+                "dataType": 3
+              }
+            ],
+            "arrayData": {}
+          }
+        }
+      }
+    }
+  }
+}

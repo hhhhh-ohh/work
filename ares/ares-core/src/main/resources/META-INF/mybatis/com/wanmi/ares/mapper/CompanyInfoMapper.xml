@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.report.customer.dao.CompanyInfoMapper">
+
+    <resultMap id="companyInfoMap" type="com.wanmi.ares.source.model.root.CompanyInfo">
+        <id property="companyId" column="company_info_id"/>
+        <result property="companyName" column="company_name"/>
+        <result property="companyCode" column="company_code"/>
+        <result property="storeType" column="store_type"/>
+
+    </resultMap>
+
+    <sql id="company_col">
+        company_info_id,company_name,company_code,store_type
+    </sql>
+
+    <select id="queryByCompanyCode" resultMap="companyInfoMap">
+        SELECT
+        <include refid="company_col"/>
+        FROM replay_company_info WHERE company_code = #{companyCode}
+    </select>
+
+    <select id="queryByCompanyId" resultMap="companyInfoMap">
+        SELECT
+        <include refid="company_col"/>
+        FROM replay_company_info WHERE company_info_id = #{companyId}
+    </select>
+
+</mapper>

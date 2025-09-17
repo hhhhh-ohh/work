@@ -1,0 +1,12 @@
+@startuml
+start
+:BOSS驳回;
+:直接根据记录ID更新驳回状态和驳回原因;
+stop;
+
+start
+:商家/供应商;
+:查询商户ID所对应的开放权限信息;
+:返回驳回原因;
+stop
+@enduml

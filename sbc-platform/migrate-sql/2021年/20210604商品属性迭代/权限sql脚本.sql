@@ -1,0 +1,63 @@
+-- 菜单
+-- 商品属性三级菜单
+INSERT INTO `sbc-setting`.menu_info (menu_id, system_type_cd, parent_menu_id, menu_grade, menu_name, menu_url, menu_icon, sort, create_time, del_flag) VALUES ('2c939a4d78e9264d0178ed06fcf80000', 4, 'fc8df1b53fe311e9828800163e0fc468', 3, '商品属性', '/goods-pro', null, 5, '2021-04-20 10:06:01', 0);
+
+-- 功能
+-- 商品属性功能
+INSERT INTO `sbc-setting`.function_info (function_id, system_type_cd, menu_id, function_title, function_name, remark, sort, create_time, del_flag) VALUES ('2c939a4d78e9264d0178edd9b0b10004', 4, '2c939a4d78e9264d0178ed06fcf80000', '新增', 'f_goods_pro_3', null, 4, '2021-04-20 13:56:10', 0);
+INSERT INTO `sbc-setting`.function_info (function_id, system_type_cd, menu_id, function_title, function_name, remark, sort, create_time, del_flag) VALUES ('2c939a4d78e9264d0178edd971810003', 4, '2c939a4d78e9264d0178ed06fcf80000', '删除', 'f_goods_pro_2', null, 3, '2021-04-20 13:55:54', 0);
+INSERT INTO `sbc-setting`.function_info (function_id, system_type_cd, menu_id, function_title, function_name, remark, sort, create_time, del_flag) VALUES ('2c939a4d78e9264d0178edd933930002', 4, '2c939a4d78e9264d0178ed06fcf80000', '编辑', 'f_goods_pro_1', null, 2, '2021-04-20 13:55:38', 0);
+INSERT INTO `sbc-setting`.function_info (function_id, system_type_cd, menu_id, function_title, function_name, remark, sort, create_time, del_flag) VALUES ('2c939a4d78e9264d0178edd8ba900001', 4, '2c939a4d78e9264d0178ed06fcf80000', '查看', 'f_goods_pro_0', null, 1, '2021-04-20 13:55:07', 0);
+
+-- 商品品牌功能
+INSERT INTO `sbc-setting`.function_info (function_id, system_type_cd, menu_id, function_title, function_name, remark, sort, create_time, del_flag) VALUES ('2c939a4d79118fcf017912a2f9840001', 4, 'fc8df3623fe311e9828800163e0fc468', '设置品牌排序', 'f_goods_brand_4', null, 4, '2021-04-27 17:22:21', 0);
+INSERT INTO `sbc-setting`.function_info (function_id, system_type_cd, menu_id, function_title, function_name, remark, sort, create_time, del_flag) VALUES ('2c939a4d79118fcf017912a26d560000', 4, 'fc8df3623fe311e9828800163e0fc468', '设置推荐品牌', 'f_goods_brand_3', null, 3, '2021-04-27 17:21:45', 0);
+
+-- 商品三级类目下的属性功能
+INSERT INTO `sbc-setting`.function_info (function_id, system_type_cd, menu_id, function_title, function_name, remark, sort, create_time, del_flag) VALUES ('2c939a4e79c731020179cb62f3f60000', 4, 'fc8df3023fe311e9828800163e0fc468', '商品类目属性查看', 'f_goods_cate_3', null, 4, '2021-06-02 14:22:10', 0);
+
+-- 接口权限
+-- 商品属性接口权限
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f5c90ae0005', 4, '2c939a4d78e9264d0178edd9b0b10004', '查询商品类目列表', null, '/goods/goodsCatesTreeAll', 'GET', null, 2, '2021-05-12 14:56:12', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f5ad1390004', 4, '2c939a4d78e9264d0178edd9b0b10004', '新增商品属性', null, '/goods/add-prop', 'POST', null, 1, '2021-05-12 14:54:18', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f4bee920003', 4, '2c939a4d78e9264d0178edd933930002', '查询商品类目列表', null, '/goods/goodsCatesTreeAll', 'GET', null, 2, '2021-05-12 14:38:02', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f4aed520002', 4, '2c939a4d78e9264d0178edd933930002', '查询属性详情信息', null, '/goods/find-prop-detail/**', 'GET', null, 1, '2021-05-12 14:36:57', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f485d3d0001', 4, '2c939a4d78e9264d0178edd8ba900001', '商品属性列表', null, '/goods/prop-list', 'POST', null, 2, '2021-05-12 14:34:09', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f4733720000', 4, '2c939a4d78e9264d0178edd8ba900001', '商品类目列表', null, '/goods/goodsCatesTreeAll', 'GET', null, 1, '2021-05-12 14:32:52', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d78e9264d0178fd5a77d70006', 4, '2c939a4d78e9264d0178edd971810003', '删除商品属性', null, '/goods/delete-prop/*', 'DELETE', null, 0, '2021-04-23 14:11:08', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d78e9264d0178fd59cabb0005', 4, '2c939a4d78e9264d0178edd933930002', '编辑商品属性', null, '/goods/modify-prop', 'PUT', null, 0, '2021-04-23 14:10:24', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('ff80808179a700ae0179a77f960f0000', 4, '2c939a4d78e9264d0178edd933930002', '修改商品属性索引开关', null, '/goods/modify-prop-index', 'PUT', null, 4, '2021-05-26 15:07:07', 0);
+
+-- 商品品牌接口权限
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d79118fcf017912a487f10003', 4, '2c939a4d79118fcf017912a2f9840001', '设置品牌排序', '设置品牌排序', '/goods/brand-sort-edit', 'POST', null, 2, '2021-04-27 17:24:03', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d79118fcf017912a3fef70002', 4, '2c939a4d79118fcf017912a26d560000', '设置推荐品牌', '设置推荐品牌', '/goods/brand-recommend-edit', 'POST', null, 1, '2021-04-27 17:23:28', 0);
+
+-- 供应商新增/编辑商品-商品属性接口权限
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d79645076017964851de50001', 6, '74a83aa7516311eab39c00505688305d', '根据三级类目id查询商品属性', null, '/goods/prop/detail/**', 'GET', null, 37, '2021-05-13 14:58:36', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d79645076017964840e960000', 6, '74a83aa7516311eab39c00505688305d', '查询国家/地区列表', null, '/country/list-all', 'GET', null, 36, '2021-05-13 14:57:27', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f8afe46000b', 6, '2c9386c170560beb01705626fd7c0001', '查询国家/地区列表', null, '/country/list-all', 'GET', null, 37, '2021-05-12 15:46:55', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f89c5db000a', 6, '2c9386c170560beb01705626fd7c0001', '查询三级类目的商品属性', null, '/goods/prop-detail/**', 'GET', null, 36, '2021-05-12 15:45:35', 0);
+
+-- 商家新增/编辑商品-商品属性接口权限
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f81f2ce0009', 3, 'fc924c7c3fe311e9828800163e0fc468', '查询商品的属性', null, '/goods/prop/detail/**', 'GET', null, 37, '2021-05-12 15:37:02', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f77b84c0008', 3, 'fc924c7c3fe311e9828800163e0fc468', '查询国家/地区列表', null, '/country/list-all', 'GET', null, 36, '2021-05-12 15:25:52', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f73b3240007', 3, 'fc93637e3fe311e9828800163e0fc468', '根据三级类目id查询商品属性', null, '/goods/prop-detail/**', 'GET', null, 37, '2021-05-12 15:21:29', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d795ed6b101795f6ccf440006', 3, 'fc93637e3fe311e9828800163e0fc468', '查询国家/地区列表', null, '/country/list-all', 'GET', null, 36, '2021-05-12 15:13:57', 0);
+
+-- boss商品库新增/编辑商品-商品属性接口权限
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d79645076017964916bd30005', 4, 'fc927fa93fe311e9828800163e0fc468', '根据三级类目id查询商品属性', null, '/goods/prop/detail/**', 'GET', null, 11, '2021-05-13 15:12:03', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d796450760179648e03390004', 4, 'fc927fa93fe311e9828800163e0fc468', '查询国家/地区列表', null, '/country/list-all', 'GET', null, 10, '2021-05-13 15:08:19', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d796450760179648bbc7e0003', 4, 'fc927e303fe311e9828800163e0fc468', '查询三级类目的商品属性', null, '/goods/prop-detail/**', 'GET', null, 10, '2021-05-13 15:05:50', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4d7964507601796489a8a70002', 4, 'fc927e303fe311e9828800163e0fc468', '查询国家/地区列表', null, '/country/list-all', 'GET', null, 9, '2021-05-13 15:03:34', 0);
+
+-- 物流权限
+INSERT INTO `sbc-setting`.`authority`(`authority_id`, `system_type_cd`, `function_id`, `authority_title`, `authority_name`, `authority_url`, `request_type`, `remark`, `sort`, `create_time`, `del_flag`) VALUES ('ff808081799ba0d901799c64d5f30000', 4, 'fc92514b3fe311e9828800163e0fc468', '查看物流信息接口', NULL, '/trade/deliveryInfos', 'POST', NULL, 4, '2021-05-24 11:22:05', 0);
+
+-- 商家端员工导入供货商品库商品权限补充
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('ff80808179b5604b0179b5d6fc6a0002', 3, 'ff80808174d1a5160174d291608a0000', '查询店铺分类', null, '/storeCate/two/**', 'GET', null, 8, '2021-05-29 09:57:16', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('ff80808179b5604b0179b5d6256f0001', 3, 'ff80808174d1a5160174d291608a0000', '查询所有品牌', null, '/goods/allGoodsBrands', 'GET', null, 7, '2021-05-29 09:56:21', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('ff80808179b5604b0179b5d502a70000', 3, 'ff80808174d1a5160174d291608a0000', '查看商品库sku信息', null, '/standard/skus/**', 'GET', null, 6, '2021-05-29 09:55:07', 0);
+
+-- 商品三级类目下属性的接口权限
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4e79c731020179cb6714da0002', 4, '2c939a4e79c731020179cb62f3f60000', '商品类目的属性排序', null, '/goods/cate/modify-sort', 'PUT', null, 2, '2021-06-02 14:26:41', 0);
+INSERT INTO `sbc-setting`.authority (authority_id, system_type_cd, function_id, authority_title, authority_name, authority_url, request_type, remark, sort, create_time, del_flag) VALUES ('2c939a4e79c731020179cb64c5e50001', 4, '2c939a4e79c731020179cb62f3f60000', '查询类目属性列表', null, '/goods/cate/prop-list/**', 'GET', null, 1, '2021-06-02 14:24:10', 0);

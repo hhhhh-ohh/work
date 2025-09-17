@@ -1,0 +1,4 @@
+## 魔方Jenkins打包调整，在原来 yarn compile 命令后面增加打包命令如下
+```
+yarn replace
+```

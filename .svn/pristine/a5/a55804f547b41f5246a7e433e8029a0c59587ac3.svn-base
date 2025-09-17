@@ -1,0 +1,368 @@
+package com.wanmi.sbc.order.orderperformance.service;
+
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.base.Operator;
+import com.wanmi.sbc.customer.api.provider.agent.AgentQueryProvider;
+import com.wanmi.sbc.customer.api.provider.detail.CustomerDetailQueryProvider;
+import com.wanmi.sbc.customer.api.request.agent.AgentGetByUniqueCodeRequest;
+import com.wanmi.sbc.customer.api.request.detail.CustomerDetailByCustomerIdRequest;
+import com.wanmi.sbc.customer.api.response.agent.AgentGetByUniqueCodeResponse;
+import com.wanmi.sbc.customer.api.response.detail.CustomerDetailGetCustomerIdResponse;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceSendMQRequest;
+import com.wanmi.sbc.order.bean.enums.PayState;
+import com.wanmi.sbc.order.bean.vo.TradeItemVO;
+import com.wanmi.sbc.order.orderperformance.model.root.OrderPerformance;
+import com.wanmi.sbc.order.orderperformance.mq.OrderPerformanceProducerService;
+import com.wanmi.sbc.order.orderperformance.repository.OrderPerformanceRepository;
+import com.wanmi.sbc.order.orderperformance.util.ReturnItemAnalyzer;
+import com.wanmi.sbc.order.orderperformance.util.TradeItemAnalyzer;
+import com.wanmi.sbc.order.payorder.service.PayOrderService;
+import com.wanmi.sbc.order.returnorder.model.entity.ReturnItem;
+import com.wanmi.sbc.order.returnorder.model.root.ReturnOrder;
+import com.wanmi.sbc.order.returnorder.repository.ReturnOrderRepository;
+import com.wanmi.sbc.order.trade.model.entity.TradeItem;
+import com.wanmi.sbc.order.trade.model.root.Trade;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 订单业绩服务
+ */
+
+
+@Slf4j
+@Service
+public class OrderPerformanceService {
+
+    @Autowired
+    private OrderPerformanceRepository orderPerformanceRepository;
+
+    @Autowired
+    private ReturnOrderRepository returnOrderRepository;
+
+    @Autowired
+    private CustomerDetailQueryProvider customerDetailQueryProvider;
+
+    @Autowired
+    private AgentQueryProvider agentQueryProvider;
+
+    @Autowired
+    private TradeItemAnalyzer tradeItemAnalyzer;
+
+    @Autowired
+    private ReturnItemAnalyzer returnItemAnalyzer;
+
+    @Autowired
+    private OrderPerformanceDetailService orderPerformanceDetailService;
+
+    @Autowired
+    private OrderPerformanceProducerService orderPerformanceProducerService;
+
+
+    /**
+     * 创建订单业绩
+     *
+     * @param trade
+     */
+    @Transactional
+    public void createOrderPerformance(Trade trade) {
+        try {
+            String customerId = trade.getBuyer().getId();
+            if (customerId == null) {
+                log.info("订单业绩创建失败，会员ID：{}，会员ID为空", customerId);
+                return;
+            }
+            // 获取会员信息
+            BaseResponse<CustomerDetailGetCustomerIdResponse> customerDetailById = customerDetailQueryProvider.getCustomerDetailByCustomerId(new CustomerDetailByCustomerIdRequest(customerId));
+            if (customerDetailById.getContext() == null || !customerDetailById.isSuccess()) {
+                log.info("订单业绩创建失败，会员信息未查询到，会员ID：{}，会员ID为空", customerId);
+                return;
+            }
+            // 判断是否是一户一码会员过来的
+            if (StringUtils.equals(customerDetailById.getContext().getAgentUniqueCode(), "-1")) {
+                log.info("订单业绩创建失败，非一户一码绑定会员，会员ID：{}，会员ID为空", customerId);
+                return;
+            }
+            // 判断是否是一户一码会员过来的
+            if (StringUtils.equals(customerDetailById.getContext().getAgentId(), "-1")) {
+                log.info("订单业绩创建失败，非一户一码绑定会员，会员ID：{}，会员ID为空", customerId);
+                return;
+            }
+
+            // 查询代理信息
+            String agentUniqueCode = customerDetailById.getContext().getAgentUniqueCode();
+            AgentGetByUniqueCodeRequest agentGetByUniqueCodeRequest = new AgentGetByUniqueCodeRequest();
+            agentGetByUniqueCodeRequest.setAgentUniqueCode(agentUniqueCode);
+            BaseResponse<AgentGetByUniqueCodeResponse> responseBaseResponse = agentQueryProvider.queryVaildAgentByUniqueCode(agentGetByUniqueCodeRequest);
+
+            if (responseBaseResponse.getContext() == null || !responseBaseResponse.isSuccess()) {
+                log.info("订单业绩创建失败，代理信息未查询到，代理码：{}，代理码为空", agentUniqueCode);
+                return;
+            }
+            // 获取到代理信息
+            AgentGetByUniqueCodeResponse agentBaseVO = responseBaseResponse.getContext();
+
+
+            // 组装订单业绩
+            OrderPerformance orderPerformance = assembleOrderPerformance(trade, agentBaseVO);
+
+            // 保存订单业绩
+            orderPerformanceRepository.save(orderPerformance);
+
+            // 创建支付订单业绩明细
+            List<TradeItem> tradeItems = trade.getTradeItems();
+            orderPerformanceDetailService.createPurchaseDetails(orderPerformance, tradeItems);
+
+
+        } catch (Exception e){
+            log.error("订单{},创建订单业绩: {}", trade.getId() ,e);
+        }
+    }
+
+
+    /**
+     * 组装订单业绩
+     * @param trade
+     * @param agentBaseVO
+     * @return
+     */
+    public OrderPerformance assembleOrderPerformance(Trade trade, AgentGetByUniqueCodeResponse agentBaseVO) {
+        String customerId = trade.getBuyer().getId();
+
+
+        OrderPerformance orderPerformance = new OrderPerformance();
+
+        orderPerformance.setCustomerId(customerId);
+        orderPerformance.setOrderId(trade.getId());
+        orderPerformance.setOrderAmount(trade.getTradePrice().getOriginPrice());
+        orderPerformance.setPayAmount(trade.getTradePrice().getTotalPayCash());
+        orderPerformance.setPayOrderStatus(0);
+
+        // 佣金计算
+        BigDecimal commissionAmount = calculateCreateCommissionAmount(trade);
+        orderPerformance.setCommissionAmount(commissionAmount);
+
+        // 学校服订单计算
+        BigDecimal schoolUniformAmount = calculateCreateSchoolUniformAmount(trade);
+        orderPerformance.setSchoolUniformAmount(schoolUniformAmount);
+
+        orderPerformance.setOrderStatus(0);
+        orderPerformance.setCommissionStatus(0);
+        orderPerformance.setAgentUniqueCode(agentBaseVO.getAgentUniqueCode());
+        orderPerformance.setAgentId(agentBaseVO.getAgentId());
+
+        orderPerformance.setCreateTime(LocalDateTime.now());
+        orderPerformance.setUpdateTime(LocalDateTime.now());
+        orderPerformance.setCreateBy("system");
+        orderPerformance.setUpdateBy("system");
+
+
+
+        return orderPerformance;
+    }
+
+    /**
+     * 创建学校服业绩
+     * @param trade
+     * @return
+     */
+    public BigDecimal calculateCreateSchoolUniformAmount(Trade trade) {
+        if (!PayState.PAID.equals(trade.getTradeState().getPayState())) {
+            return BigDecimal.ZERO;
+        }
+        List<TradeItem> tradeItems = trade.getTradeItems();
+        if (CollectionUtils.isEmpty(tradeItems)) {
+            return BigDecimal.ZERO;
+        } else {
+            return tradeItemAnalyzer.analyzeTradeItemsSchoolUniformAmount(tradeItems);
+        }
+
+    }
+
+    /**
+     * 计算创建订单业绩佣金
+     * @param trade
+     * @return
+     */
+    public BigDecimal calculateCreateCommissionAmount(Trade trade) {
+        if (!PayState.PAID.equals(trade.getTradeState().getPayState())) {
+            return BigDecimal.ZERO;
+        }
+        List<TradeItem> tradeItems = trade.getTradeItems();
+        if (CollectionUtils.isEmpty(tradeItems)) {
+            return BigDecimal.ZERO;
+        } else {
+            return tradeItemAnalyzer.analyzeTradeItems(tradeItems);
+        }
+    }
+
+    /**
+     * 创建退货业绩
+     * @param returnOrder
+     */
+    @Transactional
+    public void returnOrderPerformance(ReturnOrder returnOrder) {
+        try {
+            String customerId = returnOrder.getBuyer().getId();
+            if (customerId == null) {
+                log.info("订单业绩创建失败，会员ID：{}，会员ID为空", customerId);
+                return;
+            }
+            // 获取会员信息
+            BaseResponse<CustomerDetailGetCustomerIdResponse> customerDetailById = customerDetailQueryProvider.getCustomerDetailByCustomerId(new CustomerDetailByCustomerIdRequest(customerId));
+            if (customerDetailById.getContext() == null || !customerDetailById.isSuccess()) {
+                log.info("订单业绩创建失败，会员信息未查询到，会员ID：{}，会员ID为空", customerId);
+                return;
+            }
+            // 判断是否是一户一码会员过来的
+            if (StringUtils.equals(customerDetailById.getContext().getAgentUniqueCode(), "-1")) {
+                log.info("订单业绩创建失败，非一户一码绑定会员，会员ID：{}，会员ID为空", customerId);
+                return;
+            }
+            // 判断是否是一户一码会员过来的
+            if (StringUtils.equals(customerDetailById.getContext().getAgentId(), "-1")) {
+                log.info("订单业绩创建失败，非一户一码绑定会员，会员ID：{}，会员ID为空", customerId);
+                return;
+            }
+
+            // 订单号
+            String orderId = returnOrder.getTid();
+            OrderPerformance orderPerformance = orderPerformanceRepository.findByOrderId(orderId);
+            if (orderPerformance == null) {
+                log.info("订单业绩创建失败，订单业绩未查询到，订单号：{}，订单号为空", orderId);
+                return;
+            }
+
+            // 计算退款金额
+            // 查询订单下所有的退单
+            // 佣金计算
+            BigDecimal commissionAmount = calculateReturnCommissionAmount(orderPerformance, returnOrder);
+            orderPerformance.setCommissionAmount(commissionAmount);
+
+            // 学校服订单计算
+            BigDecimal schoolUniformAmount = calculateReturnSchoolUniformAmount(orderPerformance, returnOrder);
+            orderPerformance.setSchoolUniformAmount(schoolUniformAmount);
+
+
+
+
+            // 退款状态
+            orderPerformance.setRefundStatus(3);
+            orderPerformance.setUpdateTime(LocalDateTime.now());
+            orderPerformance.setUpdateBy("system");
+
+            // 修改订单业绩
+            orderPerformanceRepository.save(orderPerformance);
+
+
+            // 创建退款订单业绩明细
+            List<ReturnItem> returnItems = returnOrder.getReturnItems();
+            List<TradeItemVO> tradeItems = returnOrder.getTradeVO().getTradeItems();
+
+            String returnOrderId = returnOrder.getId();
+            orderPerformanceDetailService.createReturnDetails(orderPerformance, returnItems, tradeItems, returnOrderId);
+
+        } catch (Exception e){
+            log.error("订单{},创建退货业绩处理: {}", returnOrder.getTid() ,e);
+        }
+    }
+
+    /**
+     * 退货订单学校服业绩计算
+     * @param orderPerformance
+     * @param returnOrder
+     * @return
+     */
+    public BigDecimal calculateReturnSchoolUniformAmount(OrderPerformance orderPerformance, ReturnOrder returnOrder) {
+
+        BigDecimal schoolUniformAmount = orderPerformance.getSchoolUniformAmount();
+        BigDecimal returnSchoolUniformAmount = returnItemAnalyzer.analyzeReturnItemsSchoolUniformAmount(returnOrder.getReturnItems(), returnOrder.getTradeVO().getTradeItems());
+
+        schoolUniformAmount = schoolUniformAmount.subtract(returnSchoolUniformAmount);
+
+        return schoolUniformAmount;
+    }
+
+    /**
+     * 退货订单佣金计算
+     * @param orderPerformance
+     * @param returnOrder
+     * @return
+     */
+    public BigDecimal calculateReturnCommissionAmount(OrderPerformance orderPerformance, ReturnOrder returnOrder) {
+
+        BigDecimal commissionAmount = orderPerformance.getCommissionAmount();
+        BigDecimal returnCommissionAmount = returnItemAnalyzer.analyzeReturnItems(returnOrder.getReturnItems());
+
+        commissionAmount = commissionAmount.subtract(returnCommissionAmount);
+
+        return commissionAmount;
+    }
+
+    /**
+     * 订单业绩自动结算
+     * @param orderId
+     * @param operator
+     */
+    @Transactional
+    public void autoSettle(String orderId, Operator operator) {
+
+        OrderPerformance orderPerformance = orderPerformanceRepository.findByOrderId(orderId);
+
+        if (orderPerformance == null) {
+            log.info("订单业绩创建失败，订单业绩未查询到，订单号：{}，订单号为空", orderId);
+            return;
+        }
+
+        if (orderPerformance.getOrderStatus() == 1) {
+            log.info("订单业绩创建失败，订单业绩已结算，订单号：{}，订单号为空", orderId);
+            return;
+        }
+
+        //处理结算逻辑
+
+    }
+
+
+    /**
+     * 根据代理商编号查询订单业绩
+     * @param agentUniqueCode
+     * @return
+     */
+    public List<OrderPerformance> findByAgentUniqueCode(String agentUniqueCode) {
+        return orderPerformanceRepository.findByAgentUniqueCode(agentUniqueCode);
+    }
+
+    /**
+     * 根据代理商编号分页查询订单业绩
+     * @param agentUniqueCode
+     * @param pageable
+     * @return
+     */
+    public Page<OrderPerformance> getOrderPerformancePage(String agentUniqueCode, Pageable pageable) {
+        return orderPerformanceRepository.findByAgentUniqueCodeOrderByIdDesc(agentUniqueCode, pageable);
+    }
+
+    /**
+     * 发送订单业绩消息
+     * @param id
+     */
+    public void sendOrderPerformanceMessage(String id) {
+        OrderPerformanceSendMQRequest request = new OrderPerformanceSendMQRequest();
+        request.setOrderId(id);
+        orderPerformanceProducerService.sendOrderPerformanceMessage(request);
+    }
+}

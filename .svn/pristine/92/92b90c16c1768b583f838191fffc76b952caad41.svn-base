@@ -1,0 +1,5 @@
+#调用类型，1：为使用本地加密机方式，2为使用云端签名方式
+type=2
+address=api.lnksign.com
+port=8443
+accessKey=33cc0606-a1af-482e-adcb-1f87904b7906

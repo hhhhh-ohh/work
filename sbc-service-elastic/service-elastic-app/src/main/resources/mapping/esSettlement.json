@@ -1,0 +1,86 @@
+{
+  "properties": {
+    "storeType": {
+      "type": "integer"
+    },
+    "settleTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "commissionPrice": {
+      "type": "double"
+    },
+    "salePrice": {
+      "type": "double"
+    },
+    "settleId": {
+      "type": "long"
+    },
+    "settleStatus": {
+      "type": "integer"
+    },
+    "commonCouponPrice": {
+      "type": "double"
+    },
+    "deliveryPrice": {
+      "type": "double"
+    },
+    "platformPrice": {
+      "type": "double"
+    },
+    "providerPrice": {
+      "type": "double"
+    },
+    "settleCode": {
+      "type": "text"
+    },
+    "returnPrice": {
+      "type": "double"
+    },
+    "saleNum": {
+      "type": "long"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "returnNum": {
+      "type": "long"
+    },
+    "storePrice": {
+      "type": "double"
+    },
+    "splitPayPrice": {
+      "type": "double"
+    },
+    "startTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "storeName": {
+      "type": "keyword"
+    },
+    "endTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "id": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "pointPrice": {
+      "type": "double"
+    },
+    "thirdPlatFormFreight": {
+      "type": "double"
+    }
+  }
+}

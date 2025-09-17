@@ -1,0 +1,60 @@
+package com.wanmi.sbc.goods.cache;
+
+import com.alibaba.fastjson2.JSON;
+import com.wanmi.sbc.goods.cache.handler.ICacheKeyHandler;
+import com.wanmi.sbc.goods.cache.handler.impl.ListCustomerLevelMapByCustomerIdAndIds;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.interceptor.KeyGenerator;
+
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * @author ***
+ * @ClassName EhCacheKeyGenerator
+ * @Description
+ * @date 2021/3/9 17:03
+ */
+public class EhCacheKeyGenerator implements KeyGenerator {
+
+    protected static final Map<String, Class<? extends ICacheKeyHandler<String, Object>>> HANDLER_CONTAINER = new HashMap<>();
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EhCacheKeyGenerator.class);
+
+    static {
+        HANDLER_CONTAINER.put("listCustomerLevelMapByCustomerIdAndIds", ListCustomerLevelMapByCustomerIdAndIds.class);
+    }
+
+    @Override
+    public Object generate(Object targetClass, Method method, Object... params) {
+        Map<String, Object> container = new HashMap<>();
+        Class<?> targetClassClass = targetClass.getClass();
+        Package pack = targetClassClass.getPackage();
+        String clazz = targetClassClass.toGenericString();
+        String methodName = method.getName();
+        // 包名称
+        container.put("package", pack);
+        // 类地址
+        container.put("class", clazz);
+        // 方法名称
+        container.put("methodName", methodName);
+        Class<? extends ICacheKeyHandler<String, Object>> aClass = EhCacheKeyGenerator.HANDLER_CONTAINER.get(methodName);
+        try {
+            if (Objects.nonNull(aClass)) {
+                ICacheKeyHandler<String, Object> iCacheKeyHandler = aClass.newInstance();
+                container = iCacheKeyHandler.handle(container, params);
+            }
+        } catch (InstantiationException | IllegalAccessException e) {
+            LOGGER.error(e.getMessage());
+        }
+
+        // 转为JSON字符串
+        String jsonString = JSON.toJSONString(container);
+        // 做SHA256 Hash计算，得到一个SHA256摘要作为Key
+        return DigestUtils.sha256Hex(jsonString);
+    }
+}

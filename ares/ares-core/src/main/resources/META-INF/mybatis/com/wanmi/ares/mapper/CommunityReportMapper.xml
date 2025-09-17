@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.community.dao.CommunityReportMapper">
+    <resultMap id="communityCustomerResult" type="com.wanmi.ares.community.model.CommunityCustomerReport">
+        <id property="createDate" column="create_date"/>
+        <id property="storeId" column="store_id"/>
+        <id property="customerId" column="customer_id"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="payOrderNum" column="pay_order_num"/>
+        <result property="payTotalPrice" column="pay_total_price"/>
+        <result property="assistOrderNum" column="assist_order_num"/>
+        <result property="assistOrderTotalPrice" column="assist_order_total_price"/>
+    </resultMap>
+
+    <resultMap id="communityLeaderResult" type="com.wanmi.ares.community.model.CommunityLeaderReport">
+        <id property="createDate" column="create_date"/>
+        <id property="storeId" column="store_id"/>
+        <id property="leaderId" column="customer_id"/>
+        <result property="leaderCustomerId" column="leader_customer_id"/>
+        <result property="leaderAccount" column="leader_account"/>
+        <result property="leaderName" column="leader_name"/>
+        <result property="serviceOrderNum" column="service_order_num"/>
+        <result property="serviceOrderTotalPrice" column="service_order_total_price"/>
+        <result property="assistOrderNum" column="assist_order_num"/>
+        <result property="assistOrderTotalPrice" column="assist_order_total_price"/>
+    </resultMap>
+
+    <resultMap id="communityGoodsResult" type="com.wanmi.ares.community.model.CommunityGoodsReport">
+        <id property="createDate" column="create_date"/>
+        <id property="storeId" column="store_id"/>
+        <id property="skuId" column="sku_id"/>
+        <result property="goodsInfoName" column="goods_info_name"/>
+        <result property="goodsInfoNo" column="goods_info_no"/>
+        <result property="goodsInfoImg" column="goods_info_img"/>
+        <result property="groupNum" column="group_num"/>
+        <result property="payOrderNum" column="pay_order_num"/>
+        <result property="paySkuNum" column="pay_sku_num"/>
+        <result property="payTotalPrice" column="pay_total_price"/>
+        <result property="assistOrderNum" column="assist_order_num"/>
+        <result property="assistSkuNum" column="assist_sku_num"/>
+        <result property="assistPayTotalPrice" column="assist_pay_total_price"/>
+        <result property="avgGroupSale" column="avg_group_sale"/>
+        <result property="assistRatio" column="assist_ratio"/>
+    </resultMap>
+
+    <resultMap id="communityOverviewResult" type="com.wanmi.ares.community.model.CommunityOverviewReport">
+        <id property="createDate" column="create_date"/>
+        <id property="storeId" column="store_id"/>
+        <result property="payOrderNum" column="pay_order_num"/>
+        <result property="payTotalPrice" column="pay_total_price"/>
+        <result property="returnNum" column="return_num"/>
+        <result property="returnTotalPrice" column="return_total_price"/>
+        <result property="customerNum" column="customer_num"/>
+        <result property="leaderNum" column="leader_num"/>
+        <result property="assistOrderNum" column="assist_order_num"/>
+        <result property="assistOrderTotalPrice" column="assist_order_total_price"/>
+        <result property="assistReturnNum" column="assist_return_num"/>
+        <result property="assistReturnTotalPrice" column="assist_return_total_price"/>
+        <result property="assistOrderRatio" column="assist_order_ratio"/>
+        <result property="leaderCustomerNum" column="leader_customer_num"/>
+        <result property="commissionReceived" column="commission_received"/>
+        <result property="commissionReceivedPickup" column="commission_received_pickup"/>
+        <result property="commissionReceivedAssist" column="commission_received_assist"/>
+        <result property="commissionPending" column="commission_pending"/>
+        <result property="commissionPendingPickup" column="commission_pending_pickup"/>
+        <result property="commissionPendingAssist" column="commission_pending_assist"/>
+        <result property="returnTradeCommission" column="return_trade_commission"/>
+        <result property="returnTradeCommissionAssist" column="return_trade_commission_assist"/>
+        <result property="returnTradeCommissionPickup" column="return_trade_commission_pickup"/>
+    </resultMap>
+
+    <sql id="overview">
+        select #{endDate}                               as create_time,
+               a.store_id                                 as store_id,
+               sum(a.pay_num)                             as pay_num,
+               sum(a.pay_total)                           as pay_total,
+               sum(a.return_num)                          as return_num,
+               sum(a.return_total)                        as return_total,
+               0                                          as customer_num,
+               0                                          as leader_num,
+               sum(a.assist_order_num)                    as assist_order_num,
+               sum(a.assist_order_total)                  as assist_order_total,
+               sum(a.assist_return_num)                   as assist_return_num,
+               sum(a.assist_return_total)                 as assist_return_total,
+               if(sum(a.pay_num) = 0, 0 ,sum(a.assist_order_num) / sum(a.pay_num)) as assist_order_ratio,
+               0                                          as leader_customer_num,
+               sum(a.commission_received)                 as commission_received,
+               sum(a.commission_received_pickup)          as commission_received_pickup,
+               sum(a.commission_received_assist)          as commission_received_assist,
+               sum(a.commission_pending)                  as commission_pending,
+               sum(a.commission_pending_pickup)           as commission_pending_pickup,
+               sum(a.commission_pending_assist)           as commission_pending_assist,
+        coalesce(sum(a.return_trade_commission),0)             as return_trade_commission,
+        coalesce(sum(a.return_trade_commission_assist),0)      as return_trade_commission_assist,
+        coalesce(sum(a.return_trade_commission_pickup),0)      as return_trade_commission_pickup
+        from replay_community_statistics a
+        <![CDATA[
+        where date_format(a.create_date, '%Y-%m-%d') <= date_format(#{endDate}, '%Y-%m-%d')
+          and date_format(a.create_date, '%Y-%m-%d') >= date_format(#{startDate}, '%Y-%m-%d')
+        ]]>
+        group by a.store_id
+    </sql>
+
+    <sql id="overviewBoss">
+        select #{endDate}                           as create_time,
+               -1                                     as store_id,
+               sum(d.pay_num)                         as pay_num,
+               sum(d.pay_total)                       as pay_total,
+               sum(d.return_num)                      as return_num,
+               sum(d.return_total)                    as return_total,
+               sum(d.cutomer_num)                     as cutomer_num,
+               sum(d.leader_num)                      as leader_num,
+               sum(d.assist_order_num)                as assist_order_num,
+               sum(d.assist_order_total)              as assist_order_total,
+               sum(d.assist_return_num)               as assist_return_num,
+               sum(d.assist_return_total)             as assist_return_total,
+               sum(d.assist_order_ratio)              as assist_order_ratio,
+               sum(d.leader_customer_num)             as leader_customer_num,
+               sum(d.commission_received)             as commission_received,
+               sum(d.commission_received_pickup)      as commission_received_pickup,
+               sum(d.commission_received_assist)      as commission_received_assist,
+               sum(d.commission_pending)              as commission_pending,
+               sum(d.commission_pending_pickup)       as commission_pending_pickup,
+               sum(d.commission_pending_assist)       as commission_pending_assist,
+        coalesce(sum(d.return_trade_commission),0)         as return_trade_commission,
+        coalesce(sum(d.return_trade_commission_assist),0)  as return_trade_commission_assist,
+        coalesce(sum(d.return_trade_commission_pickup),0)  as return_trade_commission_pickup
+        from (select a.pay_num                        as pay_num,
+                     a.pay_total                      as pay_total,
+                     a.return_num                     as return_num,
+                     a.return_total                   as return_total,
+                     0                                as cutomer_num,
+                     0                                as leader_num,
+                     a.assist_order_num               as assist_order_num,
+                     a.assist_order_total             as assist_order_total,
+                     a.assist_return_num              as assist_return_num,
+                     a.assist_return_total            as assist_return_total,
+                     if(a.pay_num = 0, 0, a.assist_order_num / a.pay_num) as assist_order_ratio,
+                     0                                as leader_customer_num,
+                     a.commission_received            as commission_received,
+                     a.commission_received_pickup     as commission_received_pickup,
+                     a.commission_received_assist     as commission_received_assist,
+                     a.commission_pending             as commission_pending,
+                     a.commission_pending_pickup      as commission_pending_pickup,
+                     a.commission_pending_assist      as commission_pending_assist,
+                     a.return_trade_commission        as return_trade_commission,
+                     a.return_trade_commission_assist as return_trade_commission_assist,
+                     a.return_trade_commission_pickup as return_trade_commission_pickup
+              from replay_community_statistics a
+        <![CDATA[
+              where date_format(a.create_date, '%Y-%m-%d') <= date_format(#{endDate}, '%Y-%m-%d')
+                and date_format(a.create_date, '%Y-%m-%d') >= date_format(#{startDate}, '%Y-%m-%d')
+        ]]>
+        union all
+              select 0                             as pay_num,
+                     0                             as pay_total,
+                     0                             as return_num,
+                     0                             as return_total,
+                     count(distinct b.customer_id) as cutomer_num,
+                     count(distinct b.leader_id)   as leader_num,
+                     0                             as assist_order_num,
+                     0                             as assist_order_total,
+                     0                             as assist_return_num,
+                     0                             as assist_return_total,
+                     0                             as assist_order_ratio,
+                     0                             as leader_customer_num,
+                     0                             as commission_received,
+                     0                             as commission_received_pickup,
+                     0                             as commission_received_assist,
+                     0                             as commission_pending,
+                     0                             as commission_pending_pickup,
+                     0                             as commission_pending_assist,
+                     0                             as return_trade_commission,
+                     0                             as return_trade_commission_assist,
+                     0                             as return_trade_commission_pickup
+              from replay_leader_trade_detail b
+        <![CDATA[
+              where date_format(b.create_time, '%Y-%m-%d') <= date_format(#{endDate}, '%Y-%m-%d')
+                and date_format(b.create_time, '%Y-%m-%d') >= date_format(#{startDate}, '%Y-%m-%d')
+        ]]>
+        union all
+              select 0                    as pay_num,
+                     0                    as pay_total,
+                     0                    as return_num,
+                     0                    as return_total,
+                     0                    as cutomer_num,
+                     0                    as leader_num,
+                     0                    as assist_order_num,
+                     0                    as assist_order_total,
+                     0                    as assist_return_num,
+                     0                    as assist_return_total,
+                     0                    as assist_order_ratio,
+                     count(c.customer_id) as leader_customer_num,
+                     0                    as commission_received,
+                     0                    as commission_received_pickup,
+                     0                    as commission_received_assist,
+                     0                    as commission_pending,
+                     0                    as commission_pending_pickup,
+                     0                    as commission_pending_assist,
+                     0                    as return_trade_commission,
+                     0                    as return_trade_commission_assist,
+                     0                    as return_trade_commission_pickup
+              from replay_community_statistics_customer c
+        <![CDATA[
+              where date_format(c.create_time, '%Y-%m-%d') <= date_format(#{endDate}, '%Y-%m-%d')
+                and date_format(c.create_time, '%Y-%m-%d') >= date_format(#{startDate}, '%Y-%m-%d')) d
+        ]]>
+    </sql>
+
+    <sql id="goods">
+        select date_sub(current_date, interval 1 day),
+               b.store_id,
+               b.sku_id,
+               d.goods_info_name,
+               d.goods_info_no,
+               d.goods_info_img,
+               coalesce(b.group_num, 0),
+               coalesce(c.pay_num, 0),
+               coalesce(c.num, 0),
+               coalesce(c.price, 0),
+               coalesce(c.assist_order_num, 0),
+               coalesce(c.assist_sku_num, 0),
+               coalesce(c.assist_order_total, 0),
+               if(b.group_num = 0, 0,c.num / b.group_num) as avg,
+        coalesce(c.assist_order_ratio, 0)
+        from (select e.store_id, a.sku_id, count(a.sku_id) as group_num
+            from replay_community_activity e
+            left join replay_community_sku_rel a on e.activity_id = a.activity_id
+            group by e.store_id, a.sku_id) b
+            left join (select b.sku_id,
+            count(distinct b.tid)                            as pay_num,
+            sum(b.num)                                       as num,
+            sum(b.split_price)                               as price,
+            sum(if(b.sales_type = 1, 1, 0))                  as assist_order_num,
+            sum(if(b.sales_type = 1, b.num, 0))              as assist_sku_num,
+            sum(if(b.sales_type = 1, b.split_price, 0))      as assist_order_total,
+            if(sum(b.num) = 0, 0,sum(if(b.sales_type = 1, b.num, 0)) / sum(b.num)) as assist_order_ratio
+            from replay_trade_community_sku b
+        <![CDATA[
+            where date_format(b.create_time, '%Y-%m-%d') <= date_format(#{endDate}, '%Y-%m-%d')
+            and date_format(b.create_time, '%Y-%m-%d') >= date_format(#{startDate}, '%Y-%m-%d')
+        ]]>
+        group by b.sku_id) c on b.sku_id = c.sku_id
+            left join replay_goods_info d on b.sku_id = d.goods_info_id
+    </sql>
+
+    <sql id="leader">
+        select date_sub(current_date, interval 1 day),
+        <if test="isBoss == 0">
+            a.store_id,
+        </if>
+        <if test="isBoss == 1">
+            -1 as store_id,
+        </if>
+        a.leader_id,
+        b.customer_id,
+        c.customer_account,
+        b.customer_name,
+        sum(a.pickup_service_order_num),
+        sum(a.pickup_service_order_total),
+        sum(a.assist_order_num),
+        sum(a.assist_order_total)
+        from replay_community_statistics a
+        left join replay_customer_detail b on a.leader_customer_id = b.customer_id
+        left join replay_customer c on c.customer_id = a.leader_customer_id
+        <![CDATA[
+            where date_format(a.create_date, '%Y-%m-%d') <= date_format(#{endDate}, '%Y-%m-%d')
+            and date_format(a.create_date, '%Y-%m-%d') >= date_format(#{startDate}, '%Y-%m-%d') and a.leader_id != '-1'
+        ]]>
+        group by
+        <if test="isBoss == 0">
+            a.store_id,
+        </if>
+        a.leader_id,b.customer_id,c.customer_account,b.customer_name
+    </sql>
+
+    <sql id="customer">
+        select date_sub(current_date, interval 1 day),
+               a.store_id,
+               a.customer_id,
+               b.customer_name,
+               count(a.tid)                                as pay_num,
+               sum(a.total_price)                          as price,
+               sum(if(a.sales_type = 1, 1, 0))             as assist_order_num,
+               sum(if(a.sales_type = 1, a.total_price, 0)) as assist_order_total
+        from replay_trade_community_customer a
+                 left join replay_customer_detail b on a.customer_id = b.customer_id
+        <![CDATA[
+        where date_format(a.create_time, '%Y-%m-%d') <= date_format(#{endDate}, '%Y-%m-%d')
+          and date_format(a.create_time, '%Y-%m-%d') >= date_format(#{startDate}, '%Y-%m-%d')
+        ]]>
+        group by a.store_id, a.customer_id, b.customer_name
+    </sql>
+
+    <insert id="insertCommunityOverviewDay">
+        insert into community_overview_day(create_date, store_id, pay_order_num, pay_total_price, return_num,
+        return_total_price, customer_num,
+        leader_num, assist_order_num, assist_order_total_price, assist_return_num,
+        assist_return_total_price, assist_order_ratio, leader_customer_num,
+        commission_received,
+        commission_received_pickup, commission_received_assist, commission_pending,
+        commission_pending_pickup, commission_pending_assist, return_trade_commission,
+        return_trade_commission_assist, return_trade_commission_pickup)
+        <include refid="overview"/>
+    </insert>
+
+    <insert id="insertCommunityOverviewDayBoss">
+        insert into community_overview_day(create_date, store_id, pay_order_num, pay_total_price, return_num,
+        return_total_price, customer_num,
+        leader_num, assist_order_num, assist_order_total_price, assist_return_num,
+        assist_return_total_price, assist_order_ratio, leader_customer_num,
+        commission_received,
+        commission_received_pickup, commission_received_assist, commission_pending,
+        commission_pending_pickup, commission_pending_assist, return_trade_commission,
+        return_trade_commission_assist, return_trade_commission_pickup)
+        <include refid="overviewBoss"/>
+    </insert>
+
+
+    <insert id="insertCommunityGoodsDay">
+        insert into community_goods_day(create_date, store_id, sku_id, goods_info_name, goods_info_no, goods_info_img,
+        group_num, pay_order_num, pay_sku_num, pay_total_price, assist_order_num,
+        assist_sku_num, assist_pay_total_price, avg_group_sale, assist_ratio)
+        <include refid="goods"/>
+    </insert>
+
+    <insert id="insertCommunityGoodsSeven">
+        insert into community_goods_seven(create_date, store_id, sku_id, goods_info_name, goods_info_no, goods_info_img,
+        group_num, pay_order_num, pay_sku_num, pay_total_price, assist_order_num,
+        assist_sku_num, assist_pay_total_price, avg_group_sale, assist_ratio)
+        <include refid="goods"/>
+    </insert>
+
+    <insert id="insertCommunityGoodsThirty">
+        insert into community_goods_thirty(create_date, store_id, sku_id, goods_info_name, goods_info_no,
+        goods_info_img,
+        group_num, pay_order_num, pay_sku_num, pay_total_price, assist_order_num,
+        assist_sku_num, assist_pay_total_price, avg_group_sale, assist_ratio)
+        <include refid="goods"/>
+    </insert>
+
+    <insert id="insertCommunityGoodsMonth">
+        insert into community_goods_month(create_date, store_id, sku_id, goods_info_name, goods_info_no, goods_info_img,
+        group_num, pay_order_num, pay_sku_num, pay_total_price, assist_order_num,
+        assist_sku_num, assist_pay_total_price, avg_group_sale, assist_ratio)
+        <include refid="goods"/>
+    </insert>
+
+    <insert id="insertCommunityLeaderDay">
+        insert into community_leader_day(create_date, store_id, leader_id, leader_customer_id, leader_account, leader_name,
+        service_order_num, service_order_total_price, assist_order_num,
+        assist_order_total_price)
+        <include refid="leader"/>
+    </insert>
+
+    <insert id="insertCommunityLeaderSeven">
+        insert into community_leader_seven(create_date, store_id, leader_id, leader_customer_id, leader_account,
+        leader_name,
+        service_order_num, service_order_total_price, assist_order_num,
+        assist_order_total_price)
+        <include refid="leader"/>
+    </insert>
+
+    <insert id="insertCommunityLeaderThirty">
+        insert into community_leader_thirty(create_date, store_id, leader_id, leader_customer_id, leader_account,
+        leader_name,
+        service_order_num, service_order_total_price, assist_order_num,
+        assist_order_total_price)
+        <include refid="leader"/>
+    </insert>
+
+    <insert id="insertCommunityLeaderMonth">
+        insert into community_leader_month(create_date, store_id, leader_id, leader_customer_id, leader_account,
+        leader_name,
+        service_order_num, service_order_total_price, assist_order_num,
+        assist_order_total_price)
+        <include refid="leader"/>
+    </insert>
+
+    <insert id="insertCommunityCustomerDay">
+        insert into community_customer_day(create_date, store_id, customer_id, customer_name, pay_order_num, pay_total_price,
+        assist_order_num, assist_order_total_price)
+        <include refid="customer"/>
+    </insert>
+
+    <insert id="insertCommunityCustomerSeven">
+        insert into community_customer_seven(create_date, store_id, customer_id, customer_name, pay_order_num,
+        pay_total_price,
+        assist_order_num, assist_order_total_price)
+        <include refid="customer"/>
+    </insert>
+
+    <insert id="insertCommunityCustomerThirty">
+        insert into community_customer_thirty(create_date, store_id, customer_id, customer_name, pay_order_num,
+        pay_total_price,
+        assist_order_num, assist_order_total_price)
+        <include refid="customer"/>
+    </insert>
+
+    <insert id="insertCommunityCustomerMonth">
+        insert into community_customer_month(create_date, store_id, customer_id, customer_name, pay_order_num,
+        pay_total_price,
+        assist_order_num, assist_order_total_price)
+        <include refid="customer"/>
+    </insert>
+
+    <delete id="delCommunityOverviewDay">
+        delete from community_overview_day where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate},'%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityGoodsDay">
+        delete from community_goods_day where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate}, '%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityGoodsSeven">
+        delete from community_goods_seven where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate}, '%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityGoodsThirty">
+        delete from community_goods_thirty where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate},'%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityGoodsMonth">
+        delete from community_goods_month where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate}, '%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityLeaderDay">
+        delete from community_leader_day where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate}, '%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityLeaderSeven">
+        delete from community_leader_seven where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate},'%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityLeaderThirty">
+        delete from community_leader_thirty where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate}, '%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityLeaderMonth">
+        delete from community_leader_month where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate},'%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityCustomerDay">
+        delete from community_customer_day where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate},'%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityCustomerSeven">
+        delete from community_customer_seven where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate}, '%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityCustomerThirty">
+        delete from community_customer_thirty where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate}, '%Y-%m-%d')
+    </delete>
+
+    <delete id="delCommunityCustomerMonth">
+        delete from community_customer_month where date_format(create_date, '%Y-%m-%d') = date_format(#{startDate}, '%Y-%m-%d')
+    </delete>
+
+    <select id="queryCommunityOverviewDayByYesterday" resultMap="communityOverviewResult">
+        select * from community_overview_day a where a.store_id != -1 order by a.store_id
+    </select>
+
+    <select id="queryCustomerNum" resultType="java.lang.Long">
+        select count(distinct a.customer_id) from replay_leader_trade_detail a
+    </select>
+
+    <select id="queryLeaderNum" resultType="java.lang.Long">
+        select count(distinct a.leader_id) from replay_leader_trade_detail a where leader_id != '-1'
+    </select>
+
+    <select id="queryCommunityOverview" resultMap="communityOverviewResult">
+        select * from community_overview a where a.store_id in
+        <foreach collection="list" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        order by a.store_id
+    </select>
+
+    <insert id="insertCommunityOverview">
+        insert into community_overview (create_date, store_id, pay_order_num, pay_total_price, return_num,
+        return_total_price, customer_num, leader_num, assist_order_num, assist_order_total_price, assist_return_num,
+        assist_return_total_price, assist_order_ratio, leader_customer_num, commission_received, commission_received_pickup,
+        commission_received_assist, commission_pending, commission_pending_pickup, commission_pending_assist) values
+        <foreach collection="list" separator="," item="item">
+            (#{item.createDate},#{item.storeId},#{item.payOrderNum},#{item.payTotalPrice},#{item.returnNum},
+            #{item.returnTotalPrice},#{item.customerNum},#{item.leaderNum},#{item.assistOrderNum},
+            #{item.assistOrderTotalPrice},#{item.assistReturnNum},#{item.assistReturnTotalPrice},
+            #{item.assistOrderRatio},#{item.leaderCustomerNum},#{item.commissionReceived},
+            #{item.commissionReceivedPickup},#{item.commissionReceivedAssist},#{item.commissionPending},
+            #{item.commissionPendingPickup},#{item.commissionPendingAssist})
+        </foreach>
+    </insert>
+
+    <delete id="delCommunityOverview">
+        delete from community_overview where store_id in
+        <foreach collection="list" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+    </delete>
+
+    <select id="queryForSum" resultMap="communityOverviewResult">
+        select curdate()                                 as create_date
+        , -1                                             as store_id
+        , coalesce(sum(a.pay_order_num), 0)              as pay_order_num
+        , coalesce(sum(a.pay_total_price), 0)            as pay_total_price
+        , coalesce(sum(a.return_num), 0)                 as return_num
+        , coalesce(sum(a.return_total_price), 0)         as return_total_price
+        , coalesce(sum(a.customer_num), 0)               as customer_num
+        , coalesce(sum(a.leader_num), 0)                 as leader_num
+        , coalesce(sum(a.assist_order_num), 0)           as assist_order_num
+        , coalesce(sum(a.assist_order_total_price), 0)   as assist_order_total_price
+        , coalesce(sum(a.assist_return_num), 0)          as assist_return_num
+        , coalesce(sum(a.assist_return_total_price), 0)  as assist_return_total_price
+        , coalesce(sum(a.assist_order_ratio), 0)         as assist_order_ratio
+        , coalesce(sum(a.leader_customer_num), 0)        as leader_customer_num
+        , coalesce(sum(a.commission_received), 0)        as commission_received
+        , coalesce(sum(a.commission_received_pickup), 0) as commission_received_pickup
+        , coalesce(sum(a.commission_received_assist), 0) as commission_received_assist
+        , coalesce(sum(a.commission_pending), 0)         as commission_pending
+        , coalesce(sum(a.commission_pending_pickup), 0)  as commission_pending_pickup
+        , coalesce(sum(a.commission_pending_assist), 0)  as commission_pending_assist
+        , coalesce(sum(a.return_trade_commission), 0)    as return_trade_commission
+        , coalesce(sum(a.return_trade_commission_assist), 0)  as return_trade_commission_assist
+        , coalesce(sum(a.return_trade_commission_pickup), 0)  as return_trade_commission_pickup
+        from community_overview a
+        where a.store_id != -1
+    </select>
+
+    <select id="queryByBoss" resultMap="communityOverviewResult">
+        select create_date,
+        store_id,
+        pay_order_num,
+        pay_total_price,
+        return_num,
+        return_total_price,
+        customer_num,
+        leader_num,
+        assist_order_num,
+        assist_order_total_price,
+        assist_return_num,
+        assist_return_total_price,
+        assist_order_ratio,
+        leader_customer_num,
+        commission_received,
+        commission_received_pickup,
+        commission_received_assist,
+        (commission_pending - return_trade_commission - commission_received) as commission_pending,
+        (commission_pending_pickup - return_trade_commission_pickup - commission_received_pickup) as commission_pending_pickup,
+        (commission_pending_assist - return_trade_commission_assist - commission_received_assist) as commission_pending_assist,
+        return_trade_commission,
+        return_trade_commission_assist,
+        return_trade_commission_pickup
+        from s2b_statistics.community_overview a
+        where a.store_id = -1
+    </select>
+
+    <delete id="delOverviewForAll">
+        delete from community_overview
+    </delete>
+
+    <insert id="insertOverviewForAll">
+        insert into community_overview(create_date, store_id, pay_order_num, pay_total_price, return_num,
+        return_total_price, customer_num, leader_num, assist_order_num,
+        assist_order_total_price, assist_return_num, assist_return_total_price,
+        assist_order_ratio, leader_customer_num, commission_received,
+        commission_received_pickup, commission_received_assist,
+        commission_pending, commission_pending_pickup, commission_pending_assist, return_trade_commission,
+        return_trade_commission_assist, return_trade_commission_pickup)
+        select curdate(),
+        store_id,
+        sum(pay_order_num),
+        sum(pay_total_price),
+        sum(return_num),
+        sum(return_total_price),
+        sum(b.customerCount),
+        sum(c.leaderCount),
+        sum(assist_order_num),
+        sum(assist_order_total_price),
+        sum(assist_return_num),
+        sum(assist_return_total_price),
+        if(sum(pay_order_num) = 0, 0, sum(assist_order_num) / sum(pay_order_num)) as assist_order_ratio,
+        sum(d.customerCount),
+        sum(commission_received),
+        sum(commission_received_pickup),
+        sum(commission_received_assist),
+        sum(commission_pending),
+        sum(commission_pending_pickup),
+        sum(commission_pending_assist),
+        coalesce(sum(return_trade_commission),0),
+        coalesce(sum(return_trade_commission_assist),0),
+        coalesce(sum(return_trade_commission_pickup),0)
+        from community_overview_day a
+        left join (select -1 as storeId, count(distinct customer_id) as customerCount
+        from replay_leader_trade_detail) b on a.store_id = b.storeId and a.create_date = curdate()
+        left join (select -1 as storeId, count(distinct leader_id) as leaderCount
+        from replay_leader_trade_detail
+        where leader_id != '-1') c on a.store_id = c.storeId and a.create_date = curdate()
+        left join (select -1 as storeId, count(customer_id) as customerCount
+        from replay_community_statistics_customer) d on a.store_id = d.storeId and a.create_date = curdate()
+        group by store_id
+    </insert>
+</mapper>

@@ -1,0 +1,16 @@
+@startuml
+start
+:调用微服务退单详情接口;
+if(退单是否存在) then(no)
+:返回错误;
+stop;
+endif;
+if(退单是否属于该商户下的) then(no)
+:返回错误;
+stop;
+endif;
+:转换退单商品清单列表;
+:转换退单赠品清单列表;
+:返回清单结果;
+stop
+@enduml

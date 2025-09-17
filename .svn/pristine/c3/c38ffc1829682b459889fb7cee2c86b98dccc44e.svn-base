@@ -1,0 +1,26 @@
+package com.wanmi.sbc.order.trade.model.mapper;
+
+import com.wanmi.sbc.order.bean.dto.TradeItemDTO;
+import com.wanmi.sbc.order.bean.vo.TradeItemVO;
+import com.wanmi.sbc.order.trade.model.entity.TradeItem;
+import org.mapstruct.Builder;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mappings;
+
+import java.util.List;
+
+@Mapper(componentModel = "spring",builder = @Builder(disableBuilder = true))
+public interface TradeItemMapper {
+
+
+    @Mappings({})
+    TradeItem  tradeItemDTOToTradeItem(TradeItemDTO tradeItemDTO);
+
+    @Mappings({})
+    List<TradeItem> tradeItemDTOsToTradeItems(List<TradeItemDTO> tradeItemDTO);
+
+    @Mappings({})
+    TradeItemVO tradeItemToTradeItemVO(TradeItem TradeItem);
+
+    List<TradeItemVO> tradeItemsToTradeItemVOs(List<TradeItem> TradeItems);
+}

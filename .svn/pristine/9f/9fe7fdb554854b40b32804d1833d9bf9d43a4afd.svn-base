@@ -1,0 +1,88 @@
+## 1、boss 的 jwt.excluded-urls 新增 微信回调接口   
+,/wx/callback/*
+
+
+## 2、Boss nacos新增配置（微信小程序管理需要完善对应信息： 路径是：开发管理-开发设置-消息推送，开通消息推送）
+```properties
+wechat.proxy.sdk.appId=wx99e4b577c91bbadd
+wechat.proxy.sdk.token=WanMi
+wechat.proxy.sdk.encodingAesKey=RrCsP8PQxWTfXasKhzxHR9QlcUfZByDGnHTCiCT2mWs
+```
+
+## 3、goods nacos
+```properties
+wechat.goods.path=pages/package-B/goods/goods-details/index?skuId={goodsInfoId}&businessModel=sbc
+```
+## 4、vas nacos 
+```properties
+#视频号配置
+wechat.video.order.path=/package-C/order/order-detail/index?id=%s
+wechat.video.goods.img.path=https://mmecimage.cn/p/wx99e4b577c91bbadd/HMYEIBv5Bk_wCfjy4aVguPVStHG-cLK0JW2AfWrfriw
+wechat.video.goods.path=/package-C/order/order-detail/index?id=%s
+```
+
+## 5、dbReplay的/conf/mongo/data/mapping目录下映射文件需添加字段，具体如下：
+### trade_mapping.json添加：
+```properties
+{
+"field": "videoUser.videoName",
+"replayField": "video_name",
+"dataType": 12
+},
+{
+"field": "videoUser.videoAccount",
+"replayField": "video_account",
+"dataType": 12
+},
+{
+"field": "sellPlatformType",
+"replayField": "sell_platform_type",
+"dataType": 4,
+"enumType": {
+"WECHAT_VIDEO": 0
+}
+},
+{
+"field": "sceneGroup",
+"replayField": "scene_group",
+"dataType": -5
+}
+```
+
+### return_order_mapping.json添加：
+```properties
+{
+"field": "videoUser.videoName",
+"replayField": "video_name",
+"dataType": 12
+},
+{
+"field": "videoUser.videoAccount",
+"replayField": "video_account",
+"dataType": 12
+},
+{
+"field": "sellPlatformType",
+"replayField": "sell_platform_type",
+"dataType": 4,
+"enumType": {
+"WECHAT_VIDEO": 0
+}
+},
+{
+"field": "sceneGroup",
+"replayField": "scene_group",
+"dataType": -5
+}
+```
+
+
+## 6、dbReplay的配置文件topics.canal项追加视频号监听表：
+```properties
+sbc-customer.wechat_video_user
+```
+
+## 7、canal配置canal.instance.filter.regex项追加视频号监听表：
+```properties
+sbc-customer.wechat_video_user
+```

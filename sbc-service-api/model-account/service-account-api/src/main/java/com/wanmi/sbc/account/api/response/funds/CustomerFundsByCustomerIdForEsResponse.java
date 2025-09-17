@@ -1,0 +1,25 @@
+package com.wanmi.sbc.account.api.response.funds;
+
+import com.wanmi.sbc.account.bean.vo.CustomerFundsForEsVO;
+import com.wanmi.sbc.common.util.SensitiveUtils;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+
+/**
+ * 会员资金-根据会员ID查询
+ * @author: yangzhen
+ * @createDate: 2020/12/16 11:06
+ * @version: 1.0
+ */
+@EqualsAndHashCode(callSuper = true)
+@Schema
+@Data
+@Builder
+public class CustomerFundsByCustomerIdForEsResponse extends CustomerFundsForEsVO implements Serializable {
+
+
+}

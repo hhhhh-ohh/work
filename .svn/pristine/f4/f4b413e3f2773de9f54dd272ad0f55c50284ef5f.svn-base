@@ -1,0 +1,10 @@
+@startuml
+start
+
+while(true)
+note right: 定时任务每小时执行一次
+    :以当前时间的整点为依据，过期批次id = 查询销售期等于该整点的批次id;
+    :修改未发放且批次id在过期批次id中的卡密的状态为已失效;
+endwhile
+end
+@enduml1

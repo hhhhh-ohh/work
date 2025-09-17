@@ -1,0 +1,10 @@
+1、dbreplay服务配置文件修改application.properties
+topics.canal增加配置信息：sbc-goods.goods_evaluate,sbc-marketing.distribution_record,sbc-goods.goods_share_record,sbc-customer.customer_sign_record_action,sbc-customer.store_share_record,sbc-customer.store_customer_follow_action,sbc-customer.invite_new_record,sbc-customer.store_evaluate
+
+2、canal配置文件修改 instance.properties
+canal.instance.filter.regex增加配置信息：sbc-goods.goods_evaluate,sbc-marketing.distribution_record,sbc-goods.goods_share_record,sbc-customer.customer_sign_record_action,sbc-customer.store_share_record,sbc-customer.store_customer_follow_action,sbc-customer.invite_new_record,sbc-customer.store_evaluate
+
+3、boss服务配置文件修改application.properties增加配置项：（修复短信发送mq消费问题）
+spring.cloud.stream.bindings.sms-send-output.destination=q.sms.send.data.request
+spring.cloud.stream.bindings.sms-send-input.destination=q.sms.send.data.request
+spring.cloud.stream.rabbit.bindings.sms-send-input.consumer.acknowledge-mode=MANUAL

@@ -1,0 +1,23 @@
+1. 初始化ES，至boss端, 浏览器输入地址 /es-init页面下执行相关功能.
+2. es数据过大数量限制, 清理脚本至"es操作执行命令.md"中查看, 清理脚本同时备份一份至db文件夹下.
+3. 二级域名调整方法迁移入wiki中, 需自己查看, 权限有限.(另外需要调整证书等文件的地址)
+4. 目前已经清理了mysql库中的废弃表, 至"废弃表删除脚本.sql"中查看.
+5. 微服务linkedmall目前已经合并进入vas微服务中, 项目废弃, 需要自行删除.
+6. 本次改造涉及改动的项目, 至"改动项目说明.md"中查看.
+7. seata-server版本需升级至1.4.x版本(parent包升级至2.4.4-RELEASE即可),所有微服务中Seata分布式事务代理配置统一设置为: seata.enableAutoDataSourceProxy=true
+8.sharding与seata结合后，MySQL建表时暂不支持联合主键
+9.vas服务启动前需要在nacos中添加linkedmall配置，配置信息如下(并删除nacos中linkedmall配置项):
+    REGION_ID=cn-hangzhou
+    ACCESS_KEY_ID=LTAI4Fz76xvgXnxSqEa6DA92
+    ACCESS_KEY_SECRET=cqn1Q4ooB9igYN7NPoQ9Y4qrEyyBwZ
+    linkedmall.publicKey=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmB2d4NasdZEQ//lg7/h7ZFwuiyBn86a9SoE0gfquIkdFmEv2+8dj7AwxlsXidzxI4Ta9zkiZFHqgC3bmtlRuF6BgtS1+ubs7ksd3YG+kyk+H6dAb6LnhGf7rv7PTUxSb8WN8ytZbl/5li2NYJva2igiWhOQ9VITPFobYcbZLiaaRfRRUmkPGgbuP2ScgrKQJB6cy34/wpc0bYMoqLETTCKctZRnfX1G1d1E8meCKdWWHmQqsRFkA8+OxzBKMeKhrJYT3fa2lDdA9yQDQsWj+jbmMd42NE6VnOQWpI/afsCNalFBVOM/RTYY2yLjhmX20P0ytVfs4Ep1h2SM4g9PP8wIDAQAB
+    linkedmall.signatureAlgorithm=SHA256withRSA
+    linkedmall.keyAlgorithm=RSA
+10.elastic服务启动前需要在nacos中添加es配置，并在common.properties删除，配置信息如下:
+       #### ES配置
+       spring.data.elasticsearch.cluster-name=elasticsearch
+       spring.data.elasticsearch.cluster-nodes=172.19.25.63:9300
+       spring.elasticsearch.rest.uris=http://172.19.25.63:9200
+       
+       
+ 

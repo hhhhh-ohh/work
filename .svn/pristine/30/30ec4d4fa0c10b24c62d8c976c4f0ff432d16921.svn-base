@@ -1,0 +1,70 @@
+{
+  "replayTable" : "replay_appointment_record",
+  "dispatch" : null,
+  "pk": [],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "id",
+        "dataType": 12
+      },
+      {
+        "field": "buyerId",
+        "replayField": "buyer_id",
+        "dataType": 12
+      },
+      {
+        "field": "appointmentSaleInfo.activityName",
+        "replayField": "activity_name",
+        "dataType": 12
+      },
+      {
+        "field": "appointmentSaleInfo.appointmentType",
+        "replayField": "appointment_type",
+        "dataType": 4
+      },
+      {
+        "field": "appointmentSaleGoodsInfo.appointmentSaleId",
+        "replayField": "appointment_sale_id",
+        "dataType": -5
+      },
+      {
+        "field": "appointmentSaleGoodsInfo.price",
+        "replayField": "price",
+        "dataType": 3
+      },
+      {
+        "field": "appointmentSaleGoodsInfo.goodsInfoId",
+        "replayField": "goods_info_id",
+        "dataType": 12
+      },
+      {
+        "field": "appointmentSaleGoodsInfo.goodsId",
+        "replayField": "goods_id",
+        "dataType": 12
+      },
+      {
+        "field": "appointmentSaleGoodsInfo.skuName",
+        "replayField": "sku_name",
+        "dataType": 12
+      },
+      {
+        "field": "appointmentSaleGoodsInfo.storeId",
+        "replayField": "store_id",
+        "dataType": -5
+      },
+      {
+        "field": "supplier.supplierId",
+        "replayField": "company_id",
+        "dataType": -5
+      },
+      {
+        "field": "createTime",
+        "replayField": "create_time",
+        "dataType": 93
+      }
+    ],
+    "arrayData": {}
+  }
+}

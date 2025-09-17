@@ -1,0 +1,39 @@
+
+1. nacos配置
+sbc-service-elastic.properties增加如下配置
+   wm.elasticsearch.analyzer=wm_standard
+   
+sbc-service-empower.properties增加如下配置
+    vop.pool.core=60
+    vop.pool.max=500
+    vop.pool.queue=60
+    vop.pool.keepAlive=60
+    vop.pool.name=vop-task-
+   
+2、esGoodsInfo.json 、esGoods.json 、esPointsGoodsInfo.json
+
+   "analyzer": "ik_max_word" 替换成  "analyzer": "wm_standard"
+   并且增加   "norms": false
+   
+   增加了商品副标题字段
+    "goodsSubtitle": {
+        "analyzer": "wm_standard",
+        "norms": false,
+        "type": "text"
+    },
+
+    
+
+3、服务器安装新的分词器  elasticsearch-analysis-ansj-6.4.3.0-bugfix-ALPHA
+   联系运维进行安装
+
+4、更新完成需要操作删除原有es结构 然后重新初始化数据
+    curl -XDELETE localhost:9200/es_goods
+    curl -XDELETE localhost:9200/es_goods_info
+    curl -XDELETE localhost:9200/es_points_goods_info
+
+    o2o环境还需要执行如下
+
+    curl -XDELETE localhost:9200/es_o2o_goods_info
+    curl -XDELETE localhost:9200/es_o2o_goods
+

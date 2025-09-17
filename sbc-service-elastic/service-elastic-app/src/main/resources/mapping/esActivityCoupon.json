@@ -1,0 +1,112 @@
+{
+  "properties": {
+    "id": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "scopeType": {
+      "type": "integer"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "couponId": {
+      "type": "keyword"
+    },
+    "activityId": {
+      "type": "keyword"
+    },
+    "joinLevelType": {
+      "type": "integer"
+    },
+    "joinLevels": {
+      "type": "keyword"
+    },
+    "pauseFlag": {
+      "type": "integer"
+    },
+    "pluginType": {
+      "type": "integer"
+    },
+    "auditState": {
+      "type": "keyword"
+    },
+    "activityStartTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "activityEndTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "couponName": {
+      "type": "keyword"
+    },
+    "couponType": {
+      "type": "integer"
+    },
+    "couponMarketingType": {
+      "type": "integer"
+    },
+    "couponDiscountMode": {
+      "type": "integer"
+    },
+    "maxDiscountLimit": {
+      "index": false,
+      "type": "double"
+    },
+    "platformFlag": {
+      "type": "integer"
+    },
+    "participateType": {
+      "type": "integer"
+    },
+    "denomination": {
+      "type": "double"
+    },
+    "rangeDayType": {
+      "type": "integer"
+    },
+    "startTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "endTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "effectiveDays": {
+      "index": false,
+      "type": "integer"
+    },
+    "fullBuyType": {
+      "index": false,
+      "type": "integer"
+    },
+    "fullBuyPrice": {
+      "index": false,
+      "type": "double"
+    },
+    "storeIds": {
+      "type": "keyword"
+    },
+    "couponCateIds": {
+      "type": "keyword"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "hasLeft": {
+      "type": "integer"
+    },
+    "totalCount": {
+      "type": "long"
+    }
+  }
+}

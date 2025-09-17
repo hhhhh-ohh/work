@@ -1,0 +1,252 @@
+package com.wanmi.sbc.order.api.request.smallorder;
+
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+
+@Schema
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SmallOrderRequest implements Serializable {
+
+
+
+    private String orderSn;
+
+    private String phone;
+
+    private BigDecimal amount;
+
+    private BigDecimal orderAmount;
+
+    private BigDecimal discountAmount;
+
+    private BigDecimal postAge;
+
+    private Date createTime;
+
+    private Date paymentTime;
+
+
+    private List<MOrderDetailRetail> mOrderDetailRetailList;
+
+    private MOrderAddressRetail mOrderAddressRetail;
+
+    /**
+     * 商品信息实体
+     */
+    public static class MOrderDetailRetail {
+
+        private String skuId;
+
+        private BigDecimal price;
+        private Integer num;
+        private BigDecimal amount;
+        private BigDecimal discountAmount;
+        private String badgeCode;
+
+        public String getBadgeCode() {
+            return badgeCode;
+        }
+        public void setBadgeCode(String badgeCode) {
+            this.badgeCode = badgeCode;
+        }
+        public String getSkuId() {
+            return skuId;
+        }
+
+        public void setSkuId(String skuId) {
+            this.skuId = skuId;
+        }
+
+        public BigDecimal getPrice() {
+            return price;
+        }
+
+        public void setPrice(BigDecimal price) {
+            this.price = price;
+        }
+
+        public Integer getNum() {
+            return num;
+        }
+
+        public void setNum(Integer num) {
+            this.num = num;
+        }
+
+        public BigDecimal getAmount() {
+            return amount;
+        }
+
+        public void setAmount(BigDecimal amount) {
+            this.amount = amount;
+        }
+
+        public BigDecimal getDiscountAmount() {
+            return discountAmount;
+        }
+
+        public void setDiscountAmount(BigDecimal discountAmount) {
+            this.discountAmount = discountAmount;
+        }
+    }
+
+    /**
+     * 商品信息实体
+     */
+    public static class MOrderAddressRetail {
+
+        private String tel;//手机号
+
+        private String province;//省
+
+        private String city;//市
+
+        private String area;//区
+
+        private String address;//详细地址
+
+        private String consignee;//收件人
+
+        private Integer addressId;
+
+        public String getTel() {
+            return tel;
+        }
+
+        public void setTel(String tel) {
+            this.tel = tel;
+        }
+
+        public String getProvince() {
+            return province;
+        }
+
+        public void setProvince(String province) {
+            this.province = province;
+        }
+
+        public String getCity() {
+            return city;
+        }
+
+        public void setCity(String city) {
+            this.city = city;
+        }
+
+        public String getArea() {
+            return area;
+        }
+
+        public void setArea(String area) {
+            this.area = area;
+        }
+
+        public String getAddress() {
+            return address;
+        }
+
+        public void setAddress(String address) {
+            this.address = address;
+        }
+
+        public String getConsignee() {
+            return consignee;
+        }
+
+        public void setConsignee(String consignee) {
+            this.consignee = consignee;
+        }
+
+        public Integer getAddressId() {
+            return addressId;
+        }
+
+        public void setAddressId(Integer addressId) {
+            this.addressId = addressId;
+        }
+    }
+
+    public String getOrderSn() {
+        return orderSn;
+    }
+
+    public void setOrderSn(String orderSn) {
+        this.orderSn = orderSn;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public BigDecimal getOrderAmount() {
+        return orderAmount;
+    }
+
+    public void setOrderAmount(BigDecimal orderAmount) {
+        this.orderAmount = orderAmount;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public Date getPaymentTime() {
+        return paymentTime;
+    }
+
+    public void setPaymentTime(Date paymentTime) {
+        this.paymentTime = paymentTime;
+    }
+
+    public List<MOrderDetailRetail> getmOrderDetailRetailList() {
+        return mOrderDetailRetailList;
+    }
+
+    public void setmOrderDetailRetailList(List<MOrderDetailRetail> mOrderDetailRetailList) {
+        this.mOrderDetailRetailList = mOrderDetailRetailList;
+    }
+
+    public MOrderAddressRetail getmOrderAddressRetail() {
+        return mOrderAddressRetail;
+    }
+
+    public void setmOrderAddressRetail(MOrderAddressRetail mOrderAddressRetail) {
+        this.mOrderAddressRetail = mOrderAddressRetail;
+    }
+}

@@ -1,0 +1,774 @@
+package com.wanmi.sbc.order.provider.impl.orderperformance;
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.base.MicroServicePage;
+import com.wanmi.sbc.common.util.KsBeanUtil;
+import com.wanmi.sbc.customer.api.provider.agent.AgentQueryProvider;
+import com.wanmi.sbc.customer.api.provider.detail.CustomerDetailQueryProvider;
+import com.wanmi.sbc.customer.api.request.agent.GetAgentRequest;
+import com.wanmi.sbc.customer.api.request.detail.CustomerDetailListByAgentUniqueCodeRequest;
+import com.wanmi.sbc.customer.api.response.agent.GetAgentResponse;
+import com.wanmi.sbc.customer.api.response.detail.CustomerDetailListByConditionResponse;
+import com.wanmi.sbc.customer.bean.vo.CustomerDetailVO;
+import com.wanmi.sbc.order.api.provider.orderperformance.OrderPerformanceQueryProvider;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceByUniqueCodesRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceModifyRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformancePageRequest;
+import com.wanmi.sbc.order.api.request.orderperformance.OrderPerformanceSummaryRequest;
+import com.wanmi.sbc.order.api.response.orderperformance.GetSchooluUniformSalesDataResponse;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceDetailSummaryResponse;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceSummaryNewResponse;
+import com.wanmi.sbc.order.api.response.orderperformance.OrderPerformanceSummaryResponse;
+import com.wanmi.sbc.order.bean.vo.OrderPerformanceVO;
+import com.wanmi.sbc.order.orderperformance.model.root.OrderPerformance;
+import com.wanmi.sbc.order.orderperformance.model.root.OrderPerformanceDetail;
+import com.wanmi.sbc.order.orderperformance.service.OrderPerformanceDetailService;
+import com.wanmi.sbc.order.orderperformance.service.OrderPerformanceService;
+import com.wanmi.sbc.order.returnorder.model.root.ReturnOrder;
+import com.wanmi.sbc.order.returnorder.service.ReturnOrderService;
+import com.wanmi.sbc.order.trade.model.root.Trade;
+import com.wanmi.sbc.order.trade.service.TradeService;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * @Author: ZhangLingKe
+ * @Description:
+ * @Date: 2018-12-03 10:44
+ */
+@Slf4j
+@Validated
+@RestController
+public class OrderPerformanceQueryController implements OrderPerformanceQueryProvider {
+
+    @Autowired
+    private OrderPerformanceService orderPerformanceService;
+
+    @Autowired
+    private OrderPerformanceDetailService orderPerformanceDetailService;
+
+    @Autowired
+    private AgentQueryProvider agentQueryProvider;
+
+    @Autowired
+    private CustomerDetailQueryProvider customerDetailQueryProvider;
+
+    @Autowired
+    private TradeService tradeService;
+
+    @Autowired
+    private ReturnOrderService returnOrderService;
+
+
+
+
+    @Override
+    public BaseResponse<OrderPerformanceSummaryResponse> getOrderPerformanceSummary(@RequestBody @Valid OrderPerformanceSummaryRequest request) {
+        OrderPerformanceSummaryResponse response = new OrderPerformanceSummaryResponse();
+
+        List<OrderPerformance> orderPerformanceList = orderPerformanceService.findByAgentUniqueCode(request.getAgentUniqueCode());
+        if (CollectionUtils.isEmpty(orderPerformanceList)) {
+            // 如果没有找到订单业绩数据，返回默认值
+            response.setCumulativeIncome(BigDecimal.ZERO);
+            response.setCumulativeOrderCount(0);
+            response.setPendingSettlementIncome(BigDecimal.ZERO);
+            response.setPendingSettlementOrderCount(0);
+            response.setWithDrawIncome(BigDecimal.ZERO);
+            response.setTotalOrderCount(0);
+            response.setTotalSalesAmount(BigDecimal.ZERO);
+            response.setWithDrawAmount(BigDecimal.ZERO);
+            response.setAvailableWithDrawAmount(BigDecimal.ZERO);
+        } else {
+            // 计算各种统计数据
+            // 累计收益
+            BigDecimal cumulativeIncome = orderPerformanceList.stream().map(OrderPerformance::getCommissionAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            // 累计订单数
+            Integer cumulativeOrderCount = orderPerformanceList.size();
+            // 待结算收益
+            BigDecimal pendingSettlementIncome = orderPerformanceList.stream().filter(p -> p.getOrderStatus() != null && p.getOrderStatus() == 1).map(OrderPerformance::getCommissionAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            // 待结算订单数
+            Integer pendingSettlementOrderCount = (int) orderPerformanceList.stream().filter(p -> p.getOrderStatus() != null && p.getOrderStatus() == 1).count();
+            // 可提现收益
+            BigDecimal withDrawIncome = BigDecimal.ZERO;
+
+
+            // 订单总数
+            Integer totalOrderCount = orderPerformanceList.size();
+            // 总销售额
+            BigDecimal totalSalesAmount = orderPerformanceList.stream().map(OrderPerformance::getOrderAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            // 已提现金额
+            BigDecimal withDrawAmount = BigDecimal.ZERO;
+            // 可提现金额
+            BigDecimal availableWithDrawAmount = BigDecimal.ZERO;
+
+
+
+
+            // 设置响应数据
+            response.setCumulativeIncome(cumulativeIncome);
+            response.setCumulativeOrderCount(cumulativeOrderCount);
+            response.setPendingSettlementIncome(pendingSettlementIncome);
+            response.setPendingSettlementOrderCount(pendingSettlementOrderCount);
+            response.setWithDrawIncome(withDrawIncome);
+            response.setTotalOrderCount(totalOrderCount);
+            response.setTotalSalesAmount(totalSalesAmount);
+            response.setWithDrawAmount(withDrawAmount);
+            response.setAvailableWithDrawAmount(availableWithDrawAmount);
+        }
+
+
+        return BaseResponse.success(response);
+    }
+
+    @Override
+    public BaseResponse<MicroServicePage<OrderPerformanceVO>> getOrderPerformancePage(@RequestBody @Valid OrderPerformancePageRequest request) {
+
+        Page<OrderPerformance> page = orderPerformanceService.getOrderPerformancePage(request.getAgentUniqueCode(), request.getPageable());
+
+        if (CollectionUtils.isEmpty(page.getContent())) {
+            return BaseResponse.success(new MicroServicePage<>());
+        }
+
+
+        MicroServicePage<OrderPerformanceVO> microServicePage = KsBeanUtil.convertPage(page,
+                OrderPerformanceVO.class);
+
+        // 设置标题
+        microServicePage.getContent().forEach(orderPerformanceVO -> {
+            orderPerformanceVO.setTitle("校服订单");
+        });
+        
+        // 设置退款类型
+        List<String> orderIdList = microServicePage.getContent().stream().map(OrderPerformanceVO::getOrderId).collect(Collectors.toList());
+        // 获取订单业绩明细列表
+        List<OrderPerformanceDetail> orderPerformanceDetailList = orderPerformanceDetailService.findByOrderIdIn(orderIdList);
+
+        // 创建订单退货映射Map
+        Map<String, Boolean> orderReturnMap = new HashMap<>();
+
+        // 初始化所有订单为无退货状态
+        orderIdList.forEach(orderId -> orderReturnMap.put(orderId, false));
+
+        // 遍历订单业绩明细列表，标记有退货的订单
+        orderPerformanceDetailList.forEach(detail -> {
+            if (detail.getDetailType() != null && detail.getDetailType() == 2) {
+                orderReturnMap.put(detail.getOrderId(), true);
+            }
+        });
+        //从明细里面统计金额
+        for (OrderPerformanceVO orderPerformanceVO : microServicePage.getContent()) {
+            List<OrderPerformanceDetail> orderPerformanceDetailTemps = orderPerformanceDetailList.stream().filter(detail -> detail.getOrderId().equals(orderPerformanceVO.getOrderId())).collect(Collectors.toList());
+            BigDecimal totalUniformAmount = orderPerformanceDetailTemps.stream()
+                    .filter(detail -> detail.getUniformTotalAmount() != null)
+                    .map(OrderPerformanceDetail::getUniformTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalCommissionAmount = orderPerformanceDetailTemps.stream()
+                    .filter(detail -> detail.getCommissionAmount() != null)
+                    .map(OrderPerformanceDetail::getCommissionAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            orderPerformanceVO.setSchoolUniformAmount(totalUniformAmount);
+            orderPerformanceVO.setCommissionAmount(totalCommissionAmount);
+        }
+
+        // 将退货信息设置到VO中
+        microServicePage.getContent().forEach(orderPerformanceVO -> {
+            String orderId = orderPerformanceVO.getOrderId();
+            if (orderReturnMap.containsKey(orderId) && orderReturnMap.get(orderId)) {
+                // 存在退货
+                if (BigDecimal.ZERO.compareTo(orderPerformanceVO.getCommissionAmount()) == 0) {
+                    // 全部退
+                    orderPerformanceVO.setReturnType(1);
+                } else {
+                    // 部分退
+                    orderPerformanceVO.setReturnType(2);
+                }
+            } else {
+                // 不存在退货
+                // 正常
+                orderPerformanceVO.setReturnType(0);
+            }
+        });
+
+        return BaseResponse.success(microServicePage);
+    }
+
+    @Override
+    public BaseResponse<OrderPerformanceSummaryNewResponse> getOrderPerformanceSummaryNew(@RequestBody @Valid OrderPerformanceSummaryRequest request) {
+
+        OrderPerformanceSummaryNewResponse response = new OrderPerformanceSummaryNewResponse();
+
+        // 查询代理信息
+        GetAgentRequest getAgentRequest = new GetAgentRequest();
+        getAgentRequest.setAgentUniqueCode(request.getAgentUniqueCode());
+        BaseResponse<GetAgentResponse> agentByUniqueCode = agentQueryProvider.getAgentByUniqueCode(getAgentRequest);
+        if (!agentByUniqueCode.isSuccess() && agentByUniqueCode.getContext() == null) {
+            return BaseResponse.success(response);
+        }
+        // 校验时间参数（要么都传要么都不传）
+        if (!isTimeParamValid(request.getStartTime(), request.getEndTime())) {
+            return BaseResponse.error("开始时间和结束时间必须同时传递或同时不传递");
+        }
+
+        // 代理类型
+        Integer type = agentByUniqueCode.getContext().getType();
+        response.setType(type);
+
+        // 根据不同的代理类型执行不同的计算逻辑
+        switch (type) {
+            case 1: // 小B
+                calculateForSmallB(request.getAgentUniqueCode(), response);
+                break;
+            case 2: // 一级代理商
+                calculateForFirstLevelAgent(request.getAgentUniqueCode(),request.getStartTime(),request.getEndTime(),response);
+                break;
+            case 3: // 二级代理商
+                calculateForSecondLevelAgent(request.getAgentUniqueCode(),request.getStartTime(),request.getEndTime(), response);
+                break;
+            case 4: // 一级合作商
+                calculateForFirstLevelPartner(request.getAgentUniqueCode(), response);
+                break;
+            default:
+                // 默认处理逻辑
+                calculateDefault(request.getAgentUniqueCode(), response);
+                break;
+        }
+
+
+
+        return BaseResponse.success(response);
+    }
+
+
+    /**
+     * 查询门店明细（根据一级获取二级列表）
+     *
+     * @param request
+     * @return
+     */
+    @Override
+    public BaseResponse<OrderPerformanceDetailSummaryResponse> getOrderPerformanceSummarySecond(@RequestBody OrderPerformanceSummaryRequest request) {
+        OrderPerformanceDetailSummaryResponse response = new OrderPerformanceDetailSummaryResponse();
+
+        try {
+            // 查询代理信息
+            if (request.getAgentUniqueCode() == null || request.getAgentUniqueCode().isEmpty()) {
+                log.warn("代理商唯一码为空");
+                return BaseResponse.success(response);
+            }
+
+            GetAgentRequest getAgentRequest = new GetAgentRequest();
+            getAgentRequest.setAgentUniqueCode(request.getAgentUniqueCode());
+
+            //GetAgentResponse相当于agent
+            BaseResponse<GetAgentResponse> agentByUniqueCode = null;
+            try {
+                agentByUniqueCode = agentQueryProvider.getAgentByUniqueCode(getAgentRequest);
+            } catch (Exception e) {
+                log.error("查询代理商信息异常，agentUniqueCode: {}", request.getAgentUniqueCode(), e);
+                // 发生异常时仍然返回成功响应
+                return BaseResponse.success(response);
+            }
+
+            if (agentByUniqueCode == null || !agentByUniqueCode.isSuccess() || agentByUniqueCode.getContext() == null) {
+                log.warn("查询代理商信息失败或代理商不存在，agentUniqueCode: {}", request.getAgentUniqueCode());
+                // 即使查询不到代理商也返回成功响应
+                return BaseResponse.success(response);
+            }
+            // 校验时间参数
+            if (!isTimeParamValid(request.getStartTime(), request.getEndTime())) {
+                return BaseResponse.error("开始时间和结束时间必须同时传递或同时不传递");
+            }
+
+            //逻辑处理
+            try {
+                calculateTwiceForFirstLevelAgent(request.getAgentUniqueCode(),request.getStartTime(),request.getEndTime(),response);
+            } catch (Exception e) {
+                log.error("计算一级代理商下属二级代理商业绩汇总失败，agentUniqueCode: {}", request.getAgentUniqueCode(), e);
+                // 即使计算过程出错也返回已创建的空响应
+            }
+
+            return BaseResponse.success(response);
+        } catch (Exception e) {
+            log.error("处理getOrderPerformanceSummarySecond请求时发生未预期异常，agentUniqueCode: {}", request.getAgentUniqueCode(), e);
+            // 确保任何情况下都返回成功响应，避免Feign调用失败
+            return BaseResponse.success(response);
+        }
+    }
+
+    //计算二级代理商
+    private void calculateTwiceForFirstLevelAgent(String agentUniqueCode, LocalDateTime startTime, LocalDateTime endTime, OrderPerformanceDetailSummaryResponse response) {
+        List<OrderPerformanceSummaryNewResponse> responses = new ArrayList<>();
+
+
+            // 1. 查询当前一级代理商的所有下属二级代理商（type=3 表示二级代理商，parentUniqueCode关联上级）
+            GetAgentRequest getAgentRequest = new GetAgentRequest();
+            getAgentRequest.setAgentUniqueCode(agentUniqueCode);
+
+            BaseResponse<List<GetAgentResponse>> agentResponse = agentQueryProvider.getAgentListByParentUniqueCode(getAgentRequest);
+
+            // 2. 获取二级代理商列表
+            if (agentResponse != null && agentResponse.isSuccess() && agentResponse.getContext() != null) {
+                List<GetAgentResponse> childSecondLevelAgents = agentResponse.getContext();
+
+                if (CollectionUtils.isNotEmpty(childSecondLevelAgents)) {
+                    // 3. 遍历每个下属二级代理商，计算其业绩并累加
+                    for (GetAgentResponse secondLevelAgent : childSecondLevelAgents) {
+                        if (secondLevelAgent != null) {
+                            try {
+                                // 3.1 创建二级代理商的业绩响应对象（临时存储单个二级代理商数据）
+                                OrderPerformanceSummaryNewResponse secondLevelResponse = new OrderPerformanceSummaryNewResponse();
+
+                                // 设置门店名
+                                if (secondLevelAgent.getShopName() != null) {
+                                    secondLevelResponse.setShopName(secondLevelAgent.getShopName());
+                                }
+
+                                // 3.2 复用二级代理商的计算逻辑，获取单个二级代理商的业绩数据
+                                calculateForSecondLevelAgent(secondLevelAgent.getAgentUniqueCode(),startTime,endTime,secondLevelResponse);
+                                responses.add(secondLevelResponse);
+                                response.setResultList(responses);
+                            } catch (Exception e) {
+                                log.warn("处理二级代理商数据时出错，agentUniqueCode: {}",
+                                        secondLevelAgent.getAgentUniqueCode() != null ? secondLevelAgent.getAgentUniqueCode() : "unknown", e);
+                            }
+                        }
+                    }
+                }
+            }
+    }
+
+
+    /**
+     * 小B类型代理的计算逻辑
+     */
+    private void calculateForSmallB(String agentUniqueCode, OrderPerformanceSummaryNewResponse response) {
+        // 累计销售额（校服总金额）
+        // 累计收益（佣金总金额）
+        // 累计订单数（校服订单数）
+        List<OrderPerformance> orderPerformanceList = orderPerformanceService.findByAgentUniqueCode(agentUniqueCode);
+        List<OrderPerformanceDetail> orderPerformanceDetailList = orderPerformanceDetailService.findByAgentUniqueCode(agentUniqueCode);
+        BigDecimal totalSales = BigDecimal.ZERO;
+        BigDecimal totalProfit = BigDecimal.ZERO;
+        Integer totalOrderCount = 0;
+        if (CollectionUtils.isNotEmpty(orderPerformanceList)) {
+            //totalSales = orderPerformanceList.stream().map(OrderPerformance::getSchoolUniformAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            //totalProfit = orderPerformanceList.stream().map(OrderPerformance::getCommissionAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            //totalOrderCount = (int)orderPerformanceList.stream().filter(orderPerformance -> orderPerformance.getSchoolUniformAmount().compareTo(BigDecimal.ZERO) != 0).count();
+            totalSales = orderPerformanceDetailList.stream().map(OrderPerformanceDetail::getUniformTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            totalProfit = orderPerformanceDetailList.stream().map(OrderPerformanceDetail::getCommissionAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            // 使用stream按orderId分组，然后统计commissionAmount各个分组的总金额
+            Map<String, BigDecimal> commissionAmountByOrderId = orderPerformanceDetailList.stream()
+                    .collect(Collectors.groupingBy(
+                            OrderPerformanceDetail::getOrderId,
+                            Collectors.mapping(
+                                    OrderPerformanceDetail::getCommissionAmount,
+                                    Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+                            )
+                    ));
+            totalOrderCount =  (int)commissionAmountByOrderId.values().stream()
+                    .filter(value -> value != null && value.compareTo(BigDecimal.ZERO) > 0)
+                    .count();
+        }
+        response.setTotalSales(totalSales);
+        response.setTotalProfit(totalProfit);
+        response.setTotalOrderCount(totalOrderCount);
+
+
+        // 春秋装累积校服总数（春秋装）
+        // 夏装累积校服总数（夏装）
+        // 冬装累积校服总数（冬装）
+        Integer springAutumnUniformCount = 0;
+        Integer summerUniformCount = 0;
+        Integer winterUniformCount = 0;
+        //List<OrderPerformanceDetail> orderPerformanceDetailList = orderPerformanceDetailService.findByAgentUniqueCode(agentUniqueCode);
+        if (CollectionUtils.isNotEmpty(orderPerformanceDetailList)) {
+            springAutumnUniformCount = calculateSpringAutumnUniformCount(orderPerformanceDetailList);
+            summerUniformCount = calculateSummerUniformCount(orderPerformanceDetailList);
+            winterUniformCount = calculateWinterUniformCount(orderPerformanceDetailList);
+        }
+        response.setSpringAutumnUniformCount(springAutumnUniformCount);
+        response.setSummerUniformCount(summerUniformCount);
+        response.setWinterUniformCount(winterUniformCount);
+
+
+        // 用户总数
+        CustomerDetailListByAgentUniqueCodeRequest request = new CustomerDetailListByAgentUniqueCodeRequest(agentUniqueCode);
+        BaseResponse<CustomerDetailListByConditionResponse> customerDetailListByConditionResponseBaseResponse = customerDetailQueryProvider.listCustomerDetailByAgentUniqueCode(request);
+        if (customerDetailListByConditionResponseBaseResponse.getContext() == null){
+            response.setUserCount(0);
+        } else {
+            List<CustomerDetailVO> customerDetailVOList = customerDetailListByConditionResponseBaseResponse.getContext().getCustomerDetailVOList();
+            response.setUserCount(customerDetailVOList.size());
+        }
+
+    }
+
+
+    private boolean isTimeParamValid(LocalDateTime startTime, LocalDateTime endTime) {
+        // 都为null或都不为null则合法
+        return (startTime == null && endTime == null) || (startTime != null && endTime != null);
+    }
+    /**
+     * 一级代理商的计算逻辑：汇总所有下属二级代理商的业绩数据之和
+     *
+     * @param agentUniqueCode 一级代理商唯一码
+     * @param startTime
+     * @param endTime
+     * @param response        一级代理商业绩汇总响应对象
+     */
+    private void calculateForFirstLevelAgent(String agentUniqueCode, LocalDateTime startTime, LocalDateTime endTime, OrderPerformanceSummaryNewResponse response) {
+        // 1. 查询当前一级代理商的所有下属二级代理商（type=3 表示二级代理商，parentUniqueCode关联上级）
+        GetAgentRequest getAgentRequest = new GetAgentRequest();
+        getAgentRequest.setAgentUniqueCode(agentUniqueCode);
+        List<GetAgentResponse> childSecondLevelAgents = agentQueryProvider.getAgentListByParentUniqueCode(getAgentRequest).getContext();
+        if (CollectionUtils.isEmpty(childSecondLevelAgents)) {
+            // 若没有下属二级代理商，所有数据默认设为0
+            initEmptyResponse(response);
+            return;
+        }
+        // 2. 初始化汇总容器，用于累加所有二级代理商的数据
+        // 门店总销售额
+        BigDecimal totalSalesSum = BigDecimal.ZERO;   //
+        // 累计订单数总和
+        int totalOrderCountSum = 0;
+        // 春秋装总数总和
+        int springAutumnUniformCountSum = 0;
+        // 夏装总数总和
+        int summerUniformCountSum = 0;
+        // 冬装总数总和
+        int winterUniformCountSum = 0;
+        // 待结算订单数总和
+        int pendingSettlementOrderCountSum = 0;  //
+        // 待结算收益总和
+        BigDecimal pendingSettlementProfitSum = BigDecimal.ZERO;  //
+        // 可提现收益总和
+        BigDecimal withDrawableProfitSum = BigDecimal.ZERO;  //
+        //总佣金
+        BigDecimal totalCommissionIncome = BigDecimal.ZERO;  //
+        //已提现总收益
+        BigDecimal totalWithdrawnIncome = BigDecimal.ZERO;  //
+        //待提现总收益
+        BigDecimal totalPendingWithdrawIncome = BigDecimal.ZERO;  //
+        // 用户总数总和
+        int userCountSum = 0;
+        // 门店销售数量（校服总销量）
+        int totalUniformCount = 0;  //
+        //管理门店数量（门店总数量）
+        int managedStoreCount = 0;  //
+
+        // 3. 遍历每个下属二级代理商，计算其业绩并累加
+        for (GetAgentResponse secondLevelAgent : childSecondLevelAgents) {
+            // 3.1 创建二级代理商的业绩响应对象（临时存储单个二级代理商数据）
+            OrderPerformanceSummaryNewResponse secondLevelResponse = new OrderPerformanceSummaryNewResponse();
+            // 3.2 复用二级代理商的计算逻辑，获取单个二级代理商的业绩数据
+            calculateForSecondLevelAgent(secondLevelAgent.getAgentUniqueCode(),startTime,endTime,secondLevelResponse);
+
+            // 3.3 累加当前二级代理商的数据到汇总容器
+            // 累计销售额
+            totalSalesSum = totalSalesSum.add(secondLevelResponse.getTotalSales() == null ? BigDecimal.ZERO : secondLevelResponse.getTotalSales());
+            // 累计订单数
+            totalOrderCountSum += secondLevelResponse.getTotalOrderCount() == null ? 0 : secondLevelResponse.getTotalOrderCount();
+            // 春秋装累积校服总数
+            springAutumnUniformCountSum += secondLevelResponse.getSpringAutumnUniformCount() == null ? 0 : secondLevelResponse.getSpringAutumnUniformCount();
+            // 夏装累积校服总数
+            summerUniformCountSum += secondLevelResponse.getSummerUniformCount() == null ? 0 : secondLevelResponse.getSummerUniformCount();
+            // 冬装累积校服总数
+            winterUniformCountSum += secondLevelResponse.getWinterUniformCount() == null ? 0 : secondLevelResponse.getWinterUniformCount();
+            // 待结算订单数
+            pendingSettlementOrderCountSum += secondLevelResponse.getPendingSettlementOrderCount() == null ? 0 : secondLevelResponse.getPendingSettlementOrderCount();
+            // 待结算收益
+            pendingSettlementProfitSum = pendingSettlementProfitSum.add(secondLevelResponse.getPendingSettlementProfit() == null ? BigDecimal.ZERO : secondLevelResponse.getPendingSettlementProfit());
+            // 可提现收益
+            withDrawableProfitSum = withDrawableProfitSum.add(secondLevelResponse.getWithDrawableProfit() == null ? BigDecimal.ZERO : secondLevelResponse.getWithDrawableProfit());
+            // 总佣金
+            totalCommissionIncome = totalCommissionIncome.add(secondLevelResponse.getTotalCommissionIncome() == null ? BigDecimal.ZERO : secondLevelResponse.getTotalCommissionIncome());
+            // 已提现总收益
+            totalWithdrawnIncome = totalWithdrawnIncome.add(secondLevelResponse.getTotalWithdrawnIncome() == null ? BigDecimal.ZERO : secondLevelResponse.getTotalWithdrawnIncome());
+            // 待提现总收益
+            totalPendingWithdrawIncome = totalPendingWithdrawIncome.add(secondLevelResponse.getTotalPendingWithdrawalIncome() == null ? BigDecimal.ZERO : secondLevelResponse.getTotalPendingWithdrawalIncome());
+            // 用户总数
+            userCountSum += secondLevelResponse.getUserCount() == null ? 0 : secondLevelResponse.getUserCount();
+            //门店销售数量（所有门店销售校服总数）
+            totalUniformCount=springAutumnUniformCountSum+summerUniformCountSum+winterUniformCountSum;
+            // 门店总数量
+            managedStoreCount++;
+        }
+
+        // 4. 将汇总后的数据赋值给一级代理商的响应对象
+        response.setTotalSales(totalSalesSum);                                   //门店总销售额
+        response.setTotalOrderCount(totalOrderCountSum);
+        response.setSpringAutumnUniformCount(springAutumnUniformCountSum);
+        response.setSummerUniformCount(summerUniformCountSum);
+        response.setWinterUniformCount(winterUniformCountSum);
+        response.setPendingSettlementOrderCount(pendingSettlementOrderCountSum);  //待结算订单数
+        response.setPendingSettlementProfit(pendingSettlementProfitSum);          //待结算收益
+        response.setWithDrawableProfit(withDrawableProfitSum);                    //可提现收益
+        response.setTotalCommissionIncome(totalCommissionIncome);                 //总佣金收益
+        response.setTotalWithdrawnIncome(totalWithdrawnIncome);                   //已提现总收益
+        response.setTotalPendingWithdrawalIncome(totalPendingWithdrawIncome);     //待提现总收益
+        response.setUserCount(userCountSum);
+        response.setTotalUniformCount(totalUniformCount);                         //门店销售数量（校服总销量）
+        response.setManagedStoreCount(managedStoreCount);                         //管理门店数量
+        // 一级代理商类型固定为2（与agent表type字段对应）
+        response.setType(2);
+    }
+
+    /**
+     * 辅助方法：初始化空响应（无下属二级代理商时使用）
+     */
+    private void initEmptyResponse(OrderPerformanceSummaryNewResponse response) {
+        response.setTotalSales(BigDecimal.ZERO);
+        response.setTotalOrderCount(0);
+        response.setSpringAutumnUniformCount(0);
+        response.setSummerUniformCount(0);
+        response.setWinterUniformCount(0);
+        response.setPendingSettlementOrderCount(0);
+        response.setPendingSettlementProfit(BigDecimal.ZERO);
+        response.setWithDrawableProfit(BigDecimal.ZERO);
+        response.setTotalCommissionIncome(BigDecimal.ZERO);
+        response.setTotalWithdrawnIncome(BigDecimal.ZERO);
+        response.setTotalPendingWithdrawalIncome(BigDecimal.ZERO);
+        response.setUserCount(0);
+        response.setTotalUniformCount(0);
+        response.setManagedStoreCount(0);
+        // 一级代理商类型
+        response.setType(2);
+    }
+
+    /**
+     * 二级代理商的计算逻辑
+     */
+    private void calculateForSecondLevelAgent(String agentUniqueCode,LocalDateTime startTime, LocalDateTime endTime, OrderPerformanceSummaryNewResponse response) {
+        // 累计销售额（校服总金额）
+        // 累计订单数（校服订单数）
+        BigDecimal totalSales = BigDecimal.ZERO;
+        Integer totalOrderCount = 0;
+        //总佣金
+        BigDecimal totalCommissionIncome = BigDecimal.ZERO;
+        //根据时间筛选后的订单
+        List<OrderPerformance> orderPerformanceList = orderPerformanceService.findByAgentUniqueCodeAndTime(agentUniqueCode, startTime, endTime);
+        List<OrderPerformanceDetail> orderPerformanceDetailList = orderPerformanceDetailService.findByAgentUniqueCodAndCreateTimeBetween(agentUniqueCode, startTime, endTime);
+//        List<OrderPerformance> orderPerformanceList = orderPerformanceService.findByAgentUniqueCode(agentUniqueCode);
+//        List<OrderPerformanceDetail> orderPerformanceDetailList = orderPerformanceDetailService.findByAgentUniqueCode(agentUniqueCode);
+        if (CollectionUtils.isNotEmpty(orderPerformanceList)) {
+            //totalSales = orderPerformanceList.stream().map(OrderPerformance::getSchoolUniformAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            //totalOrderCount = (int)orderPerformanceList.stream().filter(orderPerformance -> orderPerformance.getSchoolUniformAmount().compareTo(BigDecimal.ZERO) != 0).count();
+            totalSales = orderPerformanceDetailList.stream().map(OrderPerformanceDetail::getUniformTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            totalCommissionIncome = orderPerformanceDetailList.stream().map(OrderPerformanceDetail::getCommissionAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            // 使用stream按orderId分组，然后统计commissionAmount各个分组的总金额
+            Map<String, BigDecimal> commissionAmountByOrderId = orderPerformanceDetailList.stream()
+                    .collect(Collectors.groupingBy(
+                            OrderPerformanceDetail::getOrderId,
+                            Collectors.mapping(
+                                    OrderPerformanceDetail::getCommissionAmount,
+                                    Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+                            )
+                    ));
+            totalOrderCount =  (int)commissionAmountByOrderId.values().stream()
+                    .filter(value -> value != null && value.compareTo(BigDecimal.ZERO) > 0)
+                    .count();
+
+        }
+        response.setTotalSales(totalSales);
+        response.setTotalOrderCount(totalOrderCount);
+        response.setTotalCommissionIncome(totalCommissionIncome);
+
+
+        // 春秋装累积校服总数（春秋装）
+        // 夏装累积校服总数（夏装）
+        // 冬装累积校服总数（冬装）
+        // 校服总销售数
+        Integer springAutumnUniformCount = 0;
+        Integer summerUniformCount = 0;
+        Integer winterUniformCount = 0;
+        Integer totalUniformCount = 0;
+        //List<OrderPerformanceDetail> orderPerformanceDetailList = orderPerformanceDetailService.findByAgentUniqueCode(agentUniqueCode);
+        if (CollectionUtils.isNotEmpty(orderPerformanceDetailList)) {
+            springAutumnUniformCount = calculateSpringAutumnUniformCount(orderPerformanceDetailList);
+            summerUniformCount = calculateSummerUniformCount(orderPerformanceDetailList);
+            winterUniformCount = calculateWinterUniformCount(orderPerformanceDetailList);
+            totalUniformCount = springAutumnUniformCount + summerUniformCount + winterUniformCount;
+        }
+        response.setSpringAutumnUniformCount(springAutumnUniformCount);
+        response.setSummerUniformCount(summerUniformCount);
+        response.setWinterUniformCount(winterUniformCount);
+        response.setTotalUniformCount(totalUniformCount);
+
+
+        // 待结算订单数
+        Integer pendingSettlementOrderCount = 0;
+        // 待结算收益
+        BigDecimal pendingSettlementProfit = BigDecimal.ZERO;
+        // 可提现收益
+        BigDecimal withDrawableProfit = BigDecimal.ZERO;
+
+        response.setPendingSettlementOrderCount(pendingSettlementOrderCount);
+        response.setPendingSettlementProfit(pendingSettlementProfit);
+        response.setWithDrawableProfit(withDrawableProfit);
+
+
+        // 用户总数
+        CustomerDetailListByAgentUniqueCodeRequest request = new CustomerDetailListByAgentUniqueCodeRequest(agentUniqueCode);
+        BaseResponse<CustomerDetailListByConditionResponse> customerDetailListByConditionResponseBaseResponse = customerDetailQueryProvider.listCustomerDetailByAgentUniqueCode(request);
+        if (customerDetailListByConditionResponseBaseResponse.getContext() == null){
+            response.setUserCount(0);
+        } else {
+            List<CustomerDetailVO> customerDetailVOList = customerDetailListByConditionResponseBaseResponse.getContext().getCustomerDetailVOList();
+            response.setUserCount(customerDetailVOList.size());
+        }
+
+        // 设置门店名称    重复计算，设置
+//        GetAgentRequest getAgentRequest = new GetAgentRequest();
+//        getAgentRequest.setAgentUniqueCode(agentUniqueCode);
+//        BaseResponse<GetAgentResponse> agentResponse = agentQueryProvider.getAgentByUniqueCode(getAgentRequest);
+//        if (agentResponse.isSuccess() && agentResponse.getContext() != null) {
+//            response.setShopName(agentResponse.getContext().getShopName());
+//        }
+    }
+
+    /**
+     * 计算冬装累积校服总数
+     */
+    private Integer calculateWinterUniformCount(List<OrderPerformanceDetail> orderPerformanceDetailList) {
+        Integer winterUniformCount = 0;
+        for (OrderPerformanceDetail p : orderPerformanceDetailList) {
+            if (p.getSeason().equals("冬装")) {
+                if (p.getDetailType().equals(1)) {
+                    // 购买
+                    String clothingTypes = p.getClothingTypes();
+                    Integer quantity = p.getQuantity();
+                    List<String> list = Arrays.asList(clothingTypes.split(","));
+                    Integer addCount = list.size() * quantity;
+                    winterUniformCount = winterUniformCount + addCount;
+
+                } else if (p.getDetailType().equals(2)) {
+                    // 退货
+                    String clothingTypes = p.getClothingTypes();
+                    Integer quantity = p.getQuantity();
+                    List<String> list = Arrays.asList(clothingTypes.split(","));
+                    Integer subCount = list.size() * quantity;
+                    winterUniformCount = winterUniformCount - subCount;
+                }
+            }
+        }
+        return winterUniformCount;
+    }
+
+    /**
+     * 计算夏装累积校服总数
+     */
+    private Integer calculateSummerUniformCount(List<OrderPerformanceDetail> orderPerformanceDetailList) {
+        Integer summerUniformCount = 0;
+        for (OrderPerformanceDetail p : orderPerformanceDetailList) {
+            if (p.getSeason().equals("夏装")) {
+                if (p.getDetailType().equals(1)) {
+                    // 购买
+                    String clothingTypes = p.getClothingTypes();
+                    Integer quantity = p.getQuantity();
+                    List<String> list = Arrays.asList(clothingTypes.split(","));
+                    Integer addCount = list.size() * quantity;
+                    summerUniformCount = summerUniformCount + addCount;
+
+                } else if (p.getDetailType().equals(2)) {
+                    // 退货
+                    String clothingTypes = p.getClothingTypes();
+                    Integer quantity = p.getQuantity();
+                    List<String> list = Arrays.asList(clothingTypes.split(","));
+                    Integer subCount = list.size() * quantity;
+                    summerUniformCount = summerUniformCount - subCount;
+                }
+            }
+        }
+        return summerUniformCount;
+    }
+
+    /**
+     * 计算春秋装累积校服总数
+     */
+    private Integer calculateSpringAutumnUniformCount(List<OrderPerformanceDetail> orderPerformanceDetailList) {
+        Integer springAutumnUniformCount = 0;
+        for (OrderPerformanceDetail p : orderPerformanceDetailList) {
+            if (p.getSeason().equals("春秋装")) {
+                if (p.getDetailType().equals(1)) {
+                    // 购买
+                    String clothingTypes = p.getClothingTypes();
+                    Integer quantity = p.getQuantity();
+                    List<String> list = Arrays.asList(clothingTypes.split(","));
+                    Integer addCount = list.size() * quantity;
+                    springAutumnUniformCount = springAutumnUniformCount + addCount;
+
+                } else if (p.getDetailType().equals(2)) {
+                    // 退货
+                    String clothingTypes = p.getClothingTypes();
+                    Integer quantity = p.getQuantity();
+                    List<String> list = Arrays.asList(clothingTypes.split(","));
+                    Integer subCount = list.size() * quantity;
+                    springAutumnUniformCount = springAutumnUniformCount - subCount;
+                }
+            }
+        }
+        return springAutumnUniformCount;
+    }
+
+    /**
+     * 一级合作商的计算逻辑
+     */
+    private void calculateForFirstLevelPartner(String agentUniqueCode, OrderPerformanceSummaryNewResponse response) {
+        response = null;
+    }
+
+
+    /**
+     * 默认计算逻辑
+     */
+    private void calculateDefault(String agentUniqueCode, OrderPerformanceSummaryNewResponse response) {
+        response = null;
+    }
+
+
+    @Override
+    public BaseResponse createOrderPerformance(@RequestBody @Valid OrderPerformanceModifyRequest request) {
+        Trade trade = tradeService.detail(request.getId());
+        if (trade != null) {
+            orderPerformanceService.createOrderPerformance(trade);
+        }
+        log.info("创建业绩的失败,该订单: {} 为空", request.getId());
+        return BaseResponse.SUCCESSFUL();
+    }
+
+    @Override
+    public BaseResponse returnOrderPerformance(@RequestBody @Valid OrderPerformanceModifyRequest request) {
+
+        List<ReturnOrder> returnOrderList = returnOrderService.findByTid(request.getId());
+        if (CollectionUtils.isNotEmpty(returnOrderList)) {
+            returnOrderList.forEach(returnOrder -> orderPerformanceService.returnOrderPerformance(returnOrder));
+        }
+        return BaseResponse.SUCCESSFUL();
+    }
+
+    @Override
+    public BaseResponse<List<GetSchooluUniformSalesDataResponse>> getSchooluUniformSalesData(@RequestBody OrderPerformanceByUniqueCodesRequest request){
+        List<GetSchooluUniformSalesDataResponse> getSchooluUniformSalesDataResponseList = orderPerformanceDetailService.getSchooluUniformSalesData(request);
+        return BaseResponse.success(getSchooluUniformSalesDataResponseList);
+    }
+    @Override
+    public BaseResponse<GetSchooluUniformSalesDataResponse> getSchooluUniformSalesDataNew( @RequestBody OrderPerformanceByUniqueCodesRequest request){
+        return  orderPerformanceDetailService.getSchooluUniformSalesDataNew(request);
+    }
+    @Override
+    public BaseResponse<GetSchooluUniformSalesDataResponse> getAllSchooluUniformSalesDataAndZero(@RequestBody  OrderPerformanceByUniqueCodesRequest orderPerformanceByUniqueCodesRequest){
+        return orderPerformanceDetailService.getAllSchooluUniformSalesDataAndZero(orderPerformanceByUniqueCodesRequest);
+    }
+}

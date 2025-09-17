@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wanmi.sbc.vas.recommend.caterelatedrecommend.mapper.CateRelatedRecommendMapper">
+    <resultMap id="BaseResultMap" type="com.wanmi.sbc.vas.bean.vo.recommend.CateRelatedRecommendInfoVO">
+        <id column="firstCateId" jdbcType="VARCHAR" property="cateId" />
+        <result column="firstCateId" jdbcType="VARCHAR" property="key" />
+        <result column="firstCateName" jdbcType="VARCHAR" property="cateName" />
+        <result column="recommendFirstCateId" jdbcType="BIGINT" property="id" />
+        <result column="firstNum" jdbcType="INTEGER" property="num" />
+        <result column="firstLift" jdbcType="INTEGER" property="lift" />
+        <collection property="children"
+                    javaType="ArrayList"
+                    ofType="com.wanmi.sbc.vas.bean.vo.recommend.CateRelatedRecommendInfoVO"
+                    resultMap="BaseResultSecondCateMap">
+        </collection>
+    </resultMap>
+    <resultMap id="BaseResultSecondCateMap" type="com.wanmi.sbc.vas.bean.vo.recommend.CateRelatedRecommendInfoVO">
+        <id column="secondCateId" jdbcType="VARCHAR" property="cateId" />
+        <result column="secondCateId" jdbcType="VARCHAR" property="key" />
+        <result column="secondCateName" jdbcType="VARCHAR" property="cateName" />
+        <result column="secondParenId" jdbcType="VARCHAR" property="parenId" />
+        <result column="recommendSecondCateId" jdbcType="BIGINT" property="id" />
+        <result column="secondNum" jdbcType="INTEGER" property="num" />
+        <result column="secondLift" jdbcType="INTEGER" property="lift" />
+        <collection property="children"
+                    javaType="ArrayList"
+                    ofType="com.wanmi.sbc.vas.bean.vo.recommend.RecommendCateManageInfoVO"
+                    resultMap="BaseResultThirdCateMap">
+        </collection>
+    </resultMap>
+    <resultMap id="BaseResultThirdCateMap" type="com.wanmi.sbc.vas.bean.vo.recommend.CateRelatedRecommendInfoVO">
+        <id column="thirdCateId" jdbcType="VARCHAR" property="cateId" />
+        <result column="thirdCateId" jdbcType="VARCHAR" property="key" />
+        <result column="thirdCateName" jdbcType="VARCHAR" property="cateName" />
+        <result column="thirdParenId" jdbcType="VARCHAR" property="parenId" />
+        <result column="id" jdbcType="BIGINT" property="id" />
+        <result column="thirdNum" jdbcType="INTEGER" property="num" />
+        <result column="thirdLift" jdbcType="INTEGER" property="lift" />
+    </resultMap>
+
+    <resultMap id="BaseResultDetailMap" type="com.wanmi.sbc.vas.bean.vo.recommend.CateRelatedRecommendDetailVO">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="cateId" jdbcType="BIGINT" property="cateId" />
+        <result column="cateName" jdbcType="VARCHAR" property="cateName" />
+        <result column="relatedCateId" jdbcType="BIGINT" property="relatedCateId" />
+        <result column="relatedCateName" jdbcType="VARCHAR" property="relatedCateName" />
+        <result column="weight" jdbcType="INTEGER" property="weight" />
+        <result column="lift" jdbcType="INTEGER" property="lift" />
+    </resultMap>
+
+    <select id="getCateRelateRecommendInfoList" resultMap="BaseResultMap" parameterType="com.wanmi.sbc.vas.api.request.recommend.caterelatedrecommend.CateRelatedRecommendInfoListRequest">
+        SELECT
+            gc1.cate_id firstCateId,
+            gc1.cate_name firstCateName,
+            gc1.cate_parent_id firstParenId,
+            res1.num firstNum,
+            res1.lift firstLift,
+            gc2.cate_id secondCateId,
+            gc2.cate_name secondCateName,
+            gc2.cate_parent_id secondParenId,
+            res2.num secondNum,
+            res2.lift secondLift,
+            gc3.cate_id thirdCateId,
+            gc3.cate_name thirdCateName,
+            gc3.cate_parent_id thirdParenId,
+            res3.id,
+            res3.num thirdNum ,
+            res3.lift thirdLift
+        FROM
+            `s2b_statistics`.`replay_goods_cate` gc1
+            LEFT JOIN (
+                                SELECT
+                                    gc2.cate_parent_id cate_id,
+                                    sum(res2.num) num,
+                                    sum(res2.lift) lift
+                                from`s2b_statistics`.`replay_goods_cate` gc2
+                                LEFT JOIN (SELECT
+                                    gc3.cate_parent_id cate_id,
+                                    sum(res3.num) num,
+                                    sum(res3.lift)  lift
+                                FROM
+                                    `s2b_statistics`.`replay_goods_cate` gc3
+                                    LEFT JOIN ( SELECT count( 1 ) num, sum( lift ) lift, cate_id FROM cate_related_recommend GROUP BY cate_id )
+                                    res3 ON res3.cate_id = gc3.cate_id
+                                    GROUP BY gc3.cate_parent_id
+                                    ) res2 ON res2.cate_id = gc2.cate_id
+                                    GROUP BY gc2.cate_parent_id
+            )res1 ON res1.cate_id = gc1.cate_id
+            INNER JOIN `s2b_statistics`.`replay_goods_cate` gc2 ON gc2.cate_parent_id = gc1.cate_id
+            LEFT JOIN (SELECT
+                                    gc3.cate_parent_id cate_id,
+                                    sum(res3.num) num,
+                                    sum(res3.lift)  lift
+                                FROM
+                                    `s2b_statistics`.`replay_goods_cate` gc3
+                                    LEFT JOIN ( SELECT count( 1 ) num, sum( lift ) lift, cate_id FROM cate_related_recommend GROUP BY cate_id )
+                                    res3 ON res3.cate_id = gc3.cate_id
+                                    GROUP BY gc3.cate_parent_id
+                                    ) res2 ON res2.cate_id = gc2.cate_id
+            INNER JOIN `s2b_statistics`.`replay_goods_cate` gc3 ON gc3.cate_parent_id = gc2.cate_id
+            LEFT JOIN (SELECT
+                        min(crr.id) id,
+                        count( 1 ) num,
+                        sum( crr.lift ) lift,
+                        crr.cate_id
+                        FROM
+                        cate_related_recommend crr
+                        inner join `s2b_statistics`.`replay_goods_cate` rgc on rgc.cate_id = crr.related_cate_id and rgc.del_flag = 0
+                        GROUP BY
+                        crr.cate_id) res3 ON res3.cate_id = gc3.cate_id
+        WHERE
+            gc1.cate_grade > 0
+            AND gc3.del_flag = 0
+        <if test="cateId != null">
+            AND gc3.cate_id = #{cateId}
+        </if>
+        <if test="cateIds!=null and cateIds.size()>0 ">
+            and gc3.cate_id in
+            <foreach collection="cateIds" item="item" separator="," open="(" close=")" index="">
+                #{item,jdbcType=BIGINT}
+            </foreach>
+        </if>
+        <if test="sortColumn != null and sortColumn != '' and sortColumn == 'lift' and sortRole != null and sortRole != '' ">
+            ORDER BY res1.lift ${sortRole}, res2.lift ${sortRole}, res3.lift ${sortRole}
+            ,gc1.cate_id ${sortRole},gc2.cate_id ${sortRole},gc3.cate_id ${sortRole}
+        </if>
+        <if test="sortColumn != null and sortColumn != '' and sortColumn == 'num' and sortRole != null and sortRole != '' ">
+            ORDER BY res1.num ${sortRole},res2.num ${sortRole},res3.num ${sortRole}
+            ,gc1.cate_id ${sortRole},gc2.cate_id ${sortRole},gc3.cate_id ${sortRole}
+        </if>
+    </select>
+
+    <select id="getCateRelateRecommendDetailNum" resultType="java.lang.Long" parameterType="com.wanmi.sbc.vas.api.request.recommend.caterelatedrecommend.CateRelatedRecommendDetailListRequest">
+        select
+          count(1) num
+        from (
+        SELECT
+        gc3.cate_id cateId,
+        CONCAT( gc1.cate_name, '>', gc2.cate_name, '>', gc3.cate_name ) cateName
+        FROM
+        `s2b_statistics`.`replay_goods_cate` gc1
+        INNER JOIN `s2b_statistics`.`replay_goods_cate` gc2 ON gc2.cate_parent_id = gc1.cate_id
+        INNER JOIN `s2b_statistics`.`replay_goods_cate` gc3 ON gc3.cate_parent_id = gc2.cate_id
+        ) res
+        INNER JOIN (
+        SELECT
+        crr.id,
+        crr.cate_id cateId,
+        crr.related_cate_id relatedCateId,
+        CONCAT( gc1.cate_name, '>', gc2.cate_name, '>', gc3.cate_name ) relatedCateName,
+        crr.weight,
+        crr.lift
+        FROM
+        `s2b_statistics`.`replay_goods_cate` gc1
+        INNER JOIN `s2b_statistics`.`replay_goods_cate` gc2 ON gc2.cate_parent_id = gc1.cate_id
+        INNER JOIN `s2b_statistics`.`replay_goods_cate` gc3 ON gc3.cate_parent_id = gc2.cate_id
+        INNER JOIN cate_related_recommend crr on crr.related_cate_id = gc3.cate_id
+        ) res1 on res1.cateId = res.cateId
+        where 1=1
+        <if test="cateId != null and cateId !='' ">
+            and res.cateId = #{cateId}
+        </if>
+    </select>
+
+    <select id="getCateRelateRecommendDetailList" resultMap="BaseResultDetailMap" parameterType="com.wanmi.sbc.vas.api.request.recommend.caterelatedrecommend.CateRelatedRecommendDetailListRequest">
+        select
+            res.cateId,
+            res.cateName,
+            res1.relatedCateId,
+            res1.relatedCateName,
+            res1.weight,
+            res1.lift,
+            res1.id
+       from (
+            SELECT
+                gc3.cate_id cateId,
+                CONCAT( gc1.cate_name, '>', gc2.cate_name, '>', gc3.cate_name ) cateName
+            FROM
+                `s2b_statistics`.`replay_goods_cate` gc1
+                INNER JOIN `s2b_statistics`.`replay_goods_cate` gc2 ON gc2.cate_parent_id = gc1.cate_id
+                INNER JOIN `s2b_statistics`.`replay_goods_cate` gc3 ON gc3.cate_parent_id = gc2.cate_id
+            ) res
+        INNER JOIN (
+            SELECT
+                crr.id,
+                crr.cate_id cateId,
+                crr.related_cate_id relatedCateId,
+                CONCAT( gc1.cate_name, '>', gc2.cate_name, '>', gc3.cate_name ) relatedCateName,
+                crr.weight,
+                crr.lift,
+                crr.create_time createTime
+            FROM
+			  `s2b_statistics`.`replay_goods_cate` gc1
+			INNER JOIN `s2b_statistics`.`replay_goods_cate` gc2 ON gc2.cate_parent_id = gc1.cate_id
+			INNER JOIN `s2b_statistics`.`replay_goods_cate` gc3 ON gc3.cate_parent_id = gc2.cate_id
+            INNER JOIN cate_related_recommend crr on crr.related_cate_id = gc3.cate_id
+		) res1 on res1.cateId = res.cateId
+        where 1=1
+        <if test="cateId != null and cateId !='' ">
+            and res.cateId = #{cateId}
+        </if>
+
+        <if  test="sortColumn != null and sortRole != null">
+            ORDER BY ${sortColumn} ${sortRole},res1.createTime desc,res1.id desc
+        </if>
+   </select>
+
+</mapper>

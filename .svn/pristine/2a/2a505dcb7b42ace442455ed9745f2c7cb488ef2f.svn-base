@@ -1,0 +1,11 @@
+@startuml
+start
+:BOSS禁用/启用;
+:直接根据记录ID跟新数据的启用状态和禁用原因;
+if (禁用) then (yes)
+:清除缓存中此纪录的相关数据;
+stop;
+endif;
+:将此记录中的数据加入缓存;
+stop
+@enduml

@@ -1,0 +1,10 @@
+## nacos  boss suppliser  provider
+#开启CSRF攻击验证
+open.referer.check=true
+
+### nacos sbc-service-mq.properties 新增
+#代销商品可售状态批量操作
+spring.cloud.stream.bindings.batch-goodsinfo-vendibility-input.destination=q.goodsinfo.vendibility.batch.update
+spring.cloud.stream.bindings.batch-goodsinfo-vendibility-output.destination=q.goodsinfo.vendibility.batch.update
+
+

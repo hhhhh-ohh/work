@@ -1,0 +1,173 @@
+# ----------------------------------------
+# application info
+# ----------------------------------------
+info.app.name=sbc-service-message
+info.app.description=sbc-service-message platform
+info.build.artifact=@project.artifactId@
+info.build.version=@project.version@
+info.app.encoding=@project.build.sourceEncoding@
+# ----------------------------------------
+# actuator settings
+# ----------------------------------------
+manager.mode = sbc
+management.server.port=8782
+management.endpoints.enabled-by-default=false
+management.endpoints.web.base-path=/act
+management.endpoint.info.enabled=true
+management.endpoint.health.enabled=true
+management.endpoint.mappings.enabled=true
+management.endpoint.env.enabled=true
+management.endpoints.web.exposure.include=env,health,info,mappings
+management.endpoint.health.show-details=always
+
+# ----------------------------------------
+# server setting
+# ----------------------------------------
+wm.nacos.username=nacos
+wm.nacos.password=Nacos@2024
+spring.main.allow-circular-references=true
+spring.cloud.nacos.config.enabled = false
+spring.cloud.nacos.config.import-check.enabled=false
+spring.application.name=sbc-service-message
+spring.cloud.nacos.discovery.server-addr=172.19.25.118:8848
+#spring.cloud.nacos.username=${wm.nacos.username}
+#spring.cloud.nacos.password=${wm.nacos.password}
+#spring.cloud.nacos.discovery.service=sbc-service-message
+
+
+# ----------------------------------------
+# i18n
+# ----------------------------------------
+spring.messages.basename=i18n/ResultCode
+spring.messages.cache-duration=5
+
+# ----------------------------------------
+# log config
+# ----------------------------------------
+logging.level.root=INFO
+logging.level.com.wanmi=DEBUG
+logging.level.org.springframework=WARN
+logging.level.com.alibaba.nacos.client=ERROR
+logging.config=classpath:logback.xml
+
+# ----------------------------------------
+# server settings
+# ----------------------------------------
+server.port=8891
+server.servlet.session.timeout=50
+server.tomcat.threads.max=200
+server.error.whitelabel.enabled=false
+server.error.include-stacktrace=ALWAYS
+server.tomcat.basedir=${user.home}/htdocs/data/sbc/sms/tmp
+
+#spring.jpa.open-in-view=true
+
+
+### dataSource
+#wm.mysql.db.master.username=root
+#wm.mysql.db.master.password=Wmi@2023
+#wm.mysql.db.master.url=172.19.25.119
+#wm.mysql.db.name=sbc-order
+#spring.datasource.type=com.zaxxer.hikari.HikariDataSource
+#spring.datasource.hikari.connection-timeout=30000
+#spring.datasource.hikari.minimum-idle=5
+#spring.datasource.hikari.maximum-pool-size=20
+#spring.datasource.hikari.auto-commit=true
+#spring.datasource.hikari.idle-timeout=600000
+#spring.datasource.hikari.pool-name=DateSourceHikariCP
+#spring.datasource.hikari.max-lifetime=1800000
+#spring.datasource.hikari.connection-test-query=SELECT 1
+#spring.datasource.hikari.password=${wm.mysql.db.master.password}
+#spring.datasource.hikari.username=${wm.mysql.db.master.username}
+##spring.datasource.hikari.driver-class-name=com.mysql.cj.jdbc.Driver
+##spring.datasource.hikari.jdbc-url=jdbc:mysql://${wm.mysql.db.master.url}:3306/${wm.mysql.db.name}?characterEncoding=UTF-8&&zeroDateTimeBehavior=convertToNull&autoReconnect=true&failOverReadOnly=false&connectTimeout=0&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+##spring.datasource.hikari.jdbc-url=jdbc:shardingsphere:classpath:sharding.yaml
+spring.datasource.url=jdbc:shardingsphere:classpath:sharding.yaml
+spring.datasource.driver-class-name=org.apache.shardingsphere.driver.ShardingSphereDriver
+
+
+#spring.jpa.show-sql=true
+spring.main.allow-bean-definition-overriding=true
+
+
+#-----------------------------------------------
+# seata
+#-----------------------------------------------
+seata.enable-auto-data-source-proxy=false
+seata.service.vgroup-mapping.sbc-service-message-group=default
+seata.registry.type=nacos
+seata.registry.nacos.server-addr=172.19.25.118:8848
+seata.registry.nacos.application=seata-server
+seata.registry.nacos.group=SEATA_GROUP
+
+# ----------------------------------------
+# redis config
+# ----------------------------------------spring.redis.database=0
+spring.data.redis.host=172.19.25.118
+spring.data.redis.port=6379
+spring.data.redis.password=Wmi@2023
+spring.data.redis.database=0
+spring.data.redis.timeout=5000
+
+
+
+# ----------------------------------------
+# \u53D1\u9001\u4EFB\u52A1\u7EBF\u7A0B\u6C60
+# ----------------------------------------
+thread.pool.threadNamePrefix = sms-executor-
+thread.pool.corePoolSize=5
+thread.pool.maxPoolSize=10
+thread.pool.queueCapacity=2048
+thread.pool.keepAliveSeconds=300
+
+# ----------------------------------------
+# json message converter
+# ----------------------------------------
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.default-property-inclusion=non_null
+
+#pagehelper
+pagehelper.helperDialect=mysql
+pagehelper.reasonable=false
+pagehelper.supportMethodsArguments=false
+pagehelper.params=count=countSql
+# ----------------------------------------
+# aliyun config
+# ----------------------------------------
+aliyun.endPoint=oss-cn-shanghai.aliyuncs.com
+aliyun.bucketName=wanmi-ares
+aliyun.accessKeyId=LTAIcvnPzCTKgdFW
+aliyun.accessKeySecret=4By4Ag5zFQLjaMcvtePL9povz1zC7W
+
+### xxl-job admin address list, such as "http://address" or "http://address01,http://address02"
+xxl.job.admin.addresses=http://172.19.25.118:8990/xxl-job-admin
+
+### xxl-job executor address
+xxl.job.executor.appname=xxl-job-sms
+xxl.job.executor.ip=
+xxl.job.executor.port=9888
+
+### xxl-job, access token
+xxl.job.accessToken=b5f7ed32b2e24789bdce1308afcafebe
+
+### xxl-job log path
+xxl.job.executor.logpath=./log/jobhandler
+### xxl-job log retention days
+xxl.job.executor.logretentiondays=-1
+
+wm.cache.enabled=true
+wm.cache.topic=cache.publish
+wm.cache.default-spec=maximumSize=500,expireTime=500
+wm.cache.configs[0].cache-name=test,test1
+wm.cache.configs[0].spec=maximumSize=2,expireTime=500
+
+# \u4F7F\u7528okhttp
+spring.cloud.openfeign.okhttp.enabled=true
+# \u5F00\u542F\u8BF7\u6C42\u6570\u636E\u7684\u538B\u7F29\u529F\u80FD
+spring.cloud.openfeign.compression.request.enabled=false
+# \u5F00\u542F\u8FD4\u56DE\u6570\u636E\u7684\u538B\u7F29\u529F\u80FD
+spring.cloud.openfeign.compression.response.enabled= true
+# \u538B\u7F29\u7C7B\u578B
+spring.cloud.openfeign.compression.request.mime-types=text/xml,application/xml, application/json
+# \u6700\u5C0F\u538B\u7F29\u503C\u6807\u51C6\uFF0C\u5F53\u6570\u636E\u5927\u4E8E 1024 \u624D\u4F1A\u8FDB\u884C\u538B\u7F29
+spring.cloud.openfeign.compression.request.min-request-size=1024

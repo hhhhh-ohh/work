@@ -1,0 +1,6 @@
+com.wanmi.tools.logtrace.springboot.TraceFeignAutoConfiguration
+com.wanmi.tools.logtrace.springboot.TraceWebAutoConfiguration
+com.wanmi.tools.logtrace.springboot.TraceAopAutoConfiguration
+com.wanmi.tools.logtrace.springboot.TraceXxlJobAutoConfiguration
+com.wanmi.tools.logtrace.springboot.TraceMessageConfiguration
+com.wanmi.tools.logtrace.springboot.TraceRocketAutoConfiguration

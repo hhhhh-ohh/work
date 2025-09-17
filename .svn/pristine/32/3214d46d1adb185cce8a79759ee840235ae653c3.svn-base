@@ -1,0 +1,63 @@
+server:
+  port: 10010
+
+management:
+  server:
+    port: 10011
+  endpoint:
+    env:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+    info:
+      enabled: true
+    mappings:
+      enabled: true
+  endpoints:
+    enabled-by-default: true
+    web:
+      base-path: /act
+      exposure:
+        include: env,health,info,mappings
+
+tunnel:
+  type: kafka
+
+capture:
+  client:
+    regex-filter: s2b.trade,s2b.returnOrder,s2b.appointmentRecord
+   # dynamic-topic: s2b.trade:s2b_trade,s2b.returnOrder:s2b_returnOrder
+    cluster-name: default
+    #zookeeper-host: 172.19.25.27:2181
+    flush-period: 1000
+    #meta-mode: ZOOKEEPER
+
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    com:
+      wanmi: debug
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://wanmi:Wanmi^2023@172.19.25.118:27017/admin?replicaSet=rs1
+#      host: 172.19.25.118
+#      port: 27017
+#      username: wanmi
+#      password: Wanmi^2023
+#      authentication-database: admin
+#      replica-set-name: rs1
+      database: local
+  kafka:
+    bootstrap-servers: 172.19.25.118:9092
+    producer:
+      retries: 0
+      batch-size: 16384
+      buffer-memory: 33554432
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        linger.ms: 1
+

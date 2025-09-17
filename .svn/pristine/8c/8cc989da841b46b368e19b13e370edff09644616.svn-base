@@ -1,0 +1,159 @@
+{
+  "replayTable" : "replay_trade",
+  "dispatch" : null,
+  "pk": [],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "tid",
+        "dataType": 12
+      },
+      {
+        "field": "tradePrice.totalPrice",
+        "replayField": "total_price",
+        "dataType": 3
+      },
+      {
+        "field": "tradePrice.goodsPrice",
+        "replayField": "goods_price",
+        "dataType": 3
+      },
+      {
+        "field": "tradePrice.totalPayCash",
+        "replayField": "total_pay_cash",
+        "dataType": 3
+      },
+      {
+        "field": "buyer._id",
+        "replayField": "customer_id",
+        "dataType": 12
+      },
+      {
+        "field": "buyer.levelId",
+        "replayField": "level_id",
+        "dataType": -5
+      },
+      {
+        "field": "supplier.supplierId",
+        "replayField": "company_id",
+        "dataType": -5
+      },
+      {
+        "field": "supplier.storeId",
+        "replayField": "store_id",
+        "dataType": -5
+      },
+      {
+        "field": "tradeState.createTime",
+        "replayField": "create_time",
+        "dataType": 93
+      },
+      {
+        "field": "tradeState.payTime",
+        "replayField": "pay_time",
+        "dataType": 93
+      },
+      {
+        "field": "tradeState.flowState",
+        "replayField": "flow_state",
+        "dataType": 4,
+        "enumType": {
+          "INIT": 0,
+          "REMEDY": 1,
+          "REFUND": 2,
+          "AUDIT": 3,
+          "DELIVERED_PART": 4,
+          "DELIVERED": 5,
+          "CONFIRMED": 6,
+          "COMPLETED": 7,
+          "VOID": 8,
+          "GROUPON": 9
+        }
+      },
+      {
+        "field": "tradeState.payState",
+        "replayField": "pay_state",
+        "dataType": 4,
+        "enumType": {
+          "NOT_PAID": 0,
+          "UNCONFIRMED": 1,
+          "PAID": 2,
+	  "PAID_EARNEST": 3
+        }
+      },
+      {
+        "field": "orderSource",
+        "replayField": "order_source",
+        "dataType": 4,
+        "enumFile": "order_source.json"
+      },
+      {
+        "field": "tradeCoupon.couponCodeId",
+        "replayField": "coupon_code_id",
+        "dataType": 12
+      },
+      {
+        "field": "tradeCoupon.couponCode",
+        "replayField": "coupon_code",
+        "dataType": 12
+      },
+      {
+        "field": "tradeCoupon.couponType",
+        "replayField": "coupon_type",
+        "dataType": 4,
+        "enumFile": "coupon_type.json"
+      },
+      {
+        "field": "tradeCoupon.discountsAmount",
+        "replayField": "discounts_amount",
+        "dataType": 3
+      },
+      {
+        "field": "isBookingSaleGoods",
+        "replayField": "is_booking_sale_goods",
+        "dataType": -6
+      },
+      {
+        "field": "bookingType",
+        "replayField": "booking_type",
+        "dataType": 4,
+        "enumType": {
+          "FULL_MONEY": 0,
+          "EARNEST_MONEY": 1
+        }
+      },
+      {
+        "field": "grouponFlag",
+        "replayField": "groupon_flag",
+        "dataType": -6
+      },
+      {
+        "field": "isFlashSaleGoods",
+        "replayField": "is_flash_sale_goods",
+        "dataType": -6
+      },
+	  {
+        "field": "supplier.isMarket",
+        "replayField": "is_market",
+        "dataType": -6
+      },
+      {
+        "field": "tradePrice.earnestPrice",
+        "replayField": "earnest_price",
+        "dataType": 3
+      },
+      {
+        "field": "tradePrice.swellPrice",
+        "replayField": "swell_price",
+        "dataType": 3
+      },
+      {
+        "field": "tradePrice.tailPrice",
+        "replayField": "tail_price",
+        "dataType": 3
+      }
+    ],
+    "arrayData": {}
+  }
+}

@@ -1,0 +1,237 @@
+package com.wanmi.sbc.crm.api.request.customerplan;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.wanmi.sbc.common.enums.CommonErrorCodeEnum;
+import com.wanmi.sbc.common.exception.SbcRuntimeException;
+import com.wanmi.sbc.common.util.CustomLocalDateDeserializer;
+import com.wanmi.sbc.common.util.CustomLocalDateSerializer;
+import com.wanmi.sbc.crm.api.request.CrmBaseRequest;
+import com.wanmi.sbc.crm.bean.dto.CustomerPlanAppPushDTO;
+import com.wanmi.sbc.crm.bean.dto.CustomerPlanCouponDTO;
+import com.wanmi.sbc.crm.bean.dto.CustomerPlanSmsDTO;
+import com.wanmi.sbc.crm.bean.enums.TriggerCondition;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import lombok.*;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.hibernate.validator.constraints.Length;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * <p> 人群运营计划修改参数</p>
+ * @author dyt
+ * @date 2020-01-07 17:07:02
+ */
+@Schema
+@EqualsAndHashCode(callSuper = true)
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CustomerPlanModifyRequest extends CrmBaseRequest {
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * 标识
+	 */
+	@Schema(description = "标识")
+	@NotNull
+	private Long id;
+
+    /**
+     * 计划名称
+     */
+    @Schema(description = "计划名称")
+    @NotBlank
+    @Length(max=20)
+    private String planName;
+
+    /**
+     * 触发条件标志 0:否1:是
+     */
+    @Schema(description = "触发条件标志 0:否1:是")
+    @NotNull
+    private Boolean triggerFlag;
+
+    /**
+     * 触发条件
+     */
+    @Schema(description = "触发条件")
+    private List<TriggerCondition> triggerConditions;
+
+    /**
+     * 计划开始时间
+     */
+    @Schema(description = "计划开始时间")
+    @NotNull
+    @JsonSerialize(using = CustomLocalDateSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateDeserializer.class)
+    private LocalDate startDate;
+
+    /**
+     * 计划结束时间
+     */
+    @Schema(description = "计划结束时间")
+    @NotNull
+    @JsonSerialize(using = CustomLocalDateSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateDeserializer.class)
+    private LocalDate endDate;
+
+    /**
+     * 目标人群类型（0-全部，1-会员等级，2-会员人群，3-自定义）
+     */
+    @Schema(description = "目标人群类型（0-全部，1-会员等级，2-会员人群，3-自定义）")
+    @NotNull
+    private Integer receiveType;
+
+    /**
+     * 目标人群值
+     */
+    @Schema(description = "目标人群值")
+    private String receiveValue;
+
+    /**
+     * 是否送积分 0:否1:是
+     */
+    @Schema(description = "是否送积分 0:否1:是")
+    @NotNull
+    private Boolean pointFlag;
+
+    /**
+     * 赠送积分值
+     */
+    @Schema(description = "赠送积分值")
+    @Max(9999999999L)
+    @Min(1L)
+    private Integer points;
+
+    /**
+     * 是否送优惠券 0:否1:是
+     */
+    @Schema(description = "是否送优惠券 0:否1:是")
+    @NotNull
+    private Boolean couponFlag;
+
+    /**
+     * 是否每人限发次数 0:否1:是
+     */
+    @Schema(description = "是否每人限发次数 0:否1:是")
+    @NotNull
+    private Boolean customerLimitFlag;
+
+    /**
+     * 每人限发次数值
+     */
+    @Schema(description = "每人限发次数值")
+    @Max(9999999999L)
+    @Min(1L)
+    private Integer customerLimit;
+
+    /**
+     * 权益礼包总数
+     */
+    @Schema(description = "权益礼包总数")
+    @NotNull
+    @Max(9999999999L)
+    @Min(1L)
+    private Integer giftPackageTotal;
+
+    /**
+     * 已发送礼包数
+     */
+    @Schema(description = "已发送礼包数")
+    private Integer giftPackageCount;
+
+    /**
+     * 短信标识 0:否1:是
+     */
+    @Schema(description = "短信标识 0:否1:是")
+    @NotNull
+    private Boolean smsFlag;
+
+    /**
+     * 站内信标识 0:否1:是
+     */
+    @Schema(description = "站内信标识 0:否1:是")
+    @NotNull
+    private Boolean appPushFlag;
+
+    /**
+     * 创建人
+     */
+    @Schema(description = "更新人", hidden = true)
+    private String updatePerson;
+
+    /**
+     * 优惠券列表
+     */
+    @Schema(description = "优惠券列表")
+    private List<CustomerPlanCouponDTO> planCouponList;
+
+    /**
+     * 活动id
+     */
+    @Schema(description = "活动id", hidden = true)
+    private String activityId;
+
+    /**
+     * 总抵扣
+     */
+    @Schema(description = "总抵扣")
+    private BigDecimal couponDiscount;
+
+    /**
+     * 短信信息
+     */
+    @Schema(description = "短信信息")
+    private CustomerPlanSmsDTO planSms;
+
+    /**
+     * App通知信息
+     */
+    @Schema(description = "App通知信息")
+    private CustomerPlanAppPushDTO planAppPush;
+
+    @Override
+    public void checkParam() {
+        if(triggerFlag && CollectionUtils.isEmpty(triggerConditions)){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+
+        if(pointFlag && Objects.isNull(points)){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+
+        if(customerLimitFlag && Objects.isNull(customerLimit)){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+
+        if(couponFlag && (CollectionUtils.isEmpty(planCouponList) || Objects.isNull(couponDiscount))){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+
+        if(smsFlag && (Objects.isNull(planSms) || Objects.isNull(planSms.getSignId()) || Objects.isNull(planSms.getTemplateCode()))){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+
+        if(appPushFlag && (Objects.isNull(planAppPush)
+                || StringUtils.isBlank(planAppPush.getName())
+                || StringUtils.isBlank(planAppPush.getNoticeTitle())
+                || StringUtils.isBlank(planAppPush.getNoticeContext()))){
+            throw new SbcRuntimeException(CommonErrorCodeEnum.K000009);
+        }
+    }
+}

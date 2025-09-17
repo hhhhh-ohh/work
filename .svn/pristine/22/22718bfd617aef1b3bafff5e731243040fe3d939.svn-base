@@ -1,0 +1,4 @@
+##1、未登录用户的购物车查询接口   mobile 和 PC 的 jwt.excluded-urls 新增配置
+```properties
+,/front/cartInfo
+```

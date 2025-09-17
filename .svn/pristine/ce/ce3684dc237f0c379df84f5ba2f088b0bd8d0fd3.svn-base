@@ -1,0 +1,137 @@
+# ----------------------------------------
+# application info
+# ----------------------------------------
+info.app.name=sbc-service-elastic
+info.app.description=sbc-service-elastic
+info.build.artifact=@project.artifactId@
+info.build.version=@project.version@
+
+
+#\u7248\u672C
+# Nacos config for discovery
+spring.cloud.nacos.discovery.metadata.group=discovery-rule-group
+#\u7248\u672C
+spring.cloud.nacos.discovery.metadata.version=1.0
+#\u533A\u57DF
+spring.cloud.nacos.discovery.metadata.region=test
+#\u73AF\u5883
+spring.cloud.nacos.discovery.metadata.env=61
+#\u53EF\u7528\u533A
+spring.cloud.nacos.discovery.metadata.zone=61
+
+# ----------------------------------------
+# actuator settings
+# ----------------------------------------
+manager.mode=s2b
+management.server.port=8983
+management.endpoints.enabled-by-default=false
+management.endpoints.web.base-path=/act
+management.endpoint.info.enabled=true
+management.endpoint.health.enabled=true
+management.endpoint.mappings.enabled=true
+management.endpoint.env.enabled=true
+management.endpoint.health.show-details=always
+management.endpoints.web.exposure.include=health,info,mappings,env
+# ----------------------------------------
+# log config
+# ----------------------------------------
+logging.level.root=INFO
+logging.level.com.wanmi=INFO
+logging.level.org.springframework=WARN
+logging.config=classpath:logback.xml
+# ----------------------------------------
+# interface log config
+# ----------------------------------------
+request.log.enable=true
+request.log.need-result=true
+request.log.log-type=0
+# ----------------------------------------
+# server settings
+# ----------------------------------------
+server.port=8890
+server.servlet.session.timeout=30
+server.tomcat.threads.max=200
+server.error.whitelabel.enabled=false
+server.error.include-stacktrace=ALWAYS
+spring.jpa.show-sql=true
+spring.jpa.open-in-view=true
+server.tomcat.basedir=./data/sbc/es/tmp
+# ----------------------------------------
+# spring cloud
+# ----------------------------------------
+wm.nacos.username=nacos
+wm.nacos.password=Nacos@2024
+spring.application.name=sbc-service-elastic
+spring.cloud.nacos.discovery.server-addr=172.19.25.118:8848
+#spring.cloud.nacos.username=${wm.nacos.username}
+#spring.cloud.nacos.password=${wm.nacos.password}
+spring.cloud.nacos.config.import-check.enabled=false
+spring.main.allow-circular-references=true
+spring.mvc.static-path-pattern=/resources/**
+
+#-----------------------------------------------
+# seata
+#-----------------------------------------------
+seata.enabled=true
+seata.application-id=sbc-service-elastic
+#Seata\u4E8B\u52A1\u7EC4\u7F16\u53F7\uFF0C\u7528\u4E8ETC\u96C6\u7FA4\u540DSeata\u670D\u52A1\u914D\u7F6E\u9879\uFF0C\u5BF9\u5E94ServiceProperties\u7C7B
+seata.tx-service-group=sbc-service-elastic-group
+# \u865A\u62DF\u7EC4\u548C\u5206\u7EC4\u7684\u6620\u5C04
+seata.service.vgroup-mapping.sbc-service-elastic-group=default
+seata.enableAutoDataSourceProxy=true
+seata.registry.type=nacos
+seata.registry.nacos.server-addr=172.19.26.12:8848
+seata.registry.nacos.namespace=public
+seata.registry.nacos.cluster=default
+seata.client.rm.lock.retryInterval=10
+seata.client.rm.lock.retryTimes=300
+seata.registry.nacos.group=SEATA_GROUP
+seata.registry.nacos.application=seata-server
+
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.default-property-inclusion=non_null
+spring.jackson.serialization.write-null-map-values=true
+
+
+spring.datasource.health.check=false
+
+#spring.data.elasticsearch.cluster-name=elasticsearch
+#spring.data.elasticsearch.cluster-nodes=172.19.26.5:9300
+#spring.elasticsearch.rest.uris=http://172.19.26.12:9200
+spring.elasticsearch.uris=http://172.19.25.169:9200
+spring.elasticsearch.username=elastic
+spring.elasticsearch.password=Wmi@2023
+
+
+# ----------------------------------------
+# lcn\u5206\u5E03\u5F0F\u4E8B\u52A1
+# ----------------------------------------
+#\u7531\u4E8Espringcloud\u9ED8\u8BA4\u662F\u5F00\u542F\u7684\u91CD\u8BD5\u673A\u5236\uFF0C\u5F00\u542F\u6B21\u673A\u5236\u4EE5\u540E\u4F1A\u5BFC\u81F4\u5F53springcloud\u8BF7\u6C42\u8D85\u65F6\u65F6\u4F1A\u91CD\u590D\u8C03\u7528>\u4E1A\u52A1\u6A21\u5757\uFF0C\u4ECE\u800C\u4F1A\u5F15\u53D1\u6570\u636E\u6DF7\u4E71
+ribbon.MaxAutoRetriesNextServer=0
+ribbon.ReadTimeout=50000
+ribbon.ConnectTimeout=50000
+
+# ----------------------------------------
+# redis config
+# ----------------------------------------
+spring.data.redis.host=172.19.25.118
+spring.data.redis.port=6379
+spring.data.redis.database=0
+spring.data.redis.password=Wmi@2023
+spring.data.redis.timeout=5000
+spring.data.redis.lettuce.pool.max-active=20
+spring.data.redis.lettuce.pool.max-idle=10
+
+
+wm.elasticsearch.analyzer=wm_standard
+
+# \u4F7F\u7528okhttp
+feign.okhttp.enabled=true
+# \u5F00\u542F\u8BF7\u6C42\u6570\u636E\u7684\u538B\u7F29\u529F\u80FD
+feign.compression.request.enabled=false
+# \u5F00\u542F\u8FD4\u56DE\u6570\u636E\u7684\u538B\u7F29\u529F\u80FD
+feign.compression.response.enabled=true
+# \u538B\u7F29\u7C7B\u578B
+feign.compression.request.mime-types=text/xml,application/xml, application/json
+# \u6700\u5C0F\u538B\u7F29\u503C\u6807\u51C6\uFF0C\u5F53\u6570\u636E\u5927\u4E8E 1024 \u624D\u4F1A\u8FDB\u884C\u538B\u7F29
+feign.compression.request.min-request-size=1024

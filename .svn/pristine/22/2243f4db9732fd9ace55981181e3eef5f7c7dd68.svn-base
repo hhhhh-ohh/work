@@ -1,0 +1,54 @@
+{
+  "replayTable" : "replay_consignee",
+  "dispatch" : null,
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "tid",
+        "dataType": 12
+      },
+      {
+        "field": "consignee._id",
+        "replayField": "cda_id",
+        "dataType": 12
+      },
+      {
+        "field": "consignee.provinceId",
+        "replayField": "province_id",
+        "dataType": -5
+      },
+      {
+        "field": "consignee.cityId",
+        "replayField": "city_id",
+        "dataType": -5
+      },
+      {
+        "field": "consignee.areaId",
+        "replayField": "area_id",
+        "dataType": -5
+      },
+      {
+        "field": "consignee.detailAddress",
+        "replayField": "detail_address",
+        "dataType": 12
+      },
+      {
+        "field": "consignee.name",
+        "replayField": "name",
+        "dataType": 12
+      },
+      {
+        "field": "consignee.phone",
+        "replayField": "phone",
+        "dataType": 12
+      },
+      {
+        "field": "consignee.expectTime",
+        "replayField": "expect_time",
+        "dataType": 93
+      }
+    ],
+    "arrayData": {}
+  }
+}

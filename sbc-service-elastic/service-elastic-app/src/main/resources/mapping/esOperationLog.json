@@ -1,0 +1,58 @@
+{
+  "properties": {
+    "id": {
+      "type": "long"
+    },
+    "employeeId": {
+      "type": "keyword"
+    },
+    "storeId": {
+      "type": "keyword"
+    },
+    "companyInfoId": {
+      "type": "keyword"
+    },
+    "opAccount": {
+      "type": "keyword"
+    },
+    "opName": {
+      "type": "keyword"
+    },
+    "opRoleName": {
+      "type": "keyword"
+    },
+    "opModule": {
+      "type": "keyword"
+    },
+    "opCode": {
+      "type": "keyword"
+    },
+    "opContext": {
+      "type": "keyword"
+    },
+    "opTime": {
+      "type": "keyword"
+    },
+    "opIp": {
+      "type": "keyword"
+    },
+    "opMac": {
+      "type": "keyword"
+    },
+    "opIsp": {
+      "type": "keyword"
+    },
+    "opCountry": {
+      "type": "keyword"
+    },
+    "opProvince": {
+      "type": "keyword"
+    },
+    "opCity": {
+      "type": "keyword"
+    },
+    "opUserAgent": {
+      "type": "keyword"
+    }
+  }
+}

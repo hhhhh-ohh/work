@@ -1,0 +1,47 @@
+package com.wanmi.sbc.goods.api.provider.marketing;
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.goods.api.request.marketing.GoodsMarketingListByCustomerIdRequest;
+import com.wanmi.sbc.goods.api.request.marketing.ListByCustomerIdAndGoodsInfoIdReq;
+import com.wanmi.sbc.goods.api.request.marketing.ListByCustomerIdAndMarketingIdReq;
+import com.wanmi.sbc.goods.api.response.marketing.GoodsMarketingListByCustomerIdResponse;
+import com.wanmi.sbc.goods.api.response.marketing.ListByCustomerIdAndGoodsInfoIdResp;
+import com.wanmi.sbc.goods.api.response.marketing.ListByCustomerIdAndMarketingIdResp;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import jakarta.validation.Valid;
+
+/**
+ * <p>商品营销查询服务</p>
+ * author: sunkun
+ * Date: 2018-11-02
+ */
+@FeignClient(value = "${application.goods.name}", contextId = "GoodsMarketingQueryProvider")
+public interface GoodsMarketingQueryProvider {
+
+    /**
+     * 获取商品使用的营销
+     * @param request 获取商品使用的营销 {@link GoodsMarketingListByCustomerIdRequest}
+     * @return {@link GoodsMarketingListByCustomerIdResponse}
+     */
+    @PostMapping("/goods/${application.goods.version}/marketing/list-by-customer-id")
+    BaseResponse<GoodsMarketingListByCustomerIdResponse> listByCustomerId(@RequestBody @Valid GoodsMarketingListByCustomerIdRequest request);
+
+    /**
+     * 用户ID、营销ID获取营销的商品
+     * @param request {@link ListByCustomerIdAndMarketingIdReq}
+     * @return {@link ListByCustomerIdAndMarketingIdResp}
+     */
+    @PostMapping("/goods/${application.goods.version}/marketing/list-by-customer-id-marketing-id")
+    BaseResponse<ListByCustomerIdAndMarketingIdResp> listByCustomerIdAndMarketingId(@RequestBody @Valid ListByCustomerIdAndMarketingIdReq request);
+
+    /**
+     * 用户ID、商品查询同营销的商品
+     * @param request 获取商品使用的营销 {@link ListByCustomerIdAndGoodsInfoIdReq}
+     * @return {@link ListByCustomerIdAndGoodsInfoIdResp}
+     */
+    @PostMapping("/goods/${application.goods.version}/marketing/list-by-customer-id-goods-id")
+    BaseResponse<ListByCustomerIdAndGoodsInfoIdResp> queryByCustomerIdAndGoodsInfoId(@RequestBody @Valid ListByCustomerIdAndGoodsInfoIdReq request);
+}

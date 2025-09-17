@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wanmi.ares.report.flow.dao.ReplayMarketingSkuUvMapper">
+
+  <sql id="Base_Column_List">
+    id,marketing_id,marketing_type,sku_id,customer_id,stat_date,send_time,receive_time
+  </sql>
+
+  <insert id="insertByList">
+    insert into replay_marketing_sku_uv
+    (
+      marketing_id,
+      marketing_type,
+      sku_id,
+      customer_id,
+      stat_date,
+      send_time,
+      receive_time
+    )
+    VALUES
+    <if test="customerIds != null and customerIds.size() >0">
+      <foreach collection="customerIds" item="item" index="index" separator=",">
+        (
+        #{marketingId,jdbcType=VARCHAR},
+        #{marketingType,jdbcType=INTEGER},
+        #{skuId,jdbcType=VARCHAR},
+        #{item,jdbcType=VARCHAR},
+        #{statDate,jdbcType=DATE},
+        #{sendDate,jdbcType=TIMESTAMP},
+        now()
+        )
+      </foreach>
+    </if>
+  </insert>
+
+</mapper>

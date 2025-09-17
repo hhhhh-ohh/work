@@ -1,0 +1,26 @@
+# open服务启动配置
+## 配置
+### sbc-service-open.properties
+```properties
+# spring datasource health check
+spring.datasource.health.check=false
+```
+
+# 刷新是否是新人的状态
+```
+删除操作日志es，重新初始化 curl -XDELETE http://localhost:9200/es_system_operation_log
+```
+
+# 停机公告
+- Nginx中的bff.conf配置，"location /mbff/" 节点增加如下配置
+    - 正常情况下注释，停机发版前放出
+```shell
+location /
+ {
+  # add_header Access-Control-Allow-Headers *;
+  # add_header Access-Control-Allow-Methods GET,PUT,POST,DELETE,PATCH,OPTIONS;
+  # add_header Access-Control-Allow-Origin *;
+  # default_type application/json;
+  # return 200 '{"status":"STOP_1","result":"ok","data":"","message":["-温馨提示-","尊敬的会员:","为了给您更好的购物体验，万米SBC商城计划在2022-01-11日1点至5点进行停机升级维护，维护期间我们将关闭万米SBC商城的访问通道，为此给您带来的不变我们深表歉意！","感谢各位会员一直以来的大力支持，我们将竭诚为您提供更好的服务！","万米SBC商城"]}';
+}
+```

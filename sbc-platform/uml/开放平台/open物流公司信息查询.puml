@@ -1,0 +1,12 @@
+@startuml
+start
+:物流公司查询;
+:根据请求头AppKey获取所对应的商户;
+:调用setting服务的查询物流公司信息接口;
+if(接口调用正常) then(Y)
+:封装返回数据;
+else
+:返回空集合;
+endif
+stop
+@enduml

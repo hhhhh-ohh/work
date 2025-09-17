@@ -1,0 +1,115 @@
+1、provider、supplier、boss服务nacos配置文件增加配置项：
+openApi.secret.key=1wnVI0vSmed4rCjVI83v0Pi8h8jTabUxeIcsPGDKWoMOyoD18zcjCUO5Wvf3IXnX
+
+## 新增nacos配置
+### 1.open-api-router
+* DataId: open-api-router.json
+* Group: GATEWAY_GROUP
+* 配置格式: JSON
+```json
+[
+    
+     {
+        "id": "sbc-open",
+        "uri": "lb://sbc-open",
+        "predicates": [
+        {
+            "name": "Path",
+            "args": {
+                 "Path": "/open/**"
+            }
+        }],
+        "order":2
+     }
+]
+```
+### 2.open-gateway
+* DataId: open-gateway.yml
+* Group: GATEWAY_GROUP
+* 配置格式: YAML
+```yaml
+server:
+  port: 8088
+logging:
+  config: classpath:logback.xml
+  level:
+    com:
+      wanmi: INFO
+    root: INFO
+spring:
+  application:
+    name: open-gateway
+  cloud:
+    gateway:
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            key-resolver: '#{@customKeyResolver}'
+            rate-limiter: '#{@customRateLimiter}'
+    nacos:
+      discovery:
+        server-addr: 172.19.25.12:8848
+  redis:
+    database: 0
+    host: 172.19.25.12
+    port: 6379
+```
+根据环境修改nacos和redis的配置
+
+nacos 新增sbc-service-open.properties，内容如下
+```
+####基本配置
+info.app.name=sbc-service-open
+info.app.description=open
+info.build.artifact=@project.artifactId@
+info.build.version=@project.version@
+
+####Server配置
+server.port=8690
+management.server.port=8691
+server.tomcat.basedir=/data/sbc/open/tmp
+
+# mysql
+wm.mysql.db.name=sbc-bff
+spring.datasource.hikari.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.hikari.jdbc-url=jdbc:mysql://${wm.mysql.db.master.url}:3306/${wm.mysql.db.name}?characterEncoding=UTF-8&&zeroDateTimeBehavior=convertToNull&&useUnicode=true
+spring.datasource.hikari.username=${wm.mysql.db.master.username}
+spring.datasource.hikari.password=${wm.mysql.db.master.password}
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.maximum-pool-size=15
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.max-lifetime=60000
+spring.datasource.hikari.connection-timeout=30000
+
+# ----------------------------------------
+# spring cloud
+# ----------------------------------------
+spring.application.name=sbc-open
+
+########swagger begin###########
+## 标题
+swagger.title=SBC开放平台API接口
+## 联系人姓名
+swagger.contact.name=伟大的万米开发人员
+## 联系人地址
+swagger.contact.url=http://wiki.wanmi.com
+## 联系人邮箱
+swagger.contact.email=kstore_app@qianmi.com
+########swagger end###########
+
+###无用，去除jwt依赖，会导致SbcExceptionHandler找不到io.jsonwebtoken.SignatureException类 ###
+jwt.secret-key=eda1782204cf41efaca1e051ccc610be62acdcf24c09f011f343583c41cfb941f
+jwt.url-patterns=/wm
+
+#-----------------------------------------------
+# seata
+#-----------------------------------------------
+# 虚拟组和分组的映射
+seata.service.vgroup-mapping.sbc-open-group=default
+
+# 更改供应商商品状态mq
+spring.cloud.stream.bindings.q-goods-provider-status-modify-output.destination=q-goods-provider-status-modify
+spring.cloud.stream.bindings.q-goods-provider-status-modify-input.destination=q-goods-provider-status-modify
+
+application.open.version=1.0.0
+```

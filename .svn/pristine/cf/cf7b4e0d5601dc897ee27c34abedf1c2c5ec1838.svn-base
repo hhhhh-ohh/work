@@ -1,0 +1,2183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wanmi.ares.marketing.overview.dao.MarketingOverviewMapper">
+
+
+    <resultMap id="MarketingInfoMap" type="com.wanmi.ares.response.MarketingOverview">
+        <result property="payROI" column="pay_roi"/>
+        <result property="payMoney" column="pay_money"/>
+        <result property="discountMoney" column="discount_money"/>
+        <result property="payGoodsCount" column="pay_goods_count"/>
+        <result property="payTradeCount" column="pay_trade_count"/>
+        <result property="jointRate" column="joint_rate"/>
+        <result property="newCustomerCount" column="new_customer"/>
+        <result property="oldCustomerCount" column="old_customer"/>
+        <result property="payCustomerCount" column="pay_customer_count"/>
+        <result property="customerPrice" column="customer_price"/>
+        <result property="payMoneyRate" column="pay_money_rate"/>
+        <result property="noMarketingPayMoney" column="no_marketing_pay_money"/>
+        <result property="totalPayMoney" column="total_pay_money"/>
+        <result property="date" column="date" jdbcType="DATE"/>
+        <result property="title" column="title"/>
+        <result property="pv" column="pv"/>
+        <result property="uv" column="uv"/>
+        <result property="uvPayRate" column="uv_pay_rate"/>
+    </resultMap>
+
+    <insert id="insertOfDay">
+        insert into marketing_overview_day(date, store_id, pay_money, marketing_pay_money, discount_money, pay_goods_count,
+        pay_trade_count, pay_customer_count, boss_pay_customer_count, new_customer,
+        old_customer,
+        boss_new_customer, boss_old_customer,pv,uv, create_time)
+
+        select date_sub(current_date, interval 1 day) as date,
+        item.store_id,
+        sum(item.total_pay_cash)          as pay_money,
+        sum(item.pay_money)               as marketing_pay_money,
+        sum(item.discount_money)          as discount_money,
+        sum(item.pay_goods_count)         as pay_goods_count,
+        sum(item.pay_trade_count)         as pay_trade_count,
+        sum(item.customer_count)          as customer_count,
+        sum(item.boss_pay_customer_count) as boss_pay_customer_count,
+        sum(item.new_customer)            as new_customer,
+        sum(item.old_customer)            as old_customer,
+        sum(item.boss_new_customer)       as boss_new_customer,
+        sum(item.boss_old_customer)       as boss_old_customer,
+        sum(item.pv)       				  as pv,
+        sum(item.uv)       				  as uv,
+        now()
+        from (
+        select
+            sum(cod.discount_money) as discount_money,
+            0                       as pay_money,
+            0                       as pay_goods_count,
+            0                       as pay_trade_count,
+            0                       as customer_count,
+            0                       as total_pay_cash,
+            0                       as boss_pay_customer_count,
+            0                       as new_customer,
+            0                       as old_customer,
+            0                       as boss_new_customer,
+            0                       as boss_old_customer,
+            cod.store_id,
+            0                       pv,
+            0                       uv
+        from
+            coupon_overview_day cod
+        where
+            cod.stat_date = date_sub(current_date, interval 1 day)
+        group by
+            cod.store_id
+        union all
+
+        select
+            sum(gtd.discount_money)  as discount_money,
+            0                        as pay_money,
+            sum(gtd.pay_goods_count) as pay_goods_count,
+            count(gtd.id)            as pay_trade_count,
+            0                        as customer_count,
+            0                        as total_pay_cash,
+            0                        as boss_pay_customer_count,
+            0                        as new_customer,
+            0                        as old_customer,
+            0                        as boss_new_customer,
+            0                        as boss_old_customer,
+            gtd.store_id,
+            0                       pv,
+            0                       uv
+        from
+            groupon_trade_detail gtd
+        where
+            date_format(gtd.create_time, '%Y-%m-%d') = date_sub(current_date, interval 1 day)
+        group by
+            gtd.store_id
+        union all
+
+        select
+            sum(fs.discount_money)  as discount_money,
+            0                       as pay_money,
+            sum(fs.pay_goods_count) as pay_goods_count,
+            count(fs.id)            as pay_trade_count,
+            0                       as customer_count,
+            0                       as total_pay_cash,
+            0                       as boss_pay_customer_count,
+            0                       as new_customer,
+            0                       as old_customer,
+            0                       as boss_new_customer,
+            0                       as boss_old_customer,
+            fs.store_id,
+            0                       pv,
+            0                       uv
+        from
+            flash_sale fs
+        where
+            date_format(fs.create_time, '%Y-%m-%d') = date_sub(current_date, interval 1 day)
+        group by
+            fs.store_id
+        union all
+
+        select
+            sum(atd.discount_money)  as discount_money,
+            0                        as pay_money,
+            sum(atd.pay_goods_count) as pay_goods_count,
+            0                        as pay_trade_count,
+            0                        as customer_count,
+            0                        as total_pay_cash,
+            0                        as boss_pay_customer_count,
+            0                        as new_customer,
+            0                        as old_customer,
+            0                        as boss_new_customer,
+            0                        as boss_old_customer,
+            atd.store_id,
+            0                       pv,
+            0                       uv
+        from
+            appointment_trade_detail atd
+        where
+            date_format(atd.create_time, '%Y-%m-%d') = date_sub(current_date, interval 1 day)
+        group by
+            atd.store_id
+        union all
+
+        select
+            0                        as discount_money,
+            0                        as pay_money,
+            0                        as pay_goods_count,
+            count(atd.id)            as pay_trade_count,
+            0                        as customer_count,
+            0                        as total_pay_cash,
+            0                        as boss_pay_customer_count,
+            0                        as new_customer,
+            0                        as old_customer,
+            0                        as boss_new_customer,
+            0                        as boss_old_customer,
+            atd.store_id,
+            0                       pv,
+            0                       uv
+        from
+            appointment_trade_detail atd
+        where date_format(atd.create_time, '%Y-%m-%d') = date_sub(current_date, interval 1 day)
+            AND atd.tid NOT IN (
+                SELECT
+                    tid
+                FROM
+                    replay_trade_marketing
+                WHERE
+                    marketing_type IN ( 0, 1, 2 ) and pay_state = 2
+                    AND date_format( pay_time, '%Y-%m-%d' ) = DATE_SUB( curdate(), INTERVAL 1 DAY )
+            )
+        group by
+            atd.store_id
+        union all
+
+        select sum(fmb.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(fmb.pay_goods_count) as pay_goods_count,
+        count(fmb.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        fmb.store_id,
+        0                       pv,
+        0                       uv
+        from full_money_booking fmb
+        where date_format(fmb.create_time, '%Y-%m-%d') = date_sub(current_date, interval 1 day)
+        group by fmb.store_id
+        union all
+        select sum(db.discount_money)  as discount_money,
+        0                       as pay_money,
+        sum(db.pay_goods_count) as pay_goods_count,
+        count(db.id)            as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        db.store_id,
+        0                       pv,
+        0                       uv
+        from deposit_booking db
+        where date_format(create_time, '%Y-%m-%d') = date_sub(current_date, interval 1 day) and db.presell_type = 1
+        group by db.store_id
+        union all
+        select sum(item.discount_money)  as discount_money,
+        0                         as pay_money,
+        sum(item.pay_goods_count) as pay_goods_count,
+        sum(item.pay_trade_count) as pay_trade_count,
+        0                         as customer_count,
+        0                         as total_pay_cash,
+        0                         as boss_pay_customer_count,
+        0                         as new_customer,
+        0                         as old_customer,
+        0                         as boss_new_customer,
+        0                         as boss_old_customer,
+        store_id,
+        0                       pv,
+        0                       uv
+        from (
+        select sum(discounts_pay_amount) as discount_money,
+        sum(goods_pay_num)            as pay_goods_count,
+        min(order_pay_sum)             as pay_trade_count,
+        min(store_id)         as store_id
+        from marketing_statistics_day msd
+        where msd.marketing_type in (0, 1, 2, 3, 4, 6, 8) and
+         date_format(msd.create_time, '%Y-%m-%d') = DATE_SUB(curdate(), INTERVAL 1 DAY)
+        group by msd.tid
+        ) item
+        group by item.store_id
+        union all
+        SELECT 0                         as discount_money,
+        0                         as pay_money,
+        0                         as pay_goods_count,
+        0                         as pay_trade_count,
+        0                         as customer_count,
+        sum(IF(booking_type = 1, (earnest_price + tail_price), total_pay_cash)) as total_pay_cash,
+        0                         as boss_pay_customer_count,
+        0                         as new_customer,
+        0                         as old_customer,
+        0                         as boss_new_customer,
+        0                         as boss_old_customer,
+        trade.store_id,
+        0                       pv,
+        0                       uv
+        FROM replay_trade trade
+        WHERE trade.pay_state = 2
+        AND date_format(trade.pay_time, '%Y-%m-%d') = DATE_SUB(curdate(), INTERVAL 1 DAY)
+        group by trade.store_id
+        union all
+        SELECT 0                                                                       as discount_money,
+        sum(IF(trade.booking_type = 1, (trade.earnest_price + trade.tail_price), trade.total_pay_cash))    as pay_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        count(distinct trade.customer_id)                                       as customer_count,
+        0                                                                       as total_pay_cash,
+        0                                                                       as boss_pay_customer_count,
+        count(distinct if(cfp.customer_id is null, trade.customer_id, null))     as new_customer,
+        count(distinct if(cfp.customer_id is not null, trade.customer_id, null)) as old_customer,
+        0                                                                       as boss_new_customer,
+        0                                                                       as boss_old_customer,
+        trade.store_id,
+        0                       pv,
+        0                       uv
+        FROM replay_trade trade
+        left join customer_first_pay cfp
+        on cfp.store_id = trade.store_id and cfp.customer_id = trade.customer_id and
+        <![CDATA[
+            date_format(cfp.first_pay_time, '%Y-%m-%d') < DATE_SUB(curdate(), INTERVAL 1 DAY)
+        ]]>
+        WHERE trade.pay_state = 2
+        AND (
+        trade.is_flash_sale_goods = 1 or
+        trade.groupon_flag = 1 or
+        trade.is_booking_sale_goods = 1
+        OR trade.suit_marketing_flag = 1
+        or exists(select tid from replay_trade_item where tid = trade.tid and is_appointment_sale_goods = 1)
+        or exists(select tid from replay_trade_marketing where tid =
+        trade.tid and marketing_type in (0, 1, 2, 3, 4, 6, 8))
+        or exists(select tid from replay_trade_coupon where tid = trade.tid and coupon_type = 1)
+        )
+        AND date_format(trade.pay_time, '%Y-%m-%d') = DATE_SUB(curdate(), INTERVAL 1 DAY)
+        group by trade.store_id
+        union all
+        SELECT 0                                                                       as discount_money,
+        0                                                                       as pay_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        count(distinct trade.customer_id)                                       as customer_count,
+        0                                                                       as total_pay_cash,
+        0                                                                       as boss_pay_customer_count,
+        count(distinct if(cfp.customer_id is null, trade.customer_id, null))     as boss_new_customer,
+        count(distinct if(cfp.customer_id is not null, trade.customer_id, null)) as boss_old_customer,
+        0                                                                       as new_customer,
+        0                                                                       as old_customer,
+        '-1'                                                                    as store_id,
+        0                       pv,
+        0                       uv
+        FROM replay_trade trade
+        left join customer_first_pay cfp on cfp.customer_id = trade.customer_id and
+        <![CDATA[
+        date_format(cfp.first_pay_time, '%Y-%m-%d') < DATE_SUB(curdate(), INTERVAL 1 DAY)
+        ]]>
+        WHERE trade.pay_state = 2
+        AND (
+        trade.is_flash_sale_goods = 1 or
+        trade.groupon_flag = 1 or
+        trade.is_booking_sale_goods = 1
+        or trade.suit_marketing_flag = 1
+        or exists(select tid from replay_trade_item where tid = trade.tid and is_appointment_sale_goods = 1)
+        or exists(select tid from replay_trade_marketing where tid =
+        trade.tid and marketing_type in (0, 1, 2, 3, 4, 6, 8))
+        or exists(select tid from replay_trade_coupon where tid = trade.tid and coupon_type = 1)
+        )
+        AND date_format(trade.pay_time, '%Y-%m-%d') = DATE_SUB(curdate(), INTERVAL 1 DAY)
+        union all
+         SELECT
+                0                       discount_money,
+                0                       pay_money,
+                sum(rti.num)            pay_goods_count,
+                0                       pay_trade_count,
+                0                       customer_count,
+                0                       total_pay_cash,
+                0                       boss_pay_customer_count,
+                0                       boss_new_customer,
+                0                       boss_old_customer,
+                0                       new_customer,
+                0                       old_customer,
+                rti.store_id            store_id,
+                0                       pv,
+                0                       uv
+         FROM replay_trade_item rti
+                  JOIN (
+             SELECT rtc.oid oid
+             FROM replay_trade_coupon rtc
+                      JOIN replay_trade rt ON rtc.tid = rt.tid
+             WHERE date_format(rt.pay_time, '%Y-%m-%d') = date_sub(current_date, interval 1 day)
+               and rt.pay_state = 2
+               AND rtc.coupon_type = 1
+               and rt.is_flash_sale_goods is null
+               and rt.is_booking_sale_goods is null
+               and rt.groupon_flag != 1
+               and rt.suit_marketing_flag != 1
+             GROUP BY rtc.oid
+         ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+         where rti.is_appointment_sale_goods = 0
+           and not exists(select rtim.tid
+                          from replay_trade_item_marketing rtim
+                          where rtim.tid = rti.tid
+                            and rtim.sku_id = rti.sku_id
+                            and rtim.marketing_type in (0, 1, 2, 3, 4, 6, 8))
+         GROUP BY rti.store_id
+
+          union all
+         SELECT
+                0                       discount_money,
+                0                       pay_money,
+                0                       pay_goods_count,
+                count(DISTINCT rti.tid) pay_trade_count,
+                0                       customer_count,
+                0                       total_pay_cash,
+                0                       boss_pay_customer_count,
+                0                       boss_new_customer,
+                0                       boss_old_customer,
+                0                       new_customer,
+                0                       old_customer,
+                rti.store_id            store_id,
+                0                       pv,
+                0                       uv
+         FROM replay_trade_item rti
+                  JOIN (
+             SELECT rtc.oid oid
+             FROM replay_trade_coupon rtc
+                      JOIN replay_trade rt ON rtc.tid = rt.tid
+             WHERE date_format(rt.pay_time, '%Y-%m-%d') = date_sub(current_date, interval 1 day)
+               and rt.pay_state = 2
+               AND rtc.coupon_type = 1
+               and rt.is_flash_sale_goods is null
+               and rt.is_booking_sale_goods is null
+               and rt.groupon_flag != 1
+               and rt.suit_marketing_flag != 1
+             GROUP BY rtc.oid
+         ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+         where rti.is_appointment_sale_goods = 0
+           and not exists(select rtim.tid
+                          from replay_trade_item_marketing rtim
+                          where rtim.tid = rti.tid
+                            and rtim.marketing_type in (0, 1, 2, 3, 4, 6, 8))
+         GROUP BY rti.store_id
+
+
+        union all
+
+        SELECT
+        0                       discount_money,
+        0                       pay_money,
+        0                       pay_goods_count,
+        0                       pay_trade_count,
+        0                       customer_count,
+        0                       total_pay_cash,
+        0                       boss_pay_customer_count,
+        0                       boss_new_customer,
+        0                       boss_old_customer,
+        0                       new_customer,
+        0                       old_customer,
+        g.store_id              store_id,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+            replay_marketing_sku_pv p
+        LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+
+        where p.stat_date = date_sub(current_date, interval 1 day)
+        group by g.store_id
+
+        union all
+
+        SELECT
+        0                       discount_money,
+        0                       pay_money,
+        0                       pay_goods_count,
+        0                       pay_trade_count,
+        0                       customer_count,
+        0                       total_pay_cash,
+        0                       boss_pay_customer_count,
+        0                       boss_new_customer,
+        0                       boss_old_customer,
+        0                       new_customer,
+        0                       old_customer,
+        g.store_id              store_id,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        where u.stat_date = date_sub(current_date, interval 1 day)
+        group by g.store_id
+
+        union all
+		select
+            sum(bs.discount_money)  as discount_money,
+            0                        as pay_money,
+            sum(bs.pay_goods_count) as pay_goods_count,
+            count(bs.id)            as pay_trade_count,
+            0                        as customer_count,
+            0                        as total_pay_cash,
+            0                        as boss_pay_customer_count,
+            0                        as new_customer,
+            0                        as old_customer,
+            0                        as boss_new_customer,
+            0                        as boss_old_customer,
+            bs.store_id,
+            0                       pv,
+            0                       uv
+        from
+            bargain_sale bs
+        where
+            date_format(bs.create_time, '%Y-%m-%d') = date_sub(current_date, interval 1 day)
+        group by
+            bs.store_id
+        ) as item
+        inner join replay_store rs on item.store_id = rs.store_id where rs.store_type <![CDATA[ <> ]]> 2
+        group by item.store_id
+    </insert>
+
+    <delete id="delOfSevenDay">
+        truncate table marketing_overview_seven
+    </delete>
+    
+    <insert id="insertOfSevenDay">
+        <![CDATA[
+        insert into marketing_overview_seven(store_id, pay_money, marketing_pay_money, discount_money, pay_goods_count,
+        pay_trade_count, pay_customer_count, boss_pay_customer_count, new_customer,
+        old_customer,
+        boss_new_customer, boss_old_customer,pv,uv, create_time)
+        select item.store_id,
+        sum(item.total_pay_cash)          as pay_money,
+        sum(item.pay_money)               as marketing_pay_money,
+        sum(item.discount_money)          as discount_money,
+        sum(item.pay_goods_count)         as pay_goods_count,
+        sum(item.pay_trade_count)         as pay_trade_count,
+        sum(item.customer_count)          as customer_count,
+        sum(item.boss_pay_customer_count) as boss_pay_customer_count,
+        sum(item.new_customer)            as new_customer,
+        sum(item.old_customer)            as old_customer,
+        sum(item.boss_new_customer)       as boss_new_customer,
+        sum(item.boss_old_customer)       as boss_old_customer,
+        sum(item.pv)       				  as pv,
+        sum(item.uv)       				  as uv,
+        now()
+        from (
+        select sum(cod.discount_money) as discount_money,
+        0                       as pay_money,
+        0                       as pay_goods_count,
+        0                       as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        cod.store_id,
+        0                       pv,
+        0                       uv
+        from coupon_overview_day cod
+        where cod.stat_date < current_date
+                              and cod.stat_date >= date_sub(current_date, interval 7 day)
+        group by cod.store_id
+        union all
+        select sum(gtd.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(gtd.pay_goods_count) as pay_goods_count,
+        count(gtd.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        gtd.store_id,
+        0                       pv,
+        0                       uv
+        from groupon_trade_detail gtd
+        where date_format(gtd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(gtd.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+        group by gtd.store_id
+        union all
+        select sum(fs.discount_money)  as discount_money,
+        0                       as pay_money,
+        sum(fs.pay_goods_count) as pay_goods_count,
+        count(fs.id)            as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        fs.store_id,
+        0                       pv,
+        0                       uv
+        from flash_sale fs
+        where date_format(fs.create_time, '%Y-%m-%d') < current_date
+                                                        and date_format(fs.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+        group by fs.store_id
+        union all
+        select
+        sum(atd.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(atd.pay_goods_count) as pay_goods_count,
+        0                        as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        atd.store_id,
+        0                       pv,
+        0                       uv
+        from appointment_trade_detail atd
+        where date_format(atd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(atd.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+        group by atd.store_id
+        union all
+        select
+        0                        as discount_money,
+        0                        as pay_money,
+        0                        as pay_goods_count,
+        count(atd.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        atd.store_id,
+        0                       pv,
+        0                       uv
+        from appointment_trade_detail atd
+        where date_format(atd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(atd.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+            AND atd.tid NOT IN (
+                SELECT
+                    tid
+                FROM
+                    replay_trade_marketing
+                WHERE
+                    marketing_type IN ( 0, 1, 2 ) and pay_state = 2
+                    AND date_format( pay_time, '%Y-%m-%d' ) >= DATE_SUB( curdate(), INTERVAL 7 DAY ) and date_format(pay_time, '%Y-%m-%d') < current_date
+            )
+        group by atd.store_id
+        union all
+        select sum(fmb.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(fmb.pay_goods_count) as pay_goods_count,
+        count(fmb.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        fmb.store_id,
+        0                       pv,
+        0                       uv
+        from full_money_booking fmb
+        where date_format(fmb.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(fmb.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+        group by fmb.store_id
+        union all
+        select sum(db.discount_money)  as discount_money,
+        0                       as pay_money,
+        sum(db.pay_goods_count) as pay_goods_count,
+        count(db.id)            as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        db.store_id,
+        0                       pv,
+        0                       uv
+        from deposit_booking db
+        where date_format(db.create_time, '%Y-%m-%d') < current_date
+            and date_format(db.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day) and db.presell_type = 1
+        group by db.store_id
+        union all
+        select sum(item.discount_money)  as discount_money,
+        0                         as pay_money,
+        sum(item.pay_goods_count) as pay_goods_count,
+        sum(item.pay_trade_count) as pay_trade_count,
+        0                         as customer_count,
+        0                         as total_pay_cash,
+        0                         as boss_pay_customer_count,
+        0                         as new_customer,
+        0                         as old_customer,
+        0                         as boss_new_customer,
+        0                         as boss_old_customer,
+        store_id,
+        0                       pv,
+        0                       uv
+        from (
+        select sum(discounts_pay_amount) as discount_money,
+        SUM(goods_pay_num)             as pay_goods_count,
+        min(order_pay_sum)             as pay_trade_count,
+        min(store_id)         as store_id
+        from marketing_statistics_day msd
+        where msd.marketing_type in (0, 1, 2, 3, 4, 6, 8) and date_format(msd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(msd.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+        group by msd.tid
+        ) item
+        group by item.store_id
+        union all
+        SELECT 0                         as discount_money,
+        0                         as pay_money,
+        0                         as pay_goods_count,
+        0                         as pay_trade_count,
+        0                         as customer_count,
+        sum(IF(booking_type = 1, (earnest_price + tail_price), total_pay_cash)) as total_pay_cash,
+        0                         as boss_pay_customer_count,
+        0                         as new_customer,
+        0                         as old_customer,
+        0                         as boss_new_customer,
+        0                         as boss_old_customer,
+        trade.store_id,
+        0                       pv,
+        0                       uv
+        FROM replay_trade trade
+        WHERE trade.pay_state = 2
+        AND date_format(trade.pay_time, '%Y-%m-%d') < current_date
+                                                      and date_format(trade.pay_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+        group by trade.store_id
+        union all
+        SELECT 0                                                                       as discount_money,
+        sum(IF(trade.booking_type = 1, (trade.earnest_price + trade.tail_price), trade.total_pay_cash))    as pay_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        count(distinct trade.customer_id)                                       as customer_count,
+        0                                                                       as total_pay_cash,
+        0                                                                       as boss_pay_customer_count,
+        count(distinct if(cfp.customer_id is null, trade.customer_id, null))     as new_customer,
+        count(distinct if(cfp.customer_id is not null, trade.customer_id, null)) as old_customer,
+        0                                                                       as boss_new_customer,
+        0                                                                       as boss_old_customer,
+        trade.store_id,
+        0                       pv,
+        0                       uv
+        FROM replay_trade trade
+        left join customer_first_pay cfp
+        on cfp.store_id = trade.store_id and cfp.customer_id = trade.customer_id and
+        date_format(cfp.first_pay_time, '%Y-%m-%d') < DATE_SUB(curdate(), INTERVAL 7 DAY)
+        WHERE trade.pay_state = 2
+        AND (
+        trade.is_flash_sale_goods = 1 or
+        trade.groupon_flag = 1 or
+        trade.is_booking_sale_goods = 1
+        or trade.suit_marketing_flag = 1
+        or exists(select tid from replay_trade_item where tid = trade.tid and is_appointment_sale_goods = 1)
+        or exists(select tid from replay_trade_marketing where tid = trade.tid and marketing_type in (0, 1, 2, 3, 4, 6, 8))
+        or exists(select tid from replay_trade_coupon where tid = trade.tid and coupon_type = 1)
+        )
+        AND date_format(trade.pay_time, '%Y-%m-%d') < curdate()
+        AND date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 7 DAY)
+        group by trade.store_id
+        union all
+        SELECT 0                                                                       as discount_money,
+        0                                                                       as pay_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        count(distinct trade.customer_id)                                       as customer_count,
+        0                                                                       as total_pay_cash,
+        0                                                                       as boss_pay_customer_count,
+        count(distinct if(cfp.customer_id is null, trade.customer_id, null))     as boss_new_customer,
+        count(distinct if(cfp.customer_id is not null, trade.customer_id, null)) as boss_old_customer,
+        0                                                                       as new_customer,
+        0                                                                       as old_customer,
+        '-1'                                                                    as store_id,
+        0                       pv,
+        0                       uv
+        FROM replay_trade trade
+        left join customer_first_pay cfp on cfp.customer_id = trade.customer_id and
+        date_format(cfp.first_pay_time, '%Y-%m-%d') < DATE_SUB(curdate(), INTERVAL 7 DAY)
+        WHERE trade.pay_state = 2
+        AND (
+        trade.is_flash_sale_goods = 1 or
+        trade.groupon_flag = 1 or
+        trade.is_booking_sale_goods = 1
+        or trade.suit_marketing_flag = 1
+        or exists(select tid from replay_trade_item where tid = trade.tid and is_appointment_sale_goods = 1)
+        or exists(select tid from replay_trade_marketing where tid = trade.tid and marketing_type in (0, 1, 2, 3, 4, 6, 8))
+        or exists(select tid from replay_trade_coupon where tid = trade.tid and coupon_type = 1)
+        )
+        AND date_format(trade.pay_time, '%Y-%m-%d') < curdate()
+        AND date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 7 DAY)
+        union all
+         SELECT
+                0                       discount_money,
+                0                       pay_money,
+                sum(rti.num)            pay_goods_count,
+                0                       pay_trade_count,
+                0                       customer_count,
+                0                       total_pay_cash,
+                0                       boss_pay_customer_count,
+                0                       boss_new_customer,
+                0                       boss_old_customer,
+                0                       new_customer,
+                0                       old_customer,
+                rti.store_id            store_id,
+                0                       pv,
+                0                       uv
+         FROM replay_trade_item rti
+                  JOIN (
+             SELECT rtc.oid oid
+             FROM replay_trade_coupon rtc
+                      JOIN replay_trade rt ON rtc.tid = rt.tid
+             WHERE date_format(rt.pay_time, '%Y-%m-%d') < curdate()
+             and date_format(rt.pay_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+               and rt.pay_state = 2
+               AND rtc.coupon_type = 1
+               and rt.is_flash_sale_goods is null
+               and rt.is_booking_sale_goods is null
+               and rt.groupon_flag != 1
+               and rt.suit_marketing_flag != 1
+             GROUP BY rtc.oid
+         ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+         where rti.is_appointment_sale_goods = 0
+           and not exists(select rtim.tid
+                          from replay_trade_item_marketing rtim
+                          where rtim.tid = rti.tid
+                            and rtim.sku_id = rti.sku_id
+                            and rtim.marketing_type in (0, 1, 2, 3, 4, 6, 8))
+         GROUP BY rti.store_id
+
+         union all
+         SELECT
+                0                       discount_money,
+                0                       pay_money,
+                0                       pay_goods_count,
+                count(DISTINCT rti.tid) pay_trade_count,
+                0                       customer_count,
+                0                       total_pay_cash,
+                0                       boss_pay_customer_count,
+                0                       boss_new_customer,
+                0                       boss_old_customer,
+                0                       new_customer,
+                0                       old_customer,
+                rti.store_id            store_id,
+                0                       pv,
+                0                       uv
+         FROM replay_trade_item rti
+                  JOIN (
+             SELECT rtc.oid oid
+             FROM replay_trade_coupon rtc
+                      JOIN replay_trade rt ON rtc.tid = rt.tid
+             WHERE date_format(rt.pay_time, '%Y-%m-%d') < curdate()
+             and date_format(rt.pay_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+               and rt.pay_state = 2
+               AND rtc.coupon_type = 1
+               and rt.is_flash_sale_goods is null
+               and rt.is_booking_sale_goods is null
+               and rt.groupon_flag != 1
+               and rt.suit_marketing_flag != 1
+             GROUP BY rtc.oid
+         ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+         where rti.is_appointment_sale_goods = 0
+           and not exists(select rtim.tid
+                          from replay_trade_item_marketing rtim
+                          where rtim.tid = rti.tid
+                            and rtim.marketing_type in (0, 1, 2, 3, 4, 6, 8))
+         GROUP BY rti.store_id
+
+         union all
+
+        SELECT
+        0                       discount_money,
+        0                       pay_money,
+        0                       pay_goods_count,
+        0                       pay_trade_count,
+        0                       customer_count,
+        0                       total_pay_cash,
+        0                       boss_pay_customer_count,
+        0                       boss_new_customer,
+        0                       boss_old_customer,
+        0                       new_customer,
+        0                       old_customer,
+        g.store_id              store_id,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+            replay_marketing_sku_pv p
+        LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+
+        where p.stat_date >= date_sub(current_date, interval 7 day) and p.stat_date <= date_sub(current_date, interval 1 day)
+        group by g.store_id
+
+        union all
+
+        SELECT
+        0                       discount_money,
+        0                       pay_money,
+        0                       pay_goods_count,
+        0                       pay_trade_count,
+        0                       customer_count,
+        0                       total_pay_cash,
+        0                       boss_pay_customer_count,
+        0                       boss_new_customer,
+        0                       boss_old_customer,
+        0                       new_customer,
+        0                       old_customer,
+        g.store_id              store_id,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        where u.stat_date >= date_sub(current_date, interval 7 day) and u.stat_date <= date_sub(current_date, interval 1 day)
+        group by g.store_id
+
+        union all
+        select sum(bs.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(bs.pay_goods_count) as pay_goods_count,
+        count(bs.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        bs.store_id,
+        0                       pv,
+        0                       uv
+        from bargain_sale bs
+        where date_format(bs.create_time, '%Y-%m-%d') < current_date
+            and date_format(bs.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 7 day)
+        group by bs.store_id
+        ) as item
+        inner join replay_store rs on item.store_id = rs.store_id where rs.store_type <> 2
+        group by item.store_id
+        ]]>
+    </insert>
+    
+    <delete id="delOfThirtyDay">
+        truncate table marketing_overview_thirty
+    </delete>
+    
+    <insert id="insertOfThirtyDay">
+        <![CDATA[
+        insert into marketing_overview_thirty(store_id, pay_money, marketing_pay_money, discount_money, pay_goods_count,
+        pay_trade_count, pay_customer_count, boss_pay_customer_count, new_customer,
+        old_customer,
+        boss_new_customer, boss_old_customer,pv,uv, create_time)
+        select
+        item.store_id,
+        sum(item.total_pay_cash)          as pay_money,
+        sum(item.pay_money)               as marketing_pay_money,
+        sum(item.discount_money)          as discount_money,
+        sum(item.pay_goods_count)         as pay_goods_count,
+        sum(item.pay_trade_count)         as pay_trade_count,
+        sum(item.customer_count)          as customer_count,
+        sum(item.boss_pay_customer_count) as boss_pay_customer_count,
+        sum(item.new_customer)            as new_customer,
+        sum(item.old_customer)            as old_customer,
+        sum(item.boss_new_customer)       as boss_new_customer,
+        sum(item.boss_old_customer)       as boss_old_customer,
+        sum(item.pv)       				  as pv,
+        sum(item.uv)       				  as uv,
+        now()
+        from (
+        select sum(cod.discount_money) as discount_money,
+        0                       as pay_money,
+        0                       as pay_goods_count,
+        0                       as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        cod.store_id,
+        0   pv,
+        0   uv
+        from coupon_overview_day cod
+        where cod.stat_date < current_date
+                              and cod.stat_date >= date_sub(current_date, interval 30 day)
+        group by cod.store_id
+        union all
+        select sum(gtd.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(gtd.pay_goods_count) as pay_goods_count,
+        count(gtd.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        gtd.store_id,
+        0   pv,
+        0   uv
+        from groupon_trade_detail gtd
+        where date_format(gtd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(gtd.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 30 day)
+        group by gtd.store_id
+        union all
+        select sum(fs.discount_money)  as discount_money,
+        0                       as pay_money,
+        sum(fs.pay_goods_count) as pay_goods_count,
+        count(fs.id)            as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        fs.store_id,
+        0   pv,
+        0   uv
+        from flash_sale fs
+        where date_format(fs.create_time, '%Y-%m-%d') < current_date
+                                                        and date_format(fs.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 30 day)
+        group by fs.store_id
+        union all
+        select
+        sum(atd.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(atd.pay_goods_count) as pay_goods_count,
+        0                        as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        atd.store_id,
+        0   pv,
+        0   uv
+        from appointment_trade_detail atd
+        where date_format(atd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(atd.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 30 day)
+        group by atd.store_id
+        union all
+        select
+        0                        as discount_money,
+        0                        as pay_money,
+        0                        as pay_goods_count,
+        count(atd.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        atd.store_id,
+        0   pv,
+        0   uv
+        from appointment_trade_detail atd
+        where date_format(atd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(atd.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 30 day)
+         AND atd.tid NOT IN (
+                SELECT
+                    tid
+                FROM
+                    replay_trade_marketing
+                WHERE
+                    marketing_type IN (0, 1, 2, 3, 4, 6, 8) and pay_state = 2
+                    AND date_format( pay_time, '%Y-%m-%d' ) >= DATE_SUB( curdate(), INTERVAL 30 DAY ) and date_format(pay_time, '%Y-%m-%d') < current_date
+            )
+        group by atd.store_id
+        union all
+        select sum(fmb.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(fmb.pay_goods_count) as pay_goods_count,
+        count(fmb.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        fmb.store_id,
+        0   pv,
+        0   uv
+        from full_money_booking fmb
+        where date_format(fmb.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(fmb.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 30 day)
+        group by fmb.store_id
+        union all
+        select sum(db.discount_money)  as discount_money,
+        0                       as pay_money,
+        sum(db.pay_goods_count) as pay_goods_count,
+        count(db.id)            as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        db.store_id,
+        0   pv,
+        0   uv
+        from deposit_booking db
+        where date_format(db.create_time, '%Y-%m-%d') < current_date
+                                                        and date_format(db.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 30 day) and db.presell_type = 1
+        group by db.store_id
+        union all
+        select sum(item.discount_money)  as discount_money,
+        0                         as pay_money,
+        sum(item.pay_goods_count) as pay_goods_count,
+        sum(item.pay_trade_count) as pay_trade_count,
+        0                         as customer_count,
+        0                         as total_pay_cash,
+        0                         as boss_pay_customer_count,
+        0                         as new_customer,
+        0                         as old_customer,
+        0                         as boss_new_customer,
+        0                         as boss_old_customer,
+        store_id,
+        0   pv,
+        0   uv
+        from (
+        select sum(discounts_pay_amount) as discount_money,
+        SUM(goods_pay_num)               as pay_goods_count,
+        min(order_pay_sum)             as pay_trade_count,
+        min(store_id)         as store_id
+        from marketing_statistics_day msd
+        where msd.marketing_type in (0, 1, 2, 3, 4, 6, 8) and date_format(msd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(msd.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 30 day)
+        group by msd.tid
+        ) item
+        group by item.store_id
+        union all
+        SELECT 0                         as discount_money,
+        0                         as pay_money,
+        0                         as pay_goods_count,
+        0                         as pay_trade_count,
+        0                         as customer_count,
+        sum(IF(booking_type = 1, (earnest_price + tail_price), total_pay_cash)) as total_pay_cash,
+        0                         as boss_pay_customer_count,
+        0                         as new_customer,
+        0                         as old_customer,
+        0                         as boss_new_customer,
+        0                         as boss_old_customer,
+        trade.store_id,
+        0   pv,
+        0   uv
+        FROM replay_trade trade
+        WHERE trade.pay_state = 2
+        AND date_format(trade.pay_time, '%Y-%m-%d') < current_date
+                                                      and date_format(trade.pay_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 30 day)
+        group by trade.store_id
+        union all
+        SELECT 0                                                                       as discount_money,
+        sum(IF(trade.booking_type = 1, (trade.earnest_price + trade.tail_price), trade.total_pay_cash))    as pay_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        count(distinct trade.customer_id)                                       as customer_count,
+        0                                                                       as total_pay_cash,
+        0                                                                       as boss_pay_customer_count,
+        count(distinct if(cfp.customer_id is null, trade.customer_id, null))     as new_customer,
+        count(distinct if(cfp.customer_id is not null, trade.customer_id, null)) as old_customer,
+        0                                                                       as boss_new_customer,
+        0                                                                       as boss_old_customer,
+        trade.store_id,
+        0   pv,
+        0   uv
+        FROM replay_trade trade
+        left join customer_first_pay cfp
+        on cfp.store_id = trade.store_id and cfp.customer_id = trade.customer_id and
+        date_format(cfp.first_pay_time, '%Y-%m-%d') < DATE_SUB(curdate(), INTERVAL 30 DAY)
+        WHERE trade.pay_state = 2
+        AND (
+        trade.is_flash_sale_goods = 1 or
+        trade.groupon_flag = 1 or
+        trade.is_booking_sale_goods = 1
+        or trade.suit_marketing_flag = 1
+        or exists(select tid from replay_trade_item where tid = trade.tid and is_appointment_sale_goods = 1)
+        or exists(select tid from replay_trade_marketing where tid = trade.tid and marketing_type in (0, 1, 2, 3, 4, 6, 8))
+        or exists(select tid from replay_trade_coupon where tid = trade.tid and coupon_type = 1)
+        )
+        AND date_format(trade.pay_time, '%Y-%m-%d') < curdate()
+        AND date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 30 DAY)
+        group by trade.store_id
+        union all
+        SELECT 0                                                                       as discount_money,
+        0                                                                       as pay_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        count(distinct trade.customer_id)                                       as customer_count,
+        0                                                                       as total_pay_cash,
+        0                                                                       as boss_pay_customer_count,
+        count(distinct if(cfp.customer_id is null, trade.customer_id, null))     as boss_new_customer,
+        count(distinct if(cfp.customer_id is not null, trade.customer_id, null)) as boss_old_customer,
+        0                                                                       as new_customer,
+        0                                                                       as old_customer,
+        '-1'                                                                    as store_id,
+        0                                                                       as pv,
+        0                                                                       as uv
+        FROM replay_trade trade
+        left join customer_first_pay cfp on cfp.customer_id = trade.customer_id and
+        date_format(cfp.first_pay_time, '%Y-%m-%d') < DATE_SUB(curdate(), INTERVAL 30 DAY)
+        WHERE trade.pay_state = 2
+        AND (
+        trade.is_flash_sale_goods = 1 or
+        trade.groupon_flag = 1 or
+        trade.is_booking_sale_goods = 1
+        or trade.suit_marketing_flag = 1
+        or exists(select tid from replay_trade_item where tid = trade.tid and is_appointment_sale_goods = 1)
+        or exists(select tid from replay_trade_marketing where tid = trade.tid and marketing_type in (0, 1, 2, 3, 4, 6, 8))
+        or exists(select tid from replay_trade_coupon where tid = trade.tid and coupon_type = 1)
+        )
+        AND date_format(trade.pay_time, '%Y-%m-%d') < curdate()
+        AND date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 30 DAY)
+        union all
+         SELECT
+                0                       discount_money,
+                0                       pay_money,
+                sum(rti.num)            pay_goods_count,
+                0                       pay_trade_count,
+                0                       customer_count,
+                0                       total_pay_cash,
+                0                       boss_pay_customer_count,
+                0                       boss_new_customer,
+                0                       boss_old_customer,
+                0                       new_customer,
+                0                       old_customer,
+                rti.store_id            store_id,
+                0                       pv,
+                0                       uv
+         FROM replay_trade_item rti
+                  JOIN (
+             SELECT rtc.oid oid
+             FROM replay_trade_coupon rtc
+                      JOIN replay_trade rt ON rtc.tid = rt.tid
+             WHERE date_format(rt.pay_time, '%Y-%m-%d') < curdate()
+             AND date_format(rt.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 30 DAY)
+               and rt.pay_state = 2
+               AND rtc.coupon_type = 1
+               and rt.is_flash_sale_goods is null
+               and rt.is_booking_sale_goods is null
+               and rt.groupon_flag != 1
+               and rt.suit_marketing_flag != 1
+             GROUP BY rtc.oid
+         ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+         where rti.is_appointment_sale_goods = 0
+           and not exists(select rtim.tid
+                          from replay_trade_item_marketing rtim
+                          where rtim.tid = rti.tid
+                            and rtim.sku_id = rti.sku_id
+                            and rtim.marketing_type in (0, 1, 2, 3, 4, 6, 8))
+         GROUP BY rti.store_id
+
+         union all
+         SELECT
+                0                       discount_money,
+                0                       pay_money,
+                0                       pay_goods_count,
+                count(DISTINCT rti.tid) pay_trade_count,
+                0                       customer_count,
+                0                       total_pay_cash,
+                0                       boss_pay_customer_count,
+                0                       boss_new_customer,
+                0                       boss_old_customer,
+                0                       new_customer,
+                0                       old_customer,
+                rti.store_id            store_id,
+                0                       pv,
+                0                       uv
+         FROM replay_trade_item rti
+                  JOIN (
+             SELECT rtc.oid oid
+             FROM replay_trade_coupon rtc
+                      JOIN replay_trade rt ON rtc.tid = rt.tid
+             WHERE date_format(rt.pay_time, '%Y-%m-%d') < curdate()
+             AND date_format(rt.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 30 DAY)
+               and rt.pay_state = 2
+               AND rtc.coupon_type = 1
+               and rt.is_flash_sale_goods is null
+               and rt.is_booking_sale_goods is null
+               and rt.groupon_flag != 1
+               and rt.suit_marketing_flag != 1
+             GROUP BY rtc.oid
+         ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+         where rti.is_appointment_sale_goods = 0
+           and not exists(select rtim.tid
+                          from replay_trade_item_marketing rtim
+                          where rtim.tid = rti.tid
+                            and rtim.marketing_type in (0, 1, 2, 3, 4, 6, 8))
+         GROUP BY rti.store_id
+
+           union all
+
+        SELECT
+        0                       discount_money,
+        0                       pay_money,
+        0                       pay_goods_count,
+        0                       pay_trade_count,
+        0                       customer_count,
+        0                       total_pay_cash,
+        0                       boss_pay_customer_count,
+        0                       boss_new_customer,
+        0                       boss_old_customer,
+        0                       new_customer,
+        0                       old_customer,
+        g.store_id              store_id,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+            replay_marketing_sku_pv p
+        LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+
+        where p.stat_date >= date_sub(current_date, interval 30 day) and p.stat_date <= date_sub(current_date, interval 1 day)
+        group by g.store_id
+
+        union all
+
+        SELECT
+        0                       discount_money,
+        0                       pay_money,
+        0                       pay_goods_count,
+        0                       pay_trade_count,
+        0                       customer_count,
+        0                       total_pay_cash,
+        0                       boss_pay_customer_count,
+        0                       boss_new_customer,
+        0                       boss_old_customer,
+        0                       new_customer,
+        0                       old_customer,
+        g.store_id              store_id,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        where u.stat_date >= date_sub(current_date, interval 30 day) and u.stat_date <= date_sub(current_date, interval 1 day)
+        group by g.store_id
+
+        union all
+        select sum(bs.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(bs.pay_goods_count) as pay_goods_count,
+        count(bs.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        bs.store_id,
+        0   pv,
+        0   uv
+        from bargain_sale bs
+        where date_format(bs.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(bs.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 30 day)
+        group by bs.store_id
+        ) as item
+        inner join replay_store rs on item.store_id = rs.store_id where rs.store_type <> 2
+        group by item.store_id
+        ]]>
+    </insert>
+
+    <insert id="insertOfMonth">
+        <![CDATA[
+        insert into marketing_overview_month(month,store_id, pay_money, marketing_pay_money, discount_money, pay_goods_count,
+        pay_trade_count, pay_customer_count, boss_pay_customer_count, new_customer,
+        old_customer,
+        boss_new_customer, boss_old_customer,pv,uv, create_time)
+        select date_format(date_sub(current_date, interval 1 month), '%Y-%m') as month,
+        item.store_id,
+        sum(item.total_pay_cash)          as pay_money,
+        sum(item.pay_money)               as marketing_pay_money,
+        sum(item.discount_money)          as discount_money,
+        sum(item.pay_goods_count)         as pay_goods_count,
+        sum(item.pay_trade_count)         as pay_trade_count,
+        sum(item.customer_count)          as customer_count,
+        sum(item.boss_pay_customer_count) as boss_pay_customer_count,
+        sum(item.new_customer)            as new_customer,
+        sum(item.old_customer)            as old_customer,
+        sum(item.boss_new_customer)       as boss_new_customer,
+        sum(item.boss_old_customer)       as boss_old_customer,
+        sum(item.pv)       				  as pv,
+        sum(item.uv)       				  as uv,
+        now()
+        from (
+        select sum(cod.discount_money) as discount_money,
+        0                       as pay_money,
+        0                       as pay_goods_count,
+        0                       as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        cod.store_id,
+        0 pv,
+        0 uv
+        from coupon_overview_day cod
+        where cod.stat_date < current_date
+                              and cod.stat_date >= date_sub(current_date, interval 1 month)
+        group by cod.store_id
+        union all
+        select sum(gtd.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(gtd.pay_goods_count) as pay_goods_count,
+        count(gtd.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        gtd.store_id,
+        0 pv,
+        0 uv
+        from groupon_trade_detail gtd
+        where date_format(gtd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(gtd.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 1 month)
+        group by gtd.store_id
+        union all
+        select sum(fs.discount_money)  as discount_money,
+        0                       as pay_money,
+        sum(fs.pay_goods_count) as pay_goods_count,
+        count(fs.id)            as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        fs.store_id,
+        0 pv,
+        0 uv
+        from flash_sale fs
+        where date_format(fs.create_time, '%Y-%m-%d') < current_date
+                                                        and date_format(fs.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 1 month)
+        group by fs.store_id
+        union all
+        select
+        sum(atd.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(atd.pay_goods_count) as pay_goods_count,
+        0                        as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        atd.store_id,
+        0 pv,
+        0 uv
+        from appointment_trade_detail atd
+        where date_format(atd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(atd.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 1 month)
+        group by atd.store_id
+        union all
+        select
+        0                        as discount_money,
+        0                        as pay_money,
+        0                        as pay_goods_count,
+        count(atd.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        atd.store_id,
+        0 pv,
+        0 uv
+        from appointment_trade_detail atd
+        where date_format(atd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(atd.create_time, '%Y-%m-%d') >= date_sub(current_date, interval 1 month)
+         AND atd.tid NOT IN (
+                SELECT
+                    tid
+                FROM
+                    replay_trade_marketing
+                WHERE
+                    marketing_type IN ( 0, 1, 2 ) and pay_state = 2
+                    AND date_format( pay_time, '%Y-%m-%d' ) >= DATE_SUB( curdate(), INTERVAL 1 month ) and date_format(pay_time, '%Y-%m-%d') < current_date
+            )
+        group by atd.store_id
+        union all
+        select sum(fmb.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(fmb.pay_goods_count) as pay_goods_count,
+        count(fmb.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        fmb.store_id,
+        0 pv,
+        0 uv
+        from full_money_booking fmb
+        where date_format(fmb.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(fmb.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 1 month)
+        group by fmb.store_id
+        union all
+        select sum(db.discount_money)  as discount_money,
+        0                       as pay_money,
+        sum(db.pay_goods_count) as pay_goods_count,
+        count(db.id)            as pay_trade_count,
+        0                       as customer_count,
+        0                       as total_pay_cash,
+        0                       as boss_pay_customer_count,
+        0                       as new_customer,
+        0                       as old_customer,
+        0                       as boss_new_customer,
+        0                       as boss_old_customer,
+        db.store_id,
+        0 pv,
+        0 uv
+        from deposit_booking db
+        where date_format(db.create_time, '%Y-%m-%d') < current_date
+                                                        and date_format(db.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 1 month) and db.presell_type = 1
+        group by db.store_id
+        union all
+        select sum(item.discount_money)  as discount_money,
+        0                         as pay_money,
+        sum(item.pay_goods_count) as pay_goods_count,
+        sum(item.pay_trade_count) as pay_trade_count,
+        0                         as customer_count,
+        0                         as total_pay_cash,
+        0                         as boss_pay_customer_count,
+        0                         as new_customer,
+        0                         as old_customer,
+        0                         as boss_new_customer,
+        0                         as boss_old_customer,
+        store_id,
+        0 pv,
+        0 uv
+        from (
+        select sum(discounts_pay_amount) as discount_money,
+        SUM(goods_pay_num)               as pay_goods_count,
+        min(order_pay_sum)             as pay_trade_count,
+        min(store_id)         as store_id
+        from marketing_statistics_day msd
+        where msd.marketing_type in (0, 1, 2, 3, 4, 6, 8) and date_format(msd.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(msd.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 1 month)
+        group by msd.tid
+        ) item
+        group by item.store_id
+        union all
+        SELECT 0                         as discount_money,
+        0                         as pay_money,
+        0                         as pay_goods_count,
+        0                         as pay_trade_count,
+        0                         as customer_count,
+        sum(IF(booking_type = 1, (earnest_price + tail_price), total_pay_cash)) as total_pay_cash,
+        0                         as boss_pay_customer_count,
+        0                         as new_customer,
+        0                         as old_customer,
+        0                         as boss_new_customer,
+        0                         as boss_old_customer,
+        trade.store_id,
+        0 pv,
+        0 uv
+        FROM replay_trade trade
+        WHERE trade.pay_state = 2
+        AND date_format(trade.pay_time, '%Y-%m-%d') < current_date
+                                                      and date_format(trade.pay_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 1 month)
+        group by trade.store_id
+        union all
+        SELECT 0                                                                       as discount_money,
+        sum(IF(trade.booking_type = 1, (trade.earnest_price + trade.tail_price), trade.total_pay_cash))    as pay_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        count(distinct trade.customer_id)                                       as customer_count,
+        0                                                                       as total_pay_cash,
+        0                                                                       as boss_pay_customer_count,
+        count(distinct if(cfp.customer_id is null, trade.customer_id, null))     as new_customer,
+        count(distinct if(cfp.customer_id is not null, trade.customer_id, null)) as old_customer,
+        0                                                                       as boss_new_customer,
+        0                                                                       as boss_old_customer,
+        trade.store_id,
+        0 pv,
+        0 uv
+        FROM replay_trade trade
+        left join customer_first_pay cfp
+        on cfp.store_id = trade.store_id and cfp.customer_id = trade.customer_id and
+        date_format(cfp.first_pay_time, '%Y-%m-%d') < DATE_SUB(curdate(), INTERVAL 1 month)
+        WHERE trade.pay_state = 2
+        AND (
+        trade.is_flash_sale_goods = 1 or
+        trade.groupon_flag = 1 or
+        trade.is_booking_sale_goods = 1
+        or trade.suit_marketing_flag = 1
+        or exists(select tid from replay_trade_item where tid = trade.tid and is_appointment_sale_goods = 1)
+        or exists(select tid from replay_trade_marketing where tid = trade.tid and marketing_type in (0, 1, 2, 3, 4, 6, 8))
+        or exists(select tid from replay_trade_coupon where tid = trade.tid and coupon_type = 1)
+        )
+        AND date_format(trade.pay_time, '%Y-%m-%d') < current_date
+        AND date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 1 month)
+        group by trade.store_id
+        union all
+        SELECT 0                                                                       as discount_money,
+        0                                                                       as pay_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        count(distinct trade.customer_id)                                       as customer_count,
+        0                                                                       as total_pay_cash,
+        0                                                                       as boss_pay_customer_count,
+        count(distinct if(cfp.customer_id is null, trade.customer_id, null))     as boss_new_customer,
+        count(distinct if(cfp.customer_id is not null, trade.customer_id, null)) as boss_old_customer,
+        0                                                                       as new_customer,
+        0                                                                       as old_customer,
+        '-1'                                                                    as store_id,
+        0 pv,
+        0 uv
+        FROM replay_trade trade
+        left join customer_first_pay cfp on cfp.customer_id = trade.customer_id and
+        date_format(cfp.first_pay_time, '%Y-%m-%d') < DATE_SUB(curdate(), INTERVAL 1 month)
+        WHERE trade.pay_state = 2
+        AND (
+        trade.is_flash_sale_goods = 1 or
+        trade.groupon_flag = 1 or
+        trade.is_booking_sale_goods = 1
+        or trade.suit_marketing_flag = 1
+        or exists(select tid from replay_trade_item where tid = trade.tid and is_appointment_sale_goods = 1)
+        or exists(select tid from replay_trade_marketing where tid = trade.tid and marketing_type in (0, 1, 2, 3, 4, 6, 8))
+        or exists(select tid from replay_trade_coupon where tid = trade.tid and coupon_type = 1)
+        )
+        AND date_format(trade.pay_time, '%Y-%m-%d') < current_date
+        AND date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 1 month)
+        union all
+         SELECT
+                0                       discount_money,
+                0                       pay_money,
+                sum(rti.num)            pay_goods_count,
+                0                       pay_trade_count,
+                0                       customer_count,
+                0                       total_pay_cash,
+                0                       boss_pay_customer_count,
+                0                       boss_new_customer,
+                0                       boss_old_customer,
+                0                       new_customer,
+                0                       old_customer,
+                rti.store_id            store_id,
+                0 pv,
+                0 uv
+         FROM replay_trade_item rti
+                  JOIN (
+             SELECT rtc.oid oid
+             FROM replay_trade_coupon rtc
+                      JOIN replay_trade rt ON rtc.tid = rt.tid
+             WHERE date_format(rt.pay_time, '%Y-%m-%d') < current_date
+        AND date_format(rt.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 1 month)
+               and rt.pay_state = 2
+               AND rtc.coupon_type = 1
+               and rt.is_flash_sale_goods is null
+               and rt.is_booking_sale_goods is null
+               and rt.groupon_flag != 1
+               and rt.suit_marketing_flag != 1
+             GROUP BY rtc.oid
+         ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+         where rti.is_appointment_sale_goods = 0
+           and not exists(select rtim.tid
+                          from replay_trade_item_marketing rtim
+                          where rtim.tid = rti.tid
+                            and rtim.sku_id = rti.sku_id
+                            and rtim.marketing_type in (0, 1, 2, 3, 4, 6, 8))
+         GROUP BY rti.store_id
+
+         union all
+         SELECT
+                0                       discount_money,
+                0                       pay_money,
+                0                       pay_goods_count,
+                count(DISTINCT rti.tid) pay_trade_count,
+                0                       customer_count,
+                0                       total_pay_cash,
+                0                       boss_pay_customer_count,
+                0                       boss_new_customer,
+                0                       boss_old_customer,
+                0                       new_customer,
+                0                       old_customer,
+                rti.store_id            store_id,
+                0 pv,
+                0 uv
+         FROM replay_trade_item rti
+                  JOIN (
+             SELECT rtc.oid oid
+             FROM replay_trade_coupon rtc
+                      JOIN replay_trade rt ON rtc.tid = rt.tid
+             WHERE date_format(rt.pay_time, '%Y-%m-%d') < current_date
+        AND date_format(rt.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 1 month)
+               and rt.pay_state = 2
+               AND rtc.coupon_type = 1
+               and rt.is_flash_sale_goods is null
+               and rt.is_booking_sale_goods is null
+               and rt.groupon_flag != 1
+               and rt.suit_marketing_flag != 1
+             GROUP BY rtc.oid
+         ) trP ON rti.oid = trP.oid or rti.tid = trP.oid
+         where rti.is_appointment_sale_goods = 0
+           and not exists(select rtim.tid
+                          from replay_trade_item_marketing rtim
+                          where rtim.tid = rti.tid
+                            and rtim.marketing_type in (0, 1, 2, 3, 4, 6, 8))
+         GROUP BY rti.store_id
+
+
+          union all
+
+        SELECT
+        0                       discount_money,
+        0                       pay_money,
+        0                       pay_goods_count,
+        0                       pay_trade_count,
+        0                       customer_count,
+        0                       total_pay_cash,
+        0                       boss_pay_customer_count,
+        0                       boss_new_customer,
+        0                       boss_old_customer,
+        0                       new_customer,
+        0                       old_customer,
+        g.store_id              store_id,
+        SUM( p.pv ) as pv,
+        0           as uv
+        FROM
+            replay_marketing_sku_pv p
+        LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+
+        where p.stat_date >= date_sub(current_date, interval 1 month ) and p.stat_date < current_date
+        group by g.store_id
+
+        union all
+
+        SELECT
+        0                       discount_money,
+        0                       pay_money,
+        0                       pay_goods_count,
+        0                       pay_trade_count,
+        0                       customer_count,
+        0                       total_pay_cash,
+        0                       boss_pay_customer_count,
+        0                       boss_new_customer,
+        0                       boss_old_customer,
+        0                       new_customer,
+        0                       old_customer,
+        g.store_id              store_id,
+        0                               as pv,
+        COUNT(DISTINCT u.customer_id)   as uv
+        FROM
+        replay_marketing_sku_uv u
+        LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        where u.stat_date >= date_sub(current_date, interval 1 month ) and u.stat_date < current_date
+        group by g.store_id
+
+        union all
+        select sum(bs.discount_money)  as discount_money,
+        0                        as pay_money,
+        sum(bs.pay_goods_count) as pay_goods_count,
+        count(bs.id)            as pay_trade_count,
+        0                        as customer_count,
+        0                        as total_pay_cash,
+        0                        as boss_pay_customer_count,
+        0                        as new_customer,
+        0                        as old_customer,
+        0                        as boss_new_customer,
+        0                        as boss_old_customer,
+        bs.store_id,
+        0 pv,
+        0 uv
+        from bargain_sale bs
+        where date_format(bs.create_time, '%Y-%m-%d') < current_date
+                                                         and date_format(bs.create_time, '%Y-%m-%d') >=
+        date_sub(current_date, interval 1 month)
+        group by bs.store_id
+        ) as item
+        inner join replay_store rs on item.store_id = rs.store_id where rs.store_type <> 2
+        group by item.store_id
+        ]]>
+    </insert>
+
+
+    <!-- 概览基础查询语句 -->
+    <sql id="marketingBaseSearch">
+        truncate(marketing_pay_money / pay_money, 4)          as pay_money_rate,
+        marketing_pay_money                                   as pay_money,
+        truncate(marketing_pay_money / discount_money, 2)     as pay_roi,
+        discount_money,
+        pay_goods_count,
+        pay_trade_count,
+        truncate(pay_goods_count / pay_trade_count, 2)        as joint_rate,
+        pay_customer_count,
+        new_customer,
+        old_customer,
+        truncate(marketing_pay_money / pay_customer_count, 2) as customer_price,
+        pv,
+        uv,
+        truncate(pay_customer_count / uv,2)         as uv_pay_rate
+    </sql>
+
+
+    <!-- 昨天 -->
+    <select id="findByDay" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingInfoMap">
+        select
+            <include refid="marketingBaseSearch" />
+        from
+             marketing_overview_day
+        where
+            date = date_sub(current_date, interval 1 day) and store_id = #{storeId}
+    </select>
+
+    <!-- 最近7天 -->
+    <select id="findBySeven" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingInfoMap">
+        select
+            <include refid="marketingBaseSearch" />
+        from
+             marketing_overview_seven
+        where
+             store_id = #{storeId}
+    </select>
+
+    <!-- 最近30天 -->
+    <select id="findByThirty" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingInfoMap">
+        select
+            <include refid="marketingBaseSearch" />
+        from
+            marketing_overview_thirty
+        where
+            store_id = #{storeId}
+    </select>
+
+    <!-- 自然月 -->
+    <select id="findByMonth" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingInfoMap">
+        select
+            <include refid="marketingBaseSearch" />
+        from
+             marketing_overview_month
+        where
+            month = #{month}
+            and store_id = #{storeId}
+    </select>
+
+
+    <!-- 支付金额趋势图 -->
+    <select id="findMoneyTrendChart" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingInfoMap">
+        select
+            pay_money                                    as total_pay_money,
+            truncate(marketing_pay_money / pay_money, 4) as pay_money_rate,
+            marketing_pay_money                          as pay_money,
+            (pay_money - marketing_pay_money)            as no_marketing_pay_money,
+            date as date
+        from
+            marketing_overview_day
+        <where>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@YESTERDAY">
+                date = date_sub(current_date, interval 1 day) and store_id = #{storeId}
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@SEVEN">
+                <![CDATA[ date >= date_sub(current_date, interval 7 day) and store_id = #{storeId} ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@THIRTY">
+                <![CDATA[ date >= date_sub(current_date, interval 30 day) and store_id = #{storeId} ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@MONTH">
+                <![CDATA[ date_format(date , '%Y-%m') = #{month} and store_id = #{storeId} ]]>
+            </if>
+        </where>
+        order by date asc
+    </select>
+
+    <!-- 按天数据趋势图 -->
+    <select id="findTrendChart" parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingInfoMap">
+        select
+            <include refid="marketingBaseSearch" />,
+            date as date
+        from
+            marketing_overview_day
+        <where>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@YESTERDAY">
+                date = date_sub(current_date, interval 1 day) and store_id = #{storeId}
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@SEVEN">
+                <![CDATA[ date >= date_sub(current_date, interval 7 day) and store_id = #{storeId} ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@THIRTY">
+                <![CDATA[ date >= date_sub(current_date, interval 30 day) and store_id = #{storeId} ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@MONTH">
+                <![CDATA[ date_format(date , '%Y-%m') = #{month} and store_id = #{storeId} ]]>
+            </if>
+        </where>
+        order by date asc
+    </select>
+
+    <!-- 按周数据趋势图 -->
+    <select id="findTrendChartByWeek"
+            parameterType="com.wanmi.ares.request.marketing.MarketingOverviewRequest"
+            resultMap="MarketingInfoMap">
+        SELECT
+            sum(a.pay_money_rate) as pay_money_rate,
+            sum(a.pay_money) as pay_money,
+            sum(a.pay_roi) as pay_roi,
+            sum(a.discount_money) as discount_money,
+            sum(a.pay_goods_count) as pay_goods_count,
+            sum(a.pay_trade_count) as pay_trade_count,
+            sum(a.joint_rate) as joint_rate,
+            sum(a.pay_customer_count) as pay_customer_count,
+            sum(a.new_customer) as new_customer,
+            sum(a.old_customer) as old_customer,
+            sum(a.customer_price) as customer_price,
+            min(a.title) as title,
+            sum(a.pv) as pv,
+            sum(a.uv) as uv,
+            truncate(sum(a.pay_customer_count) / sum(a.uv),2)         as uv_pay_rate
+        FROM
+        (
+            select
+            truncate(sum(marketing_pay_money) / sum(pay_money), 4)          as pay_money_rate,
+            sum(marketing_pay_money)                                        as pay_money,
+            truncate(sum(marketing_pay_money) / sum(discount_money), 2)     as pay_roi,
+            sum(discount_money)                                             as discount_money,
+            sum(pay_goods_count)                                            as pay_goods_count,
+            sum(pay_trade_count)                                            as pay_trade_count,
+            truncate(sum(pay_goods_count) / sum(pay_trade_count), 2)        as joint_rate,
+            0                                                               as pay_customer_count,
+            0                                                               as new_customer,
+            0                                                               as old_customer,
+            truncate(sum(marketing_pay_money) / sum(pay_customer_count), 2) as customer_price,
+            concat(date_format(min(date), '%Y/%m/%d'), '-', date_format(max(date), '%Y/%m/%d')) as title,
+            0   as pv,
+            0   as uv,
+            date_format(date, '%x-%v') AS week
+            from marketing_overview_day
+            <where>
+                <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@YESTERDAY">
+                    date = date_sub(current_date, interval 1 day) and store_id = #{storeId}
+                </if>
+                <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@SEVEN">
+                    <![CDATA[ date >= date_sub(current_date, interval 7 day) and store_id = #{storeId} ]]>
+                </if>
+                <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@THIRTY">
+                    <![CDATA[ date >= date_sub(current_date, interval 30 day) and store_id = #{storeId} ]]>
+                </if>
+                <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@MONTH">
+                    <![CDATA[ date_format(date , '%Y-%m') = #{month} and store_id = #{storeId} ]]>
+                </if>
+            </where>
+            group by week
+
+        union all
+
+            SELECT
+            0                                                                       as pay_money_rate,
+            0                                                                       as pay_money,
+            0                                                                       as pay_roi,
+            0                                                                       as discount_money,
+            0                                                                       as pay_goods_count,
+            0                                                                       as pay_trade_count,
+            0                                                                       as joint_rate,
+            count(distinct trade.customer_id)                                       as pay_customer_count,
+            0                                                                       as new_customer,
+            0                                                                       as old_customer,
+            0                                                                        as customer_price,
+            null     																as title,
+            0   as pv,
+            0   as uv,
+            date_format( trade.pay_time, '%x-%v' ) AS week
+            FROM replay_trade trade
+            WHERE trade.pay_state = 2
+            AND (
+            trade.is_flash_sale_goods = 1 or
+            trade.groupon_flag = 1 or
+            trade.is_booking_sale_goods = 1
+            or trade.suit_marketing_flag = 1
+            or exists(select tid from replay_trade_item where tid = trade.tid
+        and is_appointment_sale_goods = 1)
+            or exists(select tid from replay_trade_marketing where tid =
+                trade.tid and marketing_type in (0, 1, 2, 6, 8 ))
+            or exists(select tid from replay_trade_coupon where tid = trade.tid and coupon_type = 1)
+            )
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@YESTERDAY">
+                <![CDATA[ and date_format(trade.pay_time, '%Y-%m-%d') = DATE_SUB(curdate(), INTERVAL 1 DAY)
+                and store_id = #{storeId} ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@SEVEN">
+                <![CDATA[ and date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 7 DAY)
+                AND date_format( trade.pay_time, '%Y-%m-%d' ) <= DATE_SUB( curdate(), INTERVAL 1 DAY )
+                and store_id = #{storeId} ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@THIRTY">
+                <![CDATA[ and date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 30 DAY)
+                AND date_format( trade.pay_time, '%Y-%m-%d' ) <= DATE_SUB( curdate(), INTERVAL 1 DAY )
+                and store_id = #{storeId} ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@MONTH">
+                <![CDATA[ and date_format(trade.pay_time, '%Y-%m-%d') = #{month} and store_id = #{storeId} ]]>
+            </if>
+            GROUP BY week
+
+        union all
+
+            SELECT
+                0                                                                       as pay_money_rate,
+                0                                                                       as pay_money,
+                0                                                                       as pay_roi,
+                0                                                                       as discount_money,
+                0                                                                       as pay_goods_count,
+                0                                                                       as pay_trade_count,
+                0                                                                       as joint_rate,
+                0                                      as pay_customer_count,
+                <if test="storeId == null">
+                    count(distinct if(a.boss_customer_flag_week = 0, a.customer_id, null))     as new_customer,
+                    count(distinct if(a.boss_customer_flag_week = 1, a.customer_id, null)) as old_customer,
+                </if>
+                <if test="storeId != null">
+                    count(distinct if(a.store_customer_flag_week = 0, a.customer_id, null))     as new_customer,
+                    count(distinct if(a.store_customer_flag_week = 1, a.customer_id, null)) as old_customer,
+                </if>
+                0                                                                        as customer_price,
+                null     																as title,
+
+                0   as pv,
+                0   as uv,
+                date_format( a.pay_time, '%x-%v' ) AS WEEK
+            FROM
+            (
+                SELECT
+                    t.customer_id,
+                    t.store_id,
+                    <![CDATA[
+                        CASE
+                        WHEN date_format(d.first_pay_time,'%Y-%m-%d') < date_format(t.pay_time,'%Y-%m-%d') THEN
+                        1 ELSE 0
+                        END AS boss_customer_flag,
+                        CASE
+                        WHEN d.first_pay_time_week < date_format( t.pay_time, '%x%v' ) THEN
+                        1 ELSE 0
+                        END AS boss_customer_flag_week,
+                        CASE
+                        WHEN date_format(e.first_pay_time,'%Y-%m-%d') < date_format(t.pay_time,'%Y-%m-%d') THEN
+                        1 ELSE 0
+                        END AS store_customer_flag,
+                        CASE
+                        WHEN t.pay_state = 3 THEN
+                        NULL
+                        WHEN e.first_pay_time_week < date_format( t.pay_time, '%x%v' ) THEN
+                        1 ELSE 0
+                        END AS store_customer_flag_week,
+                    ]]>
+                    t.pay_time
+                FROM
+                (
+                    SELECT
+                        trade.customer_id,
+                        trade.store_id,
+                        trade.pay_time,
+                        trade.pay_state
+                    FROM
+                        replay_trade trade
+                    WHERE
+                    trade.pay_state = 2
+                    AND (
+                    trade.is_flash_sale_goods = 1
+                    OR trade.groupon_flag = 1
+                    OR trade.is_booking_sale_goods = 1
+                    OR trade.suit_marketing_flag = 1
+                    OR EXISTS ( SELECT tid FROM replay_trade_item WHERE tid = trade.tid AND is_appointment_sale_goods = 1 )
+                    OR EXISTS (
+                    SELECT
+                    tid
+                    FROM
+                    replay_trade_marketing
+                    WHERE
+                    tid = trade.tid
+                    AND marketing_type IN ( 0, 1, 2, 6, 8 ))
+                    OR EXISTS ( SELECT tid FROM replay_trade_coupon WHERE tid = trade.tid AND coupon_type = 1 )
+
+                    )
+                    <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@YESTERDAY">
+                        <![CDATA[ and date_format(trade.pay_time, '%Y-%m-%d') = DATE_SUB(curdate(), INTERVAL 1 DAY)
+                            and store_id = #{storeId} ]]>
+                    </if>
+                    <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@SEVEN">
+                        <![CDATA[ and date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 7 DAY)
+                            AND date_format( trade.pay_time, '%Y-%m-%d' ) <= DATE_SUB( curdate(), INTERVAL 1 DAY )
+                            and store_id = #{storeId} ]]>
+                    </if>
+                    <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@THIRTY">
+                        <![CDATA[ and date_format(trade.pay_time, '%Y-%m-%d') >= DATE_SUB(curdate(), INTERVAL 30 DAY)
+                            AND date_format( trade.pay_time, '%Y-%m-%d' ) <= DATE_SUB( curdate(), INTERVAL 1 DAY )
+                            and store_id = #{storeId} ]]>
+                    </if>
+                    <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@MONTH">
+                        <![CDATA[ and date_format(trade.pay_time, '%Y-%m-%d') = #{month} and store_id = #{storeId} ]]>
+                    </if>
+                ) t
+                LEFT JOIN
+                (
+                SELECT min( first_pay_time ) AS first_pay_time, min( date_format( first_pay_time, '%x%v' )) AS first_pay_time_week, customer_id FROM customer_first_pay GROUP BY customer_id
+                ) d ON t.customer_id = d.customer_id
+                LEFT JOIN
+                (
+                SELECT min( first_pay_time ) AS first_pay_time, min( date_format( first_pay_time, '%x%v' )) AS first_pay_time_week, customer_id, store_id FROM customer_first_pay GROUP BY store_id, customer_id
+                ) e ON t.customer_id = e.customer_id
+                AND e.store_id = t.store_id
+            ) a
+            group by week
+
+        union all
+
+        SELECT
+        0                                                                       as pay_money_rate,
+        0                                                                       as pay_money,
+        0                                                                       as pay_roi,
+        0                                                                       as discount_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        0                                                                       as joint_rate,
+       0                                       as pay_customer_count,
+        0                                                                       as new_customer,
+        0                                                                       as old_customer,
+        0                                                                        as customer_price,
+        null     																as title,
+
+        SUM( p.pv ) as pv,
+        0           as uv,
+        date_format(p.stat_date, '%x-%v')                  as week
+        FROM
+        replay_marketing_sku_pv p
+        <if test="storeId != null ">
+            LEFT JOIN replay_goods_info g ON p.sku_id = g.goods_info_id
+        </if>
+        <where>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@YESTERDAY">
+                p.stat_date = date_sub(current_date, interval 1 day)
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@SEVEN">
+                <![CDATA[ p.stat_date >= date_sub(current_date, interval 7 day)  ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@THIRTY">
+                <![CDATA[ p.stat_date >= date_sub(current_date, interval 30 day) ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@MONTH">
+                <![CDATA[ date_format(p.stat_date , '%Y-%m') = #{month}  ]]>
+            </if>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+
+        </where>
+        group by week
+
+        union all
+
+        SELECT
+        0                                                                       as pay_money_rate,
+        0                                                                       as pay_money,
+        0                                                                       as pay_roi,
+        0                                                                       as discount_money,
+        0                                                                       as pay_goods_count,
+        0                                                                       as pay_trade_count,
+        0                                                                       as joint_rate,
+        0                                       as pay_customer_count,
+        0                                                                       as new_customer,
+        0                                                                       as old_customer,
+        0                                                                        as customer_price,
+        null     																as title,
+        0   as pv,
+        COUNT(DISTINCT u.customer_id)   as uv,
+        date_format(u.stat_date, '%x-%v')                  as week
+        FROM
+        replay_marketing_sku_uv u
+        <if test="storeId != null ">
+            LEFT JOIN replay_goods_info g ON u.sku_id = g.goods_info_id
+        </if>
+        <where>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@YESTERDAY">
+                u.stat_date = date_sub(current_date, interval 1 day)
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@SEVEN">
+                <![CDATA[ u.stat_date >= date_sub(current_date, interval 7 day)  ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@THIRTY">
+                <![CDATA[ u.stat_date >= date_sub(current_date, interval 30 day) ]]>
+            </if>
+            <if test="statisticsDataType == @com.wanmi.ares.enums.StatisticsDataType@MONTH">
+                <![CDATA[ date_format(u.stat_date , '%Y-%m') = #{month}  ]]>
+            </if>
+            <if test="storeId != null and storeId != ''">
+                and g.store_id = #{storeId}
+            </if>
+        </where>
+        group by week
+        ) a
+
+        GROUP BY a.week
+    </select>
+</mapper>

@@ -1,0 +1,33 @@
+@startuml
+start
+:页面提交数据信息;
+:调用拉卡拉进件校验接口;
+if (校验通过?) then (yes)
+    if (商户申请?) then (yes)
+     :申请电子合同;
+     if (申请成功?) then (yes)
+        :保存开户信息;
+        :获取手机验证码;
+        :签署合同;
+        partition 开户 {
+            :增商进件;
+            if (进件成功?) then (yes)
+                :保存进件状态;
+                :申请开通分账业务;
+                if (分账开通成功？) then (yes)
+                    :申请与平台绑定分账关系;
+                endif
+            endif
+        }
+     endif
+    else
+        :申请创建分账接收方;
+        if (申请成功?) then (yes)
+             :保存开户信息;
+        else (no)
+            :重新编辑信息提交;
+        endif
+    endif
+endif
+end
+@enduml

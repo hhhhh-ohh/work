@@ -1,0 +1,204 @@
+## 1、我的足迹消息配置，mq服务配置（nacos配置，sbc-service-mq.properties）
+```properties
+#我的足迹
+spring.cloud.stream.bindings.goods-footmark-output.destination=q.goods.footmark
+#我的足迹
+spring.cloud.stream.bindings.goods-footmark-input.destination=q.goods.footmark
+#消费者的初始化线程数
+spring.cloud.stream.bindings.goods-footmark-input.consumer.concurrency=2
+#消费者的最大线程数
+spring.cloud.stream.rabbit.bindings.goods-footmark-input.consumer.max-concurrency=4
+spring.cloud.stream.rabbit.bindings.goods-footmark-input.consumer.prefetch=100
+```
+
+## 2、我的足迹分表策略及配置，customer服务配置（nacos配置，sbc-service-customer.properties）
+### 2.1 nacos配置
+#### 2.1.1nacos配置，新增一下配置
+```properties
+# ----------------------------------------
+# datasource
+# ----------------------------------------
+
+
+wm.mysql.db.master.username=root
+wm.mysql.db.master.password=Wmi@2019
+wm.mysql.db.master.url=127.0.0.1
+wm.mysql.db.slave0.username=root
+wm.mysql.db.slave0.password=Wmi@2019
+wm.mysql.db.slave0.url=127.0.0.1
+
+
+spring.shardingsphere.enabled=true
+spring.shardingsphere.datasource.names=master,slave0
+spring.shardingsphere.datasource.master.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.shardingsphere.datasource.master.url=jdbc:mysql://${wm.mysql.db.master.url}:3306/sbc-customer?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+spring.shardingsphere.datasource.master.username=${wm.mysql.db.master.username}
+spring.shardingsphere.datasource.master.password=${wm.mysql.db.master.password}
+spring.shardingsphere.datasource.master.type=com.alibaba.druid.pool.DruidDataSource
+spring.shardingsphere.datasource.master.filters=stat
+spring.shardingsphere.datasource.master.maxActive=20
+spring.shardingsphere.datasource.master.initialSize=1
+spring.shardingsphere.datasource.master.maxWait=60000
+spring.shardingsphere.datasource.master.minIdle=1
+spring.shardingsphere.datasource.master.timeBetweenEvictionRunsMillis=60000
+spring.shardingsphere.datasource.master.minEvictableIdleTimeMillis=300000
+spring.shardingsphere.datasource.master.validationQuery=select 1
+spring.shardingsphere.datasource.master.testWhileIdle=true
+spring.shardingsphere.datasource.master.testOnBorrow=false
+spring.shardingsphere.datasource.master.testOnReturn=false
+spring.shardingsphere.datasource.master.poolPreparedStatements=true
+spring.shardingsphere.datasource.master.maxOpenPreparedStatements=20
+spring.shardingsphere.datasource.master.removeAbandoned=true
+spring.shardingsphere.datasource.master.removeAbandonedTimeout=60
+spring.shardingsphere.datasource.master.validationInterval=30000
+
+spring.shardingsphere.datasource.slave0.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.shardingsphere.datasource.slave0.url=jdbc:mysql://${wm.mysql.db.slave0.url}:3306/sbc-customer?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+spring.shardingsphere.datasource.slave0.username=${wm.mysql.db.slave0.username}
+spring.shardingsphere.datasource.slave0.password=${wm.mysql.db.slave0.password}
+spring.shardingsphere.datasource.slave0.type=com.alibaba.druid.pool.DruidDataSource
+spring.shardingsphere.datasource.slave0.filters=stat
+spring.shardingsphere.datasource.slave0.maxActive=20
+spring.shardingsphere.datasource.slave0.initialSize=1
+spring.shardingsphere.datasource.slave0.maxWait=60000
+spring.shardingsphere.datasource.slave0.minIdle=1
+spring.shardingsphere.datasource.slave0.timeBetweenEvictionRunsMillis=60000
+spring.shardingsphere.datasource.slave0.minEvictableIdleTimeMillis=300000
+spring.shardingsphere.datasource.slave0.validationQuery=select 1
+spring.shardingsphere.datasource.slave0.testWhileIdle=true
+spring.shardingsphere.datasource.slave0.testOnBorrow=false
+spring.shardingsphere.datasource.slave0.testOnReturn=false
+spring.shardingsphere.datasource.slave0.poolPreparedStatements=true
+spring.shardingsphere.datasource.slave0.maxOpenPreparedStatements=20
+spring.shardingsphere.datasource.slave0.removeAbandoned=true
+spring.shardingsphere.datasource.slave0.removeAbandonedTimeout=60
+spring.shardingsphere.datasource.slave0.validationInterval=30000
+
+spring.shardingsphere.sharding.tables.goods_footmark.actual-data-nodes=ds0.goods_footmark_$->{0..9}
+spring.shardingsphere.sharding.tables.goods_footmark.table-strategy.standard.sharding-column=customer_id
+spring.shardingsphere.sharding.tables.goods_footmark.table-strategy.standard.precise-algorithm-class-name=com.wanmi.sbc.customer.algorithm.GoodsFootmarkShardingAlgorithm
+spring.shardingsphere.sharding.binding-tables=goods_footmark
+
+
+# 开启SQL显示，默认值: false，注意：仅配置读写分离时不会打印日志
+spring.shardingsphere.props.sql.show=true
+spring.main.allow-bean-definition-overriding=true
+```
+#### 2.1.2 已有配置修改
+（1）将原先配置
+```
+seata.enableAutoDataSourceProxy=true
+```
+改为
+```
+seata.enableAutoDataSourceProxy=false
+```
+
+（2）将原先配置
+```
+spring.shardingsphere.masterslave.name=ms
+spring.shardingsphere.masterslave.master-data-source-name=master
+spring.shardingsphere.masterslave.slave-data-source-names=slave0
+spring.shardingsphere.masterslave.load-balance-algorithm-type=round_robin
+```
+改为
+```
+spring.shardingsphere.sharding.master-slave-rules.ds0.master-data-source-name=master
+spring.shardingsphere.sharding.master-slave-rules.ds0.slave-data-source-names=slave0
+spring.shardingsphere.sharding.master-slave-rules.ds0.load-balance-algorithm-type=round_robin
+```
+
+### 2.2 customer服务部署外置配置文件（data/sbc/customer/conf/application.properties）
+```
+spring.cloud.nacos.config.shared-dataids=common.properties,mysql-setting.properties
+改为
+spring.cloud.nacos.config.shared-dataids=common.properties
+```
+
+## 3、dbReplay的/conf/mongo/data/mapping目录下映射文件需添加字段，具体如下：
+### trade_mapping.json添加( "mappingData"."singleData"下添加)：
+```properties
+{
+"field": "bargain",
+"replayField": "bargain",
+"dataType": -6
+}
+```
+
+### trade_item_mapping.json添加(arrayData.mappingData.singleData下添加)：
+```properties
+{
+"field": "bargainGoodsId",
+"replayField": "bargain_goods_id",
+"dataType": -5
+}
+```
+
+
+## 4、dbReplay的配置文件topics.canal项追加监听表：
+```properties
+sbc-marketing.bargain_goods
+```
+
+## 5、canal配置(/data/canal/conf/example/instance.properties)canal.instance.filter.regex项追加监听表：
+```properties
+sbc-marketing.bargain_goods
+```
+
+## 6、sbc-service-mq服务，nacos配置文件修改
+```properties
+#商品变更
+spring.cloud.stream.bindings.goods-edit-output.destination=q.goods.edit
+spring.cloud.stream.bindings.goods-edit-input.destination=q.goods.edit
+
+## 成长值延迟队列
+spring.cloud.stream.bindings.increase-customer-growth-value-new-input.destination=q.increase.customer.growth.value.new
+spring.cloud.stream.rabbit.bindings.increase-customer-growth-value-new-input.consumer.delayed-exchange=true
+spring.cloud.stream.bindings.increase-customer-growth-value-new-output.destination=q.increase.customer.growth.value.new
+spring.cloud.stream.rabbit.increase-customer-growth-value-new-output.delayed-exchange=true
+```
+
+## 7、本次迭代SEO埋点Jenkins打包命令修改、服务部署脚本修改以及nginx配置修改
+详情可参考wiki：http://wiki.dev.wanmi.com/pages/viewpage.action?pageId=68487269
+
+### Jenkins调整说明
+新增对应seo端口号
+```
+# h5端seo端口号
+export SEO_H5_PORT=8100;
+# pc端seo端口号
+export SEO_PC_PORT=8000;
+```
+
+yarn配置修改，增加配置，追加在yarn add:config ${str} 命令后面
+```
+    # h5、pc有seo目录
+    if [[ "${project}" == 'mobile' ]] || [[ "${project}" == 'pc' ]]; then
+    	cd ./seo
+        yarn
+        cd ..
+        
+        if [[ "${project}" == 'mobile' ]]; then
+        	SEO_PORT=${SEO_H5_PORT}
+        elif [[ "${project}" == 'pc' ]]; then
+        	SEO_PORT=${SEO_PC_PORT}
+        fi
+        
+        yarn add:seo:config BFF_HOST=${BFF_HOST} SEO_PORT=${SEO_PORT}
+    fi
+```
+
+上传包到部署机器增加配置，追加在原先upload ${JOB_NAME}/$project ${base_ip} ${dist_path} 命令前
+```
+# h5、pc有seo目录
+if [[ "${project}" == 'mobile' ]] || [[ "${project}" == 'pc' ]]; then
+    yarn seo:build
+fi
+```
+
+## 8. mobile 配置中新增免登录访问接口
+```
+/bargaingoods/list,/bargaingoods/unlogin/*,/config/unlogin/findByConfigType
+```
+
+## 9.修改表sbc-empower.pay_gateway_config字段boss_back_url 域名不变将一级目录“bossbff”改为“callback”

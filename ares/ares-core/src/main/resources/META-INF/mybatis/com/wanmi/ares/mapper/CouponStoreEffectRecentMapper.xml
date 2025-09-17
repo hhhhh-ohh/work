@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wanmi.ares.marketing.coupon.dao.CouponStoreEffectRecentMapper">
+    <resultMap id="BaseResultMap" type="com.wanmi.ares.view.coupon.CouponStoreEffectView">
+        <result column="store_id" jdbcType="BIGINT" property="storeId"/>
+        <result column="pay_money" jdbcType="DECIMAL" property="payMoney"/>
+        <result column="discount_money" jdbcType="DECIMAL" property="discountMoney"/>
+        <result column="pay_goods_count" jdbcType="BIGINT" property="payGoodsCount"/>
+        <result column="pay_trade_count" jdbcType="BIGINT" property="payTradeCount"/>
+        <result column="old_customer_count" jdbcType="BIGINT" property="oldCustomerCount"/>
+        <result column="new_customer_count" jdbcType="BIGINT" property="newCustomerCount"/>
+        <result column="pay_customer_count" jdbcType="BIGINT" property="payCustomerCount"/>
+        <result column="roi" jdbcType="DECIMAL" property="roi"/>
+        <result column="joint_rate" jdbcType="DECIMAL" property="jointRate"/>
+        <result column="use_rate" jdbcType="DECIMAL" property="useRate"/>
+        <result column="customer_price" jdbcType="DECIMAL" property="customerPrice"/>
+    </resultMap>
+
+    <select id="selectList" resultType="com.wanmi.ares.view.coupon.CouponStoreEffectView">
+        select cer.store_id storeId,
+        rs.store_name storeName,
+        cer.pay_money payMoney,
+        cer.discount_money discountMoney,
+        cer.pay_goods_count payGoodsCount,
+        cer.pay_trade_count payTradeCount,
+        cer.old_customer_count oldCustomerCount,
+        cer.new_customer_count newCustomerCount,
+        concat(acquire_customer_count, '/', cer.acquire_count) acquireData,
+        concat(cer.use_customer_count, '/', cer.use_count) useData,
+        cer.pay_customer_count payCustomerCount,
+        cer.roi roi,
+        cer.joint_rate jointRate,
+        cer.use_rate useRate,
+        cer.customer_price customerPrice,
+        cer.supply_price supplyPrice
+        from coupon_store_effect_recent cer
+        join
+        replay_store rs on cer.store_id = rs.store_id
+        where cer.stat_type = #{statType}
+        <if test="storeId != null">
+            and cer.store_id=#{storeId,jdbcType=BIGINT}
+        </if>
+
+        <if test="name != null  and name!=''">
+            <bind name="pattern" value="'%' + name + '%'"/>
+            and rs.store_name like #{pattern}
+        </if>
+        <if test="sortColumn != null">
+            order by ${sortColumn} ${sort}
+        </if>
+    </select>
+</mapper>

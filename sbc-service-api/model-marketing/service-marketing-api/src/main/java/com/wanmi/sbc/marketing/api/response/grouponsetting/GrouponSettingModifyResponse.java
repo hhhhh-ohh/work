@@ -1,0 +1,31 @@
+package com.wanmi.sbc.marketing.api.response.grouponsetting;
+
+import com.wanmi.sbc.common.base.BasicResponse;
+import com.wanmi.sbc.marketing.bean.vo.GrouponSettingVO;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+/**
+ * <p>拼团活动信息表修改结果</p>
+ * @author groupon
+ * @date 2019-05-15 14:19:49
+ */
+@Schema
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class GrouponSettingModifyResponse extends BasicResponse {
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 已修改的拼团活动信息表信息
+     */
+    private GrouponSettingVO grouponSettingVO;
+}

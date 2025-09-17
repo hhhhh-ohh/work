@@ -1,0 +1,15 @@
+@startuml
+start
+   :门店编辑;
+   if(不存在门店信息) then(yes)
+    :原有店铺注册逻辑;
+   endif;
+   :计算经纬对应的GeoHash;
+   if(不存在门店信息) then(yes)
+    :将当前门店设为默认门店;
+   endif;
+   :保存扩展表;
+   :ES同步门店信息;
+   :C端不可见此商品;
+stop
+@enduml

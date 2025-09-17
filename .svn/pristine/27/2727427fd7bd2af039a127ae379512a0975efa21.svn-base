@@ -1,0 +1,32 @@
+package com.wanmi.sbc.customer.api.response.agent;
+
+import com.wanmi.sbc.common.base.BasicResponse;
+import com.wanmi.sbc.customer.bean.vo.AgentAuditLogBaseVO;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+
+/**
+ * @program: sbc-micro-service
+ * @description: 审核记录代理商返回结果
+ * @create: 2020-04-01 15:05
+ **/
+@Schema
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class GetAgentAuditLogListResponse extends BasicResponse {
+
+    /**
+     * 审核记录列表
+     */
+    @Schema(name = "审核记录列表")
+    private List<AgentAuditLogBaseVO> list;
+
+}

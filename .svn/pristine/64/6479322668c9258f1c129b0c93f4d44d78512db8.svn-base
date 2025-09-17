@@ -1,0 +1,9 @@
+@startuml
+start
+:根据核销码查询订单;
+if(是自提订单?)then(yes)
+    :原有自提点逻辑;
+endif
+:核销;
+end
+@enduml

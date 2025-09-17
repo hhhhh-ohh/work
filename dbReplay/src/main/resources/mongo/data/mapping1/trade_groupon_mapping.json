@@ -1,0 +1,81 @@
+{
+  "replayTable" : "replay_trade_groupon",
+  "dispatch" : null,
+  "pk": [],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "tid",
+        "dataType": 12
+      },
+      {
+        "field": "tradeGroupon.grouponNo",
+        "replayField": "groupon_no",
+        "dataType": 12
+      },
+      {
+        "field": "tradeGroupon.grouponActivityId",
+        "replayField": "groupon_activity_id",
+        "dataType": 12
+      },
+      {
+        "field": "tradeGroupon.goodInfoId",
+        "replayField": "goods_info_id",
+        "dataType": 12
+      },
+      {
+        "field": "tradeGroupon.goodId",
+        "replayField": "goods_id",
+        "dataType": 12
+      },
+      {
+        "field": "tradeGroupon.returnNum",
+        "replayField": "return_num",
+        "dataType": -5
+      },
+      {
+        "field": "tradeGroupon.returnPrice",
+        "replayField": "return_price",
+        "dataType": 3
+      },
+      {
+        "field": "tradeGroupon.failTime",
+        "replayField": "fail_time",
+        "dataType": 93
+      },
+      {
+        "field": "tradeGroupon.grouponOrderStatus",
+        "replayField": "groupon_order_status",
+        "dataType": 4,
+        "enumType": {
+          "UNPAY": 0,
+          "WAIT":1,
+          "COMPLETE":2,
+          "FAIL":3
+        }
+      },
+      {
+        "field": "tradeGroupon.leader",
+        "replayField": "leader",
+        "dataType": -6
+      },
+      {
+        "field": "tradeGroupon.payState",
+        "replayField": "pay_state",
+        "dataType": 4,
+        "enumType": {
+          "NOT_PAID": 0,
+          "UNCONFIRMED": 1,
+          "PAID": 2
+        }
+      },
+      {
+        "field": "tradeGroupon.grouponInviteeId",
+        "replayField": "groupon_invitee_id",
+        "dataType": 12
+      }
+    ],
+    "arrayData": {}
+  }
+}

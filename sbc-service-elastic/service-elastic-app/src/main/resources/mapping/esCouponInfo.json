@@ -1,0 +1,78 @@
+{
+  "properties": {
+    "platformFlag": {
+      "type": "integer"
+    },
+    "couponName": {
+      "type": "keyword"
+    },
+    "cateIds": {
+      "type": "keyword"
+    },
+    "rangeDayType": {
+      "type": "integer"
+    },
+    "couponId": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "ignore_above": 256,
+          "type": "keyword"
+        }
+      }
+    },
+    "delFlag": {
+      "type": "integer"
+    },
+    "storeId": {
+      "type": "long"
+    },
+    "denomination": {
+      "index": false,
+      "type": "double"
+    },
+    "fullBuyType": {
+      "index": false,
+      "type": "integer"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "effectiveDays": {
+      "index": false,
+      "type": "integer"
+    },
+    "scopeType": {
+      "type": "integer"
+    },
+    "couponType": {
+      "type": "integer"
+    },
+    "couponMarketingType": {
+      "type": "integer"
+    },
+    "couponDiscountMode": {
+      "type": "integer"
+    },
+    "maxDiscountLimit": {
+      "index": false,
+      "type": "double"
+    },
+    "fullBuyPrice": {
+      "index": false,
+      "type": "double"
+    },
+    "scopeIds": {
+      "type": "keyword"
+    },
+    "startTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "endTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    }
+  }
+}

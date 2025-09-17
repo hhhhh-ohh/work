@@ -1,0 +1,313 @@
+package com.wanmi.sbc.customer.agent.util;
+
+import com.alibaba.fastjson2.JSONObject;
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.common.enums.ResourceType;
+import com.wanmi.sbc.common.util.QrCodeUtils;
+import com.wanmi.sbc.customer.agent.model.root.Agent;
+import com.wanmi.sbc.customer.agent.model.root.AgentCityBackgroundUrl;
+import com.wanmi.sbc.customer.agent.service.AgentCityBackgroundUrlService;
+import com.wanmi.sbc.empower.api.provider.wechatauth.WechatAuthProvider;
+import com.wanmi.sbc.empower.api.request.wechatauth.MiniProgramQrCodeRequest;
+import com.wanmi.sbc.setting.api.provider.yunservice.YunServiceProvider;
+import com.wanmi.sbc.setting.api.request.yunservice.YunUploadResourceRequest;
+import com.wanmi.sbc.setting.api.response.yunservice.YunUploadResourceResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import javax.imageio.ImageIO;
+
+// 假设你已经有一个方法来下载远程图片
+@Component
+@Slf4j
+public class PosterGenerator {
+
+
+    @Value("${agent.poster.background.url:https://swdxpt-mmbxtest.oss-cn-beijing.aliyuncs.com/2a5895617c2a739596873ac2c8e573d.jpg}")
+    private String agentPostBackgroundUrl;
+
+    @Autowired
+    private YunServiceProvider yunServiceProvider;
+
+    @Autowired
+    private WechatAuthProvider wechatAuthProvider;
+
+    @Autowired
+    private AgentCityBackgroundUrlService agentCityBackgroundUrlService;
+
+    /**
+     * 生成新的二维码图片并上传到OSS
+     *
+     * @param url 二维码内容
+     * @param agent 代理商
+     * @return 上传后的URL
+     */
+    public String generateNewQrCode(String url, Agent agent) {
+
+        // 1. 生成二维码图片
+        BufferedImage qrCodeImage = QrCodeUtils.createQrCodeImage(url, 300, 300);
+        if (qrCodeImage == null) {
+            log.error("生成二维码图片失败，url: {}", url);
+            return null;
+        }
+
+        // 构造带文件夹的文件名
+        String folder = "agent/qrcode"; // 固定文件夹
+        String fileName = agent.getAgentName();
+        String fullFileName = folder + "/" + "一户一码二维码-" + fileName + ".jpg";
+        String newQrCodeUrl = uploadToOSS(qrCodeImage, fullFileName);
+
+        return newQrCodeUrl;
+    }
+
+
+    /**
+     * 生成新的海报并上传到OSS
+     *
+     * @param url 二维码内容
+     * @param agent 代理商
+     * @return 上传后的URL
+     */
+    public String generateNewPoster(String url, Agent agent)  {
+        // 步骤1: 下载背景图
+        BufferedImage background = null;
+
+        String backgroundUrl = queryBackgroundUrl(agent);
+        try {
+            background = ImageIO.read(new URL(backgroundUrl));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // 步骤2: 生成新的二维码图像（可选：用第三方服务或本地生成）
+//        BufferedImage qrCodeImage = generateQrCodeImage(url);
+//        JSONObject jsonObject = new JSONObject();
+//        jsonObject.put("agentCode", agent.getAgentUniqueCode());
+//        String scene = jsonObject.toJSONString();
+//        String scene = agent.getAgentUniqueCode();
+
+        // 步骤3: 替换背景图中的二维码区域（假设二维码在固定位置）
+        BufferedImage posterWithAgentName;
+        // 判断是否是吉安
+        if (agent.getCityId().equals(Long.valueOf(360800))) {
+            // 吉安配置海报
+            // 默认430宽度
+            Integer minniQrCodeWidth = 630;
+            Boolean is_hyaline = true;
+            BufferedImage qrCodeImage = generateMiniQrCodeImage(url, minniQrCodeWidth, is_hyaline, agent);
+
+            int x = 866; // 示例坐标，需根据实际调整
+            int y = 2298;
+            int width = 800;
+            int height = 630;
+
+            // 覆盖原二维码区域
+            for (int i = 0; i < width; i++) {
+                for (int j = 0; j < height; j++) {
+                    if (i < qrCodeImage.getWidth() && j < qrCodeImage.getHeight()) {
+                        background.setRGB(x + i, y + j, qrCodeImage.getRGB(i, j));
+                    }
+                }
+            }
+
+
+            // 添加代理商名称
+            String name = agent.getContactPhone().substring(7, 11);
+            // 设置文本位置
+            int x_index = 1095; // 示例x坐标，需根据实际调整
+            int y_index = 3140; // 示例y坐标，需根据实际调整
+            int size = 64;
+            Color color = Color.BLACK;
+            posterWithAgentName = addAgentName(background, name, x_index, y_index, size, color);
+        } else {
+            // 非吉安配置海报
+            // 默认430宽度
+            Integer minniQrCodeWidth = 430;
+            Boolean is_hyaline = false;
+            BufferedImage qrCodeImage = generateMiniQrCodeImage(url, minniQrCodeWidth, is_hyaline, agent);
+
+
+            int x = 1500; // 示例坐标，需根据实际调整
+            int y = 2650;
+            int width = 450;
+            int height = 450;
+
+            // 覆盖原二维码区域
+            for (int i = 0; i < width; i++) {
+                for (int j = 0; j < height; j++) {
+                    if (i < qrCodeImage.getWidth() && j < qrCodeImage.getHeight()) {
+                        background.setRGB(x + i, y + j, qrCodeImage.getRGB(i, j));
+                    }
+                }
+            }
+            // 添加代理商名称
+            String name = agent.getContactPhone().substring(7, 11);
+            // 设置文本位置
+            int x_index = 2150; // 示例x坐标，需根据实际调整
+            int y_index = 3450; // 示例y坐标，需根据实际调整
+            int size = 54;
+            Color color = Color.gray;
+            posterWithAgentName = addAgentName(background, name, x_index, y_index, size, color);
+        }
+
+
+        // 步骤4: 上传到 OSS
+        // 构造带文件夹的文件名
+        String folder = "agent/poster"; // 固定文件夹
+        String fileName = agent.getAgentName();
+        String fullFileName = folder + "/" + "一户一码海报-" + fileName + ".jpg";
+
+        String newPosterUrl = uploadToOSS(posterWithAgentName, fullFileName);
+
+        return newPosterUrl;
+    }
+
+    /**
+     * 查询代理商的背景图URL
+     *
+     * @param agent 代理商
+     * @return 背景图URL
+     */
+    public String queryBackgroundUrl(Agent agent) {
+        Long cityId = agent.getCityId();
+        if (cityId != null) {
+            AgentCityBackgroundUrl agentCityBackgroundUrl = agentCityBackgroundUrlService.findByCityId(cityId);
+            if (agentCityBackgroundUrl != null && StringUtils.isNotBlank(agentCityBackgroundUrl.getBackgroundUrl())) {
+                return agentCityBackgroundUrl.getBackgroundUrl();
+            }
+        }
+        return agentPostBackgroundUrl;
+    }
+
+    /**
+     * 生成小程序二维码
+     *
+     * @param url 二维码内容
+     * @param agent 代理商
+     * @return 二维码图片
+     */
+    public BufferedImage generateMiniQrCodeImage(String url, Integer width, Boolean is_hyaline, Agent agent) {
+        MiniProgramQrCodeRequest miniProgramQrCodeRequest = new MiniProgramQrCodeRequest();
+        miniProgramQrCodeRequest.setIs_hyaline(Boolean.TRUE);
+        miniProgramQrCodeRequest.setPage("pages/index/index");
+        // 添加分销标识，方便小程序解析
+        String scene = agent.getAgentUniqueCode();
+        miniProgramQrCodeRequest.setScene(scene);
+        miniProgramQrCodeRequest.setWidth(width);
+        miniProgramQrCodeRequest.setIs_hyaline(is_hyaline);
+
+
+        BaseResponse<String> wxaCodeUnlimit = wechatAuthProvider.getWxaCodeUnlimit(miniProgramQrCodeRequest);
+        if (!wxaCodeUnlimit.isSuccess() || wxaCodeUnlimit.getContext() == null) {
+            throw new RuntimeException("获取小程序二维码失败");
+        }
+        String miniUrl = wxaCodeUnlimit.getContext();
+        try {
+            return ImageIO.read(new URL(miniUrl));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 在海报上添加代理商名称
+     *
+     * @param background 海报背景图
+     * @param name 名称
+     * @return 添加代理商名称后的海报
+     */
+    public BufferedImage addAgentName(BufferedImage background, String name, int x, int y, int size, Color color) {
+        Graphics2D g = background.createGraphics();
+        try {
+            // 设置字体和颜色
+            Font font = new Font("微软雅黑", Font.BOLD, size);
+            g.setFont(font);
+            g.setColor(color);
+
+
+
+            // 绘制文本
+            g.drawString(name, x, y);
+        } finally {
+            g.dispose();
+        }
+        return background;
+    }
+
+
+    /**
+     * 生成二维码图片
+     *
+     * @param url 二维码内容
+     * @return 二维码图片
+     */
+    private BufferedImage generateQrCodeImage(String url) throws IOException {
+        // 使用 quickchart.io 生成二维码
+        URL qrUrl = new URL("https://quickchart.io/qr?text=" + url + "&size=200x200");
+        return ImageIO.read(qrUrl);
+    }
+
+    /**
+     * 上传海报到OSS并返回URL
+     *
+     * @param posterImage 海报图片
+     * @param fileName 文件名
+     * @return 上传后的URL
+     */
+    public String uploadToOSS(BufferedImage posterImage, String fileName) {
+        try {
+            // 将BufferedImage转换为字节数组
+            byte[] posterBytes = imageToBytes(posterImage);
+            if (posterBytes == null || posterBytes.length == 0) {
+                log.error("图片转换为字节数组失败，fileName: {}", fileName);
+                return null;
+            }
+
+            // 上传到阿里云OSS
+            YunUploadResourceResponse response = yunServiceProvider.uploadFile(YunUploadResourceRequest.builder()
+                    .resourceType(ResourceType.IMAGE)
+                    .resourceName(fileName)
+                    .content(posterBytes)
+                    .build()).getContext();
+
+            if (response != null) {
+                return response.getResourceUrl();
+            } else {
+                log.error("上传图片到OSS失败，fileName: {}", fileName);
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("上传图片到OSS异常，fileName: {}", fileName, e);
+            return null;
+        }
+    }
+
+    /**
+     * 将BufferedImage转换为字节数组
+     *
+     * @param image 图片
+     * @return 字节数组
+     */
+    private byte[] imageToBytes(BufferedImage image) {
+        try {
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(image, "jpg", baos);
+            baos.flush();
+            byte[] imageInByte = baos.toByteArray();
+            baos.close();
+            return imageInByte;
+        } catch (Exception e) {
+            log.error("图片转换为字节数组异常", e);
+            return null;
+        }
+    }
+}
+

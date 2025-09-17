@@ -1,0 +1,56 @@
+package com.wanmi.sbc.customer.api.response.agent;
+
+import com.wanmi.sbc.common.base.BasicResponse;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+
+/**
+ * @program: sbc-micro-service
+ * @description: 代理商返回结果
+ * @create: 2020-04-01 15:05
+ **/
+@Schema
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateQrCodeResponse extends BasicResponse {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 代理商主键ID（UUID）
+     */
+    @Schema(description = "代理商主键ID")
+    private String agentId;
+
+    /**
+     * 代理商名称
+     */
+    @Schema(description = "代理商名称")
+    private String agentName;
+
+    /**
+     * 系统唯一码（不可重复）
+     */
+    @Schema(description = "系统唯一码（不可重复）")
+    private String agentUniqueCode;
+
+    /**
+     * 二维码地址
+     */
+    @Schema(name = "二维码地址")
+    private String qrCodeAddress;
+
+    /**
+     * 海报地址
+     */
+    @Schema(description = "海报地址")
+    private String posterAddress;
+
+
+}

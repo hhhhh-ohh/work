@@ -1,0 +1,14 @@
+package com.wanmi.sbc.order.orderperformance.model.root;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import java.math.BigDecimal;
+
+@Data
+@AllArgsConstructor
+public class SeasonSummary {
+    private Integer quantity;
+    private BigDecimal commissionAmount;
+    private BigDecimal saleAmount;
+}

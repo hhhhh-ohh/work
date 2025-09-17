@@ -1,0 +1,8 @@
+1. elasticsearch的es_customer_detail索引中新加了一个字段customerType，如果es中有历史数据，需要将历史数据刷新。
+刷新方法：调用boss端“环境地址/bossbff/init/customerES”接口，POST类型，请求格式为JSON。
+请求参数：
+    {
+        "pageNum": 0,
+        "pageSize": 100000
+    }
+通过分页的方式，pageNum和pageSize可根据实际的用户数量设置，将所有数据刷新完毕即可。

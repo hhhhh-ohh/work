@@ -1,0 +1,69 @@
+package com.wanmi.sbc.order.orderperformance.repository;
+
+import com.wanmi.sbc.order.orderperformance.model.root.OrderPerformanceDetail;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface OrderPerformanceDetailRepository extends JpaRepository<OrderPerformanceDetail, Long>, JpaSpecificationExecutor<OrderPerformanceDetail> {
+
+    /**
+     * 根据业绩ID查询明细
+     * @param performanceId 业绩ID
+     * @return 订单业绩明细列表
+     */
+    List<OrderPerformanceDetail> findByPerformanceId(String performanceId);
+
+    /**
+     * 根据订单ID查询明细
+     * @param orderId 订单ID
+     * @return 订单业绩明细列表
+     */
+    List<OrderPerformanceDetail> findByOrderId(String orderId);
+
+    /**
+     * 根据退货单ID查询明细
+     * @param returnOrderId 退货单ID
+     * @return 订单业绩明细列表
+     */
+    List<OrderPerformanceDetail> findByReturnOrderId(String returnOrderId);
+
+    /**
+     * 根据代理ID查询明细
+     * @param agentId 代理ID
+     * @return 订单业绩明细列表
+     */
+    List<OrderPerformanceDetail> findByAgentId(String agentId);
+
+    /**
+     * 根据客户ID查询明细
+     * @param customerId 客户ID
+     * @return 订单业绩明细列表
+     */
+    List<OrderPerformanceDetail> findByCustomerId(String customerId);
+
+    /**
+     * 根据明细类型查询明细
+     * @param detailType 明细类型（1-购买商品，2-退货商品）
+     * @return 订单业绩明细列表
+     */
+    List<OrderPerformanceDetail> findByDetailType(Integer detailType);
+
+    /**
+     * 根据代理唯一码查询明细
+     * @param agentUniqueCode 代理唯一码
+     * @return 订单业绩明细列表
+     */
+    List<OrderPerformanceDetail> findByAgentUniqueCode(String agentUniqueCode);
+
+    /**
+     * 根据订单ID列表查询明细
+     * @param orderIds 订单ID列表
+     * @return 订单业绩明细列表
+     */
+    List<OrderPerformanceDetail> findByOrderIdIn(List<String> orderIds);
+
+}

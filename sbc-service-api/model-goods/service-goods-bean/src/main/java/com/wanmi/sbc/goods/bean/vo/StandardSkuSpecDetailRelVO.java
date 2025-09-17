@@ -1,0 +1,97 @@
+package com.wanmi.sbc.goods.bean.vo;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.wanmi.sbc.common.base.BasicResponse;
+import com.wanmi.sbc.common.enums.DeleteFlag;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeDeserializer;
+import com.wanmi.sbc.common.util.CustomLocalDateTimeSerializer;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import lombok.Data;
+
+/**
+ * <p></p>
+ * author: sunkun
+ * Date: 2018-11-07
+ */
+@Schema
+@Data
+public class StandardSkuSpecDetailRelVO extends BasicResponse {
+
+    private static final long serialVersionUID = -58271567815676547L;
+
+    /**
+     * SKU与规格值关联ID
+     */
+    @Schema(description = "SKU与规格值关联ID")
+    private Long specDetailRelId;
+
+    /**
+     * 商品编号
+     */
+    @Schema(description = "商品编号")
+    private String goodsId;
+
+    /**
+     * SKU编号
+     */
+    @Schema(description = "SKU编号")
+    private String goodsInfoId;
+
+    /**
+     * 规格值ID
+     */
+    @Schema(description = "规格值ID")
+    private Long specDetailId;
+
+    /**
+     * 规格ID
+     */
+    @Schema(description = "规格ID")
+    private Long specId;
+
+    /**
+     * 规格值自定义名称
+     * 分词搜索
+     */
+    @Schema(description = "规格值自定义名称，分词搜索")
+    private String detailName;
+
+    /**
+     * 创建时间
+     */
+    @Schema(description = "创建时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    @Schema(description = "更新时间")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime updateTime;
+
+    /**
+     * 是否删除
+     */
+    @Schema(description = "是否删除，0: 否, 1: 是")
+    private DeleteFlag delFlag;
+
+    /**
+     * 新增商品时，模拟规格ID
+     * 表明与SKU的关系
+     */
+    @Schema(description = "新增商品时，模拟规格ID，表明与SKU的关系")
+    private Long mockSpecId;
+
+    /**
+     * 新增商品时，模拟规格值ID
+     * 表明与SKU的关系
+     */
+    @Schema(description = "新增商品时，模拟规格值ID，表明与SKU的关系")
+    private Long mockSpecDetailId;
+}

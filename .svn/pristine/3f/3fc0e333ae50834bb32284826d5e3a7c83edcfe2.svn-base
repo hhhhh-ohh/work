@@ -1,0 +1,181 @@
+####\u57FA\u672C\u914D\u7F6E
+info.app.name=SupplierPlatform
+info.app.description=b2b\u5546\u5BB6
+info.build.artifact=@project.artifactId@
+info.build.version=@project.version@
+
+####\u65E5\u5FD7\u7EA7\u522B
+logging.level.root=INFO
+logging.level.com.wanmi=DEBUG
+logging.level.requestLog=DEBUG
+logging.level.org.springframework=INFO
+logging.level.org.springframework.cloud.openfeign=WARN
+
+request.log.enable=true
+request.log.need-result=true
+request.log.log-type=0
+
+####Server\u914D\u7F6E
+server.port=8390
+server.servlet.session.timeout=1800
+server.tomcat.threads.max=200
+#server.error.path=/error
+server.error.whitelabel.enabled=false
+server.error.include-stacktrace=ALWAYS
+server.tomcat.basedir=${user.home}/data/s2b/supplier/tmp
+
+# ----------------------------------------
+# spring cloud
+# ----------------------------------------
+wm.nacos.username=nacos
+wm.nacos.password=Nacos@2024
+spring.application.name=sbc-supplier
+spring.main.allow-circular-references=true
+spring.cloud.nacos.config.enabled = false
+spring.cloud.nacos.discovery.server-addr=172.19.25.53:8848
+#spring.cloud.nacos.username=${wm.nacos.username}
+#spring.cloud.nacos.password=${wm.nacos.password}
+
+###JPA\u914D\u7F6E
+spring.jpa.show-sql=true
+spring.jpa.open-in-view=false
+
+####\u6570\u636E\u6E90\u914D\u7F6E
+spring.datasource.hikari.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.hikari.jdbc-url=jdbc:mysql://172.19.25.53:3306/sbc-bff?characterEncoding=UTF-8&&zeroDateTimeBehavior=convertToNull&autoReconnect=true&failOverReadOnly=false&connectTimeout=0
+spring.datasource.hikari.username=root
+spring.datasource.hikari.password=Wmi@2024
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.maximum-pool-size=15
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.max-lifetime=60000
+spring.datasource.hikari.connection-timeout=30000
+#-----------------------------------------------
+# seata
+#-----------------------------------------------
+#seata.registry.nacos.username=${wm.nacos.username}
+#seata.registry.nacos.password=${wm.nacos.password}
+seata.enabled=true
+seata.application-id=sbc-supplier
+#Seata\u4E8B\u52A1\u7EC4\u7F16\u53F7\uFF0C\u7528\u4E8ETC\u96C6\u7FA4\u540DSeata\u670D\u52A1\u914D\u7F6E\u9879\uFF0C\u5BF9\u5E94ServiceProperties\u7C7B
+seata.tx-service-group=sbc-supplier-group
+# \u865A\u62DF\u7EC4\u548C\u5206\u7EC4\u7684\u6620\u5C04
+seata.service.vgroup-mapping.sbc-supplier-group=default
+seata.enableAutoDataSourceProxy=true
+seata.registry.type=nacos
+seata.registry.nacos.server-addr=172.19.26.12:8848
+seata.registry.nacos.namespace=public
+seata.registry.nacos.cluster=default
+seata.client.rm.lock.retryInterval=10
+seata.client.rm.lock.retryTimes=300
+seata.registry.nacos.group=SEATA_GROUP
+seata.registry.nacos.application=seata-server
+
+
+
+
+####\u7BA1\u7406\u7AEF\u914D\u7F6E
+management.server.port=9014
+management.endpoints.enabled-by-default=false
+management.endpoints.web.base-path=/act
+management.endpoint.info.enabled=true
+management.endpoint.health.enabled=true
+management.endpoint.mappings.enabled=true
+management.endpoint.env.enabled=true
+management.endpoints.web.exposure.include=env,health,info,mappings
+management.endpoint.health.show-details=always
+
+#####JWT\u914D\u7F6E
+jwt.secret-key=eda1782204cf41efaca1e051ccc610be62acdcf24c09f011f343583c41cfb941s
+jwt.url-patterns=/**
+
+
+####Spring\u56FD\u9645\u5316
+spring.messages.basename=i18n/ResultCode
+
+
+#### \u5F02\u6B65\u6267\u884C\u5668
+async.corePoolSize=5
+async.maxPoolSize=50
+async.queueCapacity=2000
+
+#### Redis\u914D\u7F6E
+spring.data.redis.host=172.19.25.53
+spring.data.redis.port=6379
+spring.data.redis.database=0
+spring.data.redis.password=Wmi@2024
+spring.data.redis.timeout=5000
+spring.data.redis.lettuce.pool.max-active=20
+spring.data.redis.lettuce.pool.max-idle=10
+
+
+
+### \u63A5\u6536\u6587\u4EF6\u6700\u5927\u5C3A\u5BF8
+spring.servlet.multipart.enabled = true
+spring.servlet.multipart.max-file-size = 50MB
+spring.servlet.multipart.max-request-size = 55MB
+
+spring.mvc.dispatch-options-request=true
+
+
+########swagger begin###########
+## \u6807\u9898
+springdoc.swagger-ui.enabled=true
+swagger.title=SBC\u5546\u5BB6\u540E\u53F0API\u63A5\u53E3
+## \u63CF\u8FF0
+swagger.description=\u5982\u6709\u63A5\u53E3\u63CF\u8FF0\u4E0D\u6E05\u6670, \u8BF7\u8054\u7CFB\u76F8\u5E94\u5F00\u53D1\u4EBA\u5458\u6DFB\u52A0
+## \u7248\u672C
+swagger.version=1.0.0
+## \u5F00\u542F/\u5173\u95ED
+swagger.enable=true
+
+#\u6B64\u5904\u4E3Aswagger\u6743\u9650\u6821\u9A8C\uFF0C\u5F00\u542F\u5219\u524D\u7AEF\u8BBF\u95EEswagger-ui\u9700\u8981\u7528\u6237\u5BC6\u7801
+swagger.basic.enable=true
+swagger.basic.username=wanmi
+swagger.basic.password=123456
+
+#\u7531\u4E8Espringcloud\u9ED8\u8BA4\u662F\u5F00\u542F\u7684\u91CD\u8BD5\u673A\u5236\uFF0C\u5F00\u542F\u6B21\u673A\u5236\u4EE5\u540E\u4F1A\u5BFC\u81F4\u5F53springcloud\u8BF7\u6C42\u8D85\u65F6\u65F6\u4F1A\u91CD\u590D\u8C03\u7528\u4E1A\u52A1\u6A21\u5757\uFF0C\u4ECE\u800C\u4F1A\u5F15\u53D1\u6570\u636E\u6DF7\u4E71
+ribbon.MaxAutoRetriesNextServer=0
+ribbon.ReadTimeout=60000
+ribbon.ConnectTimeout=60000
+
+# ----------------------------------------
+
+########sso cookie
+cookie.name = a9a68f4fefd3b693f10be4a89799dc48
+cookie.domain = kstore.shop
+cookie.secure = false
+cookie.path = /
+cookie.maxAge = -1
+# \u540C\u4E00\u4E2A\u4E91\u5B58\u50A8\uFF0C\u540C\u4E00\u4E2Abucket\u573A\u666F\u4E0B\uFF0C\u6587\u4EF6\u524D\u7F00\u901A\u8FC7\u73AF\u5883\u6807\u8BC6\u6765\u533A\u5206\uFF0C\u9632\u6B62\u4E0D\u540C\u73AF\u5883\u7684\u8986\u76D6
+yun.file.path.env.profile=dev186
+
+#CORS\u914D\u7F6E\u4FE1\u606F
+cors.allowedOrigins=*
+openApi.secret.key=1wnVI0vSmed4rCjVI83v0Pi8h8jTabUxeIcsPGDKWoMOyoD18zcjCUO5Wvf3IXnX
+
+#\u626B\u63CFN\u5206\u949F\u5185\u751F\u6548\u7684\u8BB0\u5F55\uFF0C\u7528\u4E8E\u5B9A\u65F6\u4EFB\u52A1\u626B\u63CF\u4E1A\u52A1\u8868\u5E76\u5206\u53D1MQ\u6D88\u606F
+scan-task.within-time=30
+xss.param-names=couponDesc
+
+# \u4F7F\u7528okhttp
+feign.okhttp.enabled=true
+# \u5F00\u542F\u8BF7\u6C42\u6570\u636E\u7684\u538B\u7F29\u529F\u80FD
+feign.compression.request.enabled=false
+# \u5F00\u542F\u8FD4\u56DE\u6570\u636E\u7684\u538B\u7F29\u529F\u80FD
+feign.compression.response.enabled=true
+# \u538B\u7F29\u7C7B\u578B
+feign.compression.request.mime-types=text/xml,application/xml, application/json
+# \u6700\u5C0F\u538B\u7F29\u503C\u6807\u51C6\uFF0C\u5F53\u6570\u636E\u5927\u4E8E 1024 \u624D\u4F1A\u8FDB\u884C\u538B\u7F29
+feign.compression.request.min-request-size=1024
+
+
+
+#### \u654F\u611F\u8BCD\u9ED1\u540D\u5355
+# \u654F\u611F\u8BCD\u9ED1\u540D\u5355 \u5168\u90E8\u8DEF\u5F84\u6807\u8BC6  \u4E0D\u914D\u7F6E\u6216\u8005 false \u5219\u4F7F\u7528\uFF1Aapi.badWords.addPath-rest-urls
+api.badWords.allPath-flag = true
+api.badWords.excludePath-rest-urls = {"/sensitiveWords/valid":"POST"}
+
+#\u5F00\u542FCSRF\u653B\u51FB\u9A8C\u8BC1
+open.referer.check=false
+referer.check.url=https://ssbc-dev.kstore.shop,https://s2btest5.kstore.shop

@@ -1,0 +1,15 @@
+@startuml
+  alt boss,supplier订单详情
+    actor user
+    control 界面类
+    entity 实体类
+    database 持久类
+    user -> 界面类: 1.输入网址()
+    界面类 -> 实体类: 2.订单详情
+    实体类 --> 持久类: 3.查询订单详情
+    持久类 --> 持久类: 4.数据库查询
+    持久类 --> 实体类: 5.返回查询结果
+    实体类 --> 界面类: 6.返回订单详情结果
+    界面类 --> user: 7.刷新订单详情页
+  end
+@enduml

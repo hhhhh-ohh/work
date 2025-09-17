@@ -1,0 +1,71 @@
+package com.wanmi.sbc.customer.api.provider.agent;
+
+
+import com.wanmi.sbc.common.base.BaseResponse;
+import com.wanmi.sbc.customer.api.request.agent.*;
+import com.wanmi.sbc.customer.api.response.agent.CreatePosterResponse;
+import com.wanmi.sbc.customer.api.response.agent.CreateQrCodeResponse;
+import jakarta.validation.Valid;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import java.io.IOException;
+
+@FeignClient(value = "${application.customer.name}", contextId = "AgentProvider")
+public interface AgentProvider {
+
+    /**
+     * 新增代理商
+     */
+    @PostMapping("/agent/${application.customer.version}/agent/add-agent")
+    BaseResponse addAgent(@RequestBody @Valid AddAgentRequest request);
+
+    /**
+     * 修改代理商
+     */
+    @PostMapping("/agent/${application.customer.version}/agent/update-agent")
+    BaseResponse updateAgent(@RequestBody @Valid UpdateAgentRequest request);
+
+    /**
+     * 删除代理商
+     */
+    @PostMapping("/agent/${application.customer.version}/agent/delete-agent")
+    BaseResponse deleteAgent(@RequestBody @Valid DeleteAgentRequest request);
+
+    /**
+     * 查询代理商
+     */
+    @PostMapping("/agent/${application.customer.version}/agent/audit-agent")
+    BaseResponse auditAgent(@RequestBody @Valid AuditAgentRequest request);
+
+    /**
+     * 绑定代理商
+     */
+    @PostMapping("/agent/${application.customer.version}/agent/bind-agent")
+    BaseResponse bindAgent(@RequestBody @Valid BindAgentRequest request);
+
+    /**
+     * 延长代理商有效期
+     */
+    @PostMapping("/agent/${application.customer.version}/agent/extend-vaild-agent")
+    BaseResponse extendVaildAgent(@RequestBody @Valid ExtendVaildAgentRequest request);
+
+    /**
+     * 新增代理商二维码
+     */
+    @PostMapping("/agent/${application.customer.version}/agent/create-qr-code")
+    BaseResponse<CreateQrCodeResponse> createQrCode(@RequestBody @Valid CreateQrCodeRequest request);
+
+    /**
+     * 新增代理商海报
+     */
+    @PostMapping("/agent/${application.customer.version}/agent/create-poster")
+    BaseResponse<CreatePosterResponse> createPoster(@RequestBody @Valid CreatePosterRequest request);
+
+    /**
+     * 刷新城市生成海报
+     */
+    @PostMapping("/agent/${application.customer.version}/agent/update-city-poster")
+    BaseResponse updateCityPoster(@RequestBody @Valid UpdateCityPosterAgentRequest request);
+}

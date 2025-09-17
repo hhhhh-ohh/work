@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wanmi.ares.report.wechatvideo.videomonth.dao.VideoMonthMapper">
+
+    <select id="getList" parameterType="com.wanmi.ares.request.wechatvideo.VideoQueryPageRequest"
+            resultType="com.wanmi.ares.view.wechatvideo.VideoMonthView">
+        SELECT
+            wv.id,
+            IFNULL(wvu.finder_nickname, wv.video_name) videoName,
+            company_info_id companyInfoId,
+            video_sale_amount videoSaleAmount,live_sale_amount liveSaleAmount,
+            shopwindow_sale_amount shopwindowSaleAmount,video_return_amount videoReturnAmount,
+            live_return_amount liveReturnAmount,
+            shopwindow_return_amount shopwindowReturnAmount,
+            wv.create_time createTime
+        FROM wechat_video_month wv
+        LEFT JOIN replay_wechat_video_user wvu ON wv.video_account = wvu.promoter_id
+        WHERE 1 = 1
+        <if test='companyInfoId != null'>
+            and company_info_id = #{companyInfoId}
+        </if>
+        <if test="year != null">
+            and year = #{year}
+        </if>
+        <if test="month != null">
+            and month = #{month}
+        </if>
+        <if test="sortName != null and sortName != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortName} ${sortOrder}
+        </if>
+    </select>
+
+    <delete id="deleteByDate">
+        DELETE FROM wechat_video_month
+        WHERE year = #{year} and month = #{month}
+    </delete>
+
+    <insert id="batchAdd" parameterType="java.util.List">
+        insert into wechat_video_month (video_account,video_name,company_info_id,
+        video_sale_amount, live_sale_amount, shopwindow_sale_amount,
+        video_return_amount, live_return_amount,shopwindow_return_amount, year,month,create_time)
+        values
+        <foreach collection ="list" item="wechatVideoBase" separator =",">
+            (#{wechatVideoBase.videoAccount,jdbcType=BIGINT},#{wechatVideoBase.videoName,jdbcType=VARCHAR},#{wechatVideoBase.companyInfoId,jdbcType=INTEGER}, #{wechatVideoBase.videoSaleAmount,jdbcType=DECIMAL}, #{wechatVideoBase.liveSaleAmount,jdbcType=DECIMAL},
+            #{wechatVideoBase.shopwindowSaleAmount,jdbcType=DECIMAL}, #{wechatVideoBase.videoReturnAmount,jdbcType=DECIMAL}, #{wechatVideoBase.liveReturnAmount,jdbcType=DECIMAL},
+            #{wechatVideoBase.shopwindowReturnAmount,jdbcType=DECIMAL}, #{wechatVideoBase.year,jdbcType=SMALLINT}, #{wechatVideoBase.month,jdbcType=TINYINT},#{wechatVideoBase.createTime,jdbcType=TIMESTAMP})
+        </foreach >
+    </insert>
+
+</mapper>

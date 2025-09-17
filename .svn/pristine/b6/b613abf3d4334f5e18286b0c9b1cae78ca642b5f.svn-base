@@ -1,0 +1,14 @@
+# seata配置注意事项
+
+当服务未使用sharding链接数据库时。seata应当配置为：
+~~~ properties
+seata.sharding.enable=false 
+seata.enableAutoDataSourceProxy=true
+~~~
+
+
+当服务使用sharding链接数据库时。seata应当配置为：
+~~~ properties
+seata.sharding.enable=true 
+seata.enableAutoDataSourceProxy=false
+~~~

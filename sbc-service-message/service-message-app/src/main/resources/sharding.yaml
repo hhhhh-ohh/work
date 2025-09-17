@@ -1,0 +1,65 @@
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://172.16.50.131:3306/sbc-message?characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&autoReconnect=true&failOverReadOnly=false&connectTimeout=0&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    username: root
+    password: Wmi@2025
+    minPoolSize: 100
+    maxPoolSize: 100
+    idleTimeout: 60000
+    maxLifetime: 30000
+
+
+rules:
+  - !SINGLE
+    tables:
+      - "*.*"
+    defaultDataSource: ds_0
+  - !SHARDING
+    autoTables:
+      app_message:
+        actualDataSources: ds_0
+        shardingStrategy:
+          standard:
+            shardingColumn: customer_id
+            shardingAlgorithmName: coupon_code_hash_mod
+      vop_log:
+        actualDataSources: ds_0
+        shardingStrategy:
+          standard:
+            shardingColumn: date
+            shardingAlgorithmName: vop_log_date
+      store_message_detail:
+        actualDataSources: ds_0
+        shardingStrategy:
+          standard:
+            shardingColumn: store_id
+            shardingAlgorithmName: store_id_mod
+    bindingTables:
+      - app_message
+      - vop_log
+      - store_message_detail
+    defaultTableStrategy:
+      none:
+    shardingAlgorithms:
+      coupon_code_hash_mod:
+        type: HASH_MOD
+        props:
+          sharding-count: 10
+      vop_log_date:
+        type: MOD
+        props:
+          sharding-count: 5
+      store_id_mod:
+        type: MOD
+        props:
+          sharding-count: 5
+
+
+transaction:
+  defaultType: BASE
+  providerType: Seata
+
+props:
+  sql-show: true

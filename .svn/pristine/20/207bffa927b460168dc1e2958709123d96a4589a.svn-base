@@ -1,0 +1,17 @@
+@startuml
+start
+:查询订单商品详情;
+:根据请求头AppKey获取所对应的商户;
+:封装请求参数;
+if(是否是供应商) then(Y)
+    :调用order的供应商订单商品详情查询接口;
+else
+    :调用order的商家订单商品详情查询接口;
+endif;
+if(接口调用正常) then(Y)
+:封装返回数据;
+else
+:返回空集合;
+endif
+stop
+@enduml

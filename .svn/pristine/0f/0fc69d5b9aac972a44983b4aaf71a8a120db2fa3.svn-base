@@ -1,0 +1,331 @@
+db.getCollection("common_bar_infos").remove({"_id": ObjectId("5fc70ca1f8b2d45165237405")})
+db.getCollection("common_bar_infos").insert({
+    "_id": ObjectId("5fc70ca1f8b2d45165237405"),
+    "envCode": "test1",
+    "key": "@wanmi/wechat-recommendlist",
+    "__v": NumberInt("0"),
+    "addible": true,
+    "createdAt": ISODate("2020-12-02T03:40:18.907Z"),
+    "deletable": true,
+    "deleted": false,
+    "dependencies": [
+        "@wanmi/wechat-recommendlist"
+    ],
+    "img": "",
+    "isAdvanced": true,
+    "packageName": "@wanmi/wechat-recommendlist",
+    "platform": "weixin",
+    "props": {
+        "props": {
+            "showType": {
+                "itemStyle": NumberInt("2"),
+                "showStyle": NumberInt("1"),
+                "cartButton": NumberInt("1"),
+                "goodsSetup": {
+                    "showSku": true,
+                    "cart": true,
+                    "horn": true,
+                    "marketing": true,
+                    "price": true,
+                    "name": true,
+                    "hornStyle": NumberInt("1"),
+                    "cartStyle": NumberInt("3"),
+                    "customHorn": "",
+                    "title": true
+                }
+            },
+            "bgColor": "#f7f7f7",
+            "selectedSource": NumberInt("2"),
+            "sortSource": NumberInt("1"),
+            "sources": [
+                {
+                    "type": "1",
+                    "size": NumberInt("20")
+                },
+                {
+                    "type": "2",
+                    "size": NumberInt("20")
+                },
+                {
+                    "type": "3",
+                    "size": NumberInt("20"),
+                    "cateID": "",
+                    "cateName": ""
+                },
+                {
+                    "type": "4"
+                },
+                {
+                    "type": "5",
+                    "size": NumberInt("20")
+                }
+            ],
+            "items": [
+                {
+                    "imgSrc": "https://wanmi-b2b.oss-cn-shanghai.aliyuncs.com/x-site-ui/default.png",
+                    "promotionLabels": {
+                        "couponLabels": [
+                            {
+                                "couponActivityId": "ff8080817163f8ef017171470c62001a",
+                                "couponDesc": "满56767减36545",
+                                "couponInfoId": "ff8080817163f8ef0171714373cc0014"
+                            }
+                        ],
+                        "marketingLabels": [
+                            {
+                                "marketingDesc": "满2件减1",
+                                "marketingId": NumberInt("356"),
+                                "marketingType": NumberInt("0")
+                            },
+                            {
+                                "marketingDesc": "满3件获赠品，赠完为止",
+                                "marketingId": NumberInt("360"),
+                                "marketingType": NumberInt("2")
+                            }
+                        ],
+                        "grouponLabel": {
+                            "grouponActivityId": "ff8080817163f8ef0171766442fa004c",
+                            "marketingDesc": "拼团"
+                        },
+                        "goodsLabel": [
+                            {
+                                "goodsLabelId": NumberInt("39"),
+                                "labelName": "女神节",
+                                "labelSort": NumberInt("2"),
+                                "labelVisible": true,
+                                "delFlag": NumberInt("0")
+                            }
+                        ]
+                    },
+                    "specName": "示例SKU",
+                    "price": "199.00",
+                    "buyPoint": NumberInt("0"),
+                    "name": "示例商品名称",
+                    "nameWithSku": "示例商品名称 示例SKU",
+                    "imgHref": "",
+                    "title": "商品二级标题"
+                },
+                {
+                    "imgSrc": "https://wanmi-b2b.oss-cn-shanghai.aliyuncs.com/x-site-ui/default.png",
+                    "promotionLabels": {
+                        "couponLabels": [
+                            {
+                                "couponActivityId": "ff8080817163f8ef017171470c62001a",
+                                "couponDesc": "满56767减36545",
+                                "couponInfoId": "ff8080817163f8ef0171714373cc0014"
+                            }
+                        ],
+                        "marketingLabels": [
+                            {
+                                "marketingDesc": "满2件减1",
+                                "marketingId": NumberInt("356"),
+                                "marketingType": NumberInt("0")
+                            },
+                            {
+                                "marketingDesc": "满3件获赠品，赠完为止",
+                                "marketingId": NumberInt("360"),
+                                "marketingType": NumberInt("2")
+                            }
+                        ],
+                        "grouponLabel": {
+                            "grouponActivityId": "ff8080817163f8ef0171766442fa004c",
+                            "marketingDesc": "拼团"
+                        },
+                        "goodsLabel": [
+                            {
+                                "goodsLabelId": NumberInt("39"),
+                                "labelName": "女神节",
+                                "labelSort": NumberInt("2"),
+                                "labelVisible": true,
+                                "delFlag": NumberInt("0")
+                            }
+                        ]
+                    },
+                    "specName": "示例SKU",
+                    "price": "199.00",
+                    "buyPoint": NumberInt("0"),
+                    "name": "示例商品名称",
+                    "nameWithSku": "示例商品名称 示例SKU",
+                    "imgHref": "",
+                    "title": "商品二级标题"
+                }
+            ],
+            "version": "0.0.1"
+        },
+        "widgetNameSpace": "@wanmi/wechat-recommendlist"
+    },
+    "replicable": true,
+    "title": "智能推荐",
+    "updatedAt": ISODate("2021-01-22T09:45:50.12Z"),
+    "version": "0.0.1",
+    "refs": [
+        "d2cStore"
+    ]
+});
+
+db.getCollection("bus_bar_infos").remove({"_id": ObjectId("5fc70caaf8b2d4516523742a")})
+db.getCollection("bus_bar_infos").insert({
+    "_id": ObjectId("5fc70caaf8b2d4516523742a"),
+    "envCode": "test1",
+    "key": "@wanmi/wechat-recommendlist",
+    "platform": "weixin",
+    "systemCode": "d2cStore",
+    "__v": NumberInt("0"),
+    "addible": true,
+    "createdAt": ISODate("2020-12-02T03:40:27.953Z"),
+    "deletable": true,
+    "deleted": false,
+    "dependencies": [
+        "@wanmi/wechat-recommendlist"
+    ],
+    "img": "",
+    "isAdvanced": true,
+    "isCommon": true,
+    "packageName": "@wanmi/wechat-recommendlist",
+    "props": {
+        "props": {
+            "showType": {
+                "itemStyle": NumberInt("2"),
+                "showStyle": NumberInt("1"),
+                "cartButton": NumberInt("1"),
+                "goodsSetup": {
+                    "showSku": true,
+                    "cart": true,
+                    "horn": true,
+                    "marketing": true,
+                    "price": true,
+                    "name": true,
+                    "hornStyle": NumberInt("1"),
+                    "cartStyle": NumberInt("3"),
+                    "customHorn": "",
+                    "title": true
+                }
+            },
+            "bgColor": "#f7f7f7",
+            "selectedSource": NumberInt("2"),
+            "sortSource": NumberInt("1"),
+            "sources": [
+                {
+                    "type": "1",
+                    "size": NumberInt("20")
+                },
+                {
+                    "type": "2",
+                    "size": NumberInt("20")
+                },
+                {
+                    "type": "3",
+                    "size": NumberInt("20"),
+                    "cateID": "",
+                    "cateName": ""
+                },
+                {
+                    "type": "4"
+                },
+                {
+                    "type": "5",
+                    "size": NumberInt("20")
+                 }
+            ],
+            "items": [
+                {
+                    "imgSrc": "https://wanmi-b2b.oss-cn-shanghai.aliyuncs.com/x-site-ui/default.png",
+                    "promotionLabels": {
+                        "couponLabels": [
+                            {
+                                "couponActivityId": "ff8080817163f8ef017171470c62001a",
+                                "couponDesc": "满56767减36545",
+                                "couponInfoId": "ff8080817163f8ef0171714373cc0014"
+                            }
+                        ],
+                        "marketingLabels": [
+                            {
+                                "marketingDesc": "满2件减1",
+                                "marketingId": NumberInt("356"),
+                                "marketingType": NumberInt("0")
+                            },
+                            {
+                                "marketingDesc": "满3件获赠品，赠完为止",
+                                "marketingId": NumberInt("360"),
+                                "marketingType": NumberInt("2")
+                            }
+                        ],
+                        "grouponLabel": {
+                            "grouponActivityId": "ff8080817163f8ef0171766442fa004c",
+                            "marketingDesc": "拼团"
+                        },
+                        "goodsLabel": [
+                            {
+                                "goodsLabelId": NumberInt("39"),
+                                "labelName": "女神节",
+                                "labelSort": NumberInt("2"),
+                                "labelVisible": true,
+                                "delFlag": NumberInt("0")
+                            }
+                        ]
+                    },
+                    "specName": "示例SKU",
+                    "price": "199.00",
+                    "buyPoint": NumberInt("0"),
+                    "name": "示例商品名称",
+                    "nameWithSku": "示例商品名称 示例SKU",
+                    "imgHref": "",
+                    "title": "商品二级标题"
+                },
+                {
+                    "imgSrc": "https://wanmi-b2b.oss-cn-shanghai.aliyuncs.com/x-site-ui/default.png",
+                    "promotionLabels": {
+                        "couponLabels": [
+                            {
+                                "couponActivityId": "ff8080817163f8ef017171470c62001a",
+                                "couponDesc": "满56767减36545",
+                                "couponInfoId": "ff8080817163f8ef0171714373cc0014"
+                            }
+                        ],
+                        "marketingLabels": [
+                            {
+                                "marketingDesc": "满2件减1",
+                                "marketingId": NumberInt("356"),
+                                "marketingType": NumberInt("0")
+                            },
+                            {
+                                "marketingDesc": "满3件获赠品，赠完为止",
+                                "marketingId": NumberInt("360"),
+                                "marketingType": NumberInt("2")
+                            }
+                        ],
+                        "grouponLabel": {
+                            "grouponActivityId": "ff8080817163f8ef0171766442fa004c",
+                            "marketingDesc": "拼团"
+                        },
+                        "goodsLabel": [
+                            {
+                                "goodsLabelId": NumberInt("39"),
+                                "labelName": "女神节",
+                                "labelSort": NumberInt("2"),
+                                "labelVisible": true,
+                                "delFlag": NumberInt("0")
+                            }
+                        ]
+                    },
+                    "specName": "示例SKU",
+                    "price": "199.00",
+                    "buyPoint": NumberInt("0"),
+                    "name": "示例商品名称",
+                    "nameWithSku": "示例商品名称 示例SKU",
+                    "imgHref": "",
+                    "title": "商品二级标题"
+                }
+            ],
+            "version": "0.0.1"
+        },
+        "widgetNameSpace": "@wanmi/wechat-recommendlist"
+    },
+    "replicable": true,
+    "title": "智能推荐",
+    "type": "COMMON",
+    "updatedAt": ISODate("2020-12-02T03:40:35.593Z"),
+    "version": "0.0.1",
+    "cateId": "5add9b42e15b9a13a2a3bd26",
+    "sortIndex": NumberInt("5")
+});

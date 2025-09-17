@@ -1,0 +1,56 @@
+package com.wanmi.sbc.elastic;
+
+
+import com.wanmi.sbc.common.configure.CompositePropertySourceFactory;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
+import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.web.client.RestTemplate;
+
+import java.net.InetAddress;
+
+@SpringBootApplication(scanBasePackages = {"com.wanmi.sbc"})
+@EnableAsync
+@EnableDiscoveryClient
+@Slf4j
+@EnableFeignClients(basePackages = {"com.wanmi.sbc"})
+@PropertySource(value = {"api-application.properties"}, factory = CompositePropertySourceFactory.class)
+//@EnablePluginRouting
+@EnableElasticsearchRepositories
+public class ElasticServiceApplication {
+
+    @LoadBalanced
+    @Bean
+    public RestTemplate restTemplateLoadBalanced() {
+        return new RestTemplate();
+    }
+
+    public static void main(String[] args) throws Exception {
+//        JSON.config(JSONWriter.Feature.ReferenceDetection);
+        System.setProperty("es.set.netty.runtime.available.processors", "false");
+        Environment env = SpringApplication.run(ElasticServiceApplication.class, args).getEnvironment();
+        String port = env.getProperty("server.port", "8090");
+        String actPort = env.getProperty("management.server.port", "8091");
+        String hostAddress = InetAddress.getLocalHost().getHostAddress();
+        log.info("Access URLs:\n----------------------------------------------------------\n\t"
+                        + "Local: \t\thttp://127.0.0.1:{}\n\t"
+                        + "External: \thttp://{}:{}\n\t"
+                        + "health: \thttp://{}:{}/act/health\n----------------------------------------------------------",
+                port,
+                hostAddress,
+                port,
+                hostAddress,
+                actPort
+        );
+    }
+}

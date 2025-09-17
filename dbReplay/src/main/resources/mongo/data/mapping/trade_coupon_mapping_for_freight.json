@@ -1,0 +1,50 @@
+{
+  "replayTable" : "replay_trade_coupon",
+  "dispatch" :{
+    "dispatch": null,
+    "typeFilter": ["INSERT","UPDATE","DELETE"],
+    "typeDispatch": {}
+  },
+  "pk": ["oid","coupon_code_id"],
+  "replayTypes":["UPDATE_REPLAY"],
+  "mappingData": {
+    "singleData": [
+      {
+        "field": "_id",
+        "replayField": "tid",
+        "dataType": 12
+      },
+      {
+        "field": "_id",
+        "replayField": "oid",
+        "dataType": 12
+      },
+      {
+        "field": "freightCoupon.couponCodeId",
+        "replayField": "coupon_code_id",
+        "dataType": 12
+      },
+      {
+        "field": "freightCoupon.couponCode",
+        "replayField": "coupon_code",
+        "dataType": 12
+      },
+      {
+        "field": "freightCoupon.couponType",
+        "replayField": "coupon_type",
+        "dataType": 4,
+        "enumFile": "coupon_type.json"
+      },
+      {
+        "field": "freightCoupon.splitPrice",
+        "replayField": "split_price",
+        "dataType": 3
+      },
+      {
+        "field": "freightCoupon.discountsAmount",
+        "replayField": "reduce_price",
+        "dataType": 3
+      }
+    ]
+  }
+}

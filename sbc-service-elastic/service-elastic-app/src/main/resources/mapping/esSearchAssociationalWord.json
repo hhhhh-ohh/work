@@ -1,0 +1,34 @@
+{
+  "properties": {
+    "deletePerson": {
+      "type": "keyword"
+    },
+    "createTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "deleteTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "searchTerms": {
+      "type": "keyword"
+    },
+    "createPerson": {
+      "type": "keyword"
+    },
+    "updateTime": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSS",
+      "type": "date"
+    },
+    "id": {
+      "type": "long"
+    },
+    "delFlag": {
+      "type": "keyword"
+    },
+    "updatePerson": {
+      "type": "keyword"
+    }
+  }
+}

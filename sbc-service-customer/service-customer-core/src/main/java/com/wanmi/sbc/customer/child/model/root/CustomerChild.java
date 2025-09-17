@@ -1,0 +1,103 @@
+package com.wanmi.sbc.customer.child.model.root;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.wanmi.sbc.common.enums.GenderType;
+import jakarta.persistence.*;
+import lombok.Data;
+import org.hibernate.annotations.GenericGenerator;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+/**
+ * 小孩信息实体类
+ *
+ * @author
+ * @date
+ */
+@Data
+@Entity
+@Table(name = "customer_child")
+public class CustomerChild  implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 小孩ID
+     */
+    @Id
+    @GeneratedValue(generator = "system-uuid")
+    @GenericGenerator(name = "system-uuid", strategy = "uuid")
+    @Column(name = "child_id", length = 32)
+    private String childId;
+
+    /**
+     * 客户ID
+     */
+    @Column(name = "customer_id", length = 32, nullable = false)
+    private String customerId;
+
+    /**
+     * 家长姓名
+     */
+    @Column(name = "parent_name", length = 50)
+    private String parentName;
+
+    /**
+     * 小孩姓名
+     */
+    @Column(name = "child_name", length = 50)
+    private String childName;
+
+    /**
+     * 小孩生日
+     */
+    @Column(name = "child_birthday")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDate childBirthday;
+
+    /**
+     * 性别类型 0女 1男 2保密
+     */
+    @Column(name = "child_gender")
+    @Enumerated(EnumType.ORDINAL)
+    private GenderType childGender;
+
+    /**
+     * 创建时间
+     */
+    @CreatedDate
+    @Column(name = "create_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    @LastModifiedDate
+    @Column(name = "update_time")
+    @JsonFormat(pattern = "yyyy-MM-dd-dd HH:mm:ss")
+    private LocalDateTime updateTime;
+
+    /**
+     * 学校名称
+     */
+    @Column(name = "school_name", length = 150)
+    private String schoolName;
+
+    /**
+     * 学校编码
+     */
+    @Column(name = "school_code", length = 50)
+    private String schoolCode;
+
+
+    /**
+     * 校徽
+     */
+    @Column(name = "badge_code", length = 50)
+    private String badgeCode;
+
+}

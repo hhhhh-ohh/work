@@ -1,0 +1,19 @@
+package com.wanmi.sbc.elastic.api.request.mqconsumer;
+
+import com.wanmi.sbc.common.base.BaseRequest;
+import lombok.Data;
+
+/**
+ * @author lvzhenwei
+ * @className EsMqConsumerRequest
+ * @description mq消费request
+ * @date 2021/8/11 2:40 下午
+ **/
+@Data
+public class EsMqConsumerRequest extends BaseRequest {
+
+    /**
+     * mq消息内容
+     */
+    private String mqContentJson;
+}

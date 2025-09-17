@@ -1,0 +1,23 @@
+@startuml
+start
+:调用微服务退单确认接口;
+if(退单是否存在) then(no)
+    :返回错误;
+    stop;
+endif;
+if(退单是否属于该商户下的) then(no)
+    :返回错误;
+    stop;
+endif;
+if(linkedMall退单?) then(yes)
+    :验证linkedMall的卖家是否同意收货;
+    if(未同意收货?) then(no)
+        :返回错误;
+        stop;
+    endif;
+endif;
+:删除店铺服务待评价信息;
+:调用微服务退单收货接口;
+:确认收货成功;
+stop
+@enduml

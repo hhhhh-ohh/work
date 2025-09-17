@@ -1,0 +1,71 @@
+package com.wanmi.sbc.filter;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.ServletOutputStream;
+import java.io.IOException;
+
+/**
+ * 过滤器配置
+ * 排除特定url(＊注意＊，排除的需要单独建立安全校验)
+ * <p/>
+ * <pre>
+ * &lt;filter&gt;
+ *     &lt;filter-name&gt;xssFilter&lt;/filter-name&gt;
+ *     &lt;filter-class&gt;com.wanmi.security.filter.XssFilter&lt;/filter-class&gt;
+ * &lt;/filter&gt;
+ * </pre>
+ *
+ * @author of546
+ */
+public class XssFilter extends OncePerRequestFilter {
+
+    private Integer paramNameSize;
+
+    private Integer paramValueSize;
+
+    private String excludeFieldsName;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        if (request.getMethod().equals("OPTIONS")) {
+            response.setStatus(200);
+            response.addHeader("Access-Control-Allow-Origin", request.getHeader("Origin"));
+            response.addHeader("Access-Control-Allow-Headers", "authorization,content-type,x-requested-with,systemId," +
+                    "Platform,reqId,responseType");
+            response.addHeader("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS");
+            response.addHeader("Access-Control-Allow-Credentials", "true");
+            response.addHeader("Access-Control-Max-Age", "1800");
+            response.addHeader("Allow", "Allow:GET, HEAD, POST, PUT, DELETE, TRACE, OPTIONS, PATCH");
+            response.addHeader("Vary", "Origin");
+            response.setHeader("X-Application-Context", "application:8080");
+            response.setContentLength(0);
+            return;
+        }
+        filterChain.doFilter(new XssHttpServletRequestWrapper(request, excludeFieldsName, paramNameSize, paramValueSize), response);
+    }
+
+    @Override
+    public void destroy() {
+        if (this.excludeFieldsName != null) {
+            this.excludeFieldsName = null;
+        }
+    }
+
+
+    public void setParamValueSize(Integer paramValueSize) {
+        this.paramValueSize = paramValueSize;
+    }
+
+    public void setParamNameSize(Integer paramNameSize) {
+        this.paramNameSize = paramNameSize;
+    }
+
+    public void setExcludeFieldsName(String excludeFieldsName) {
+        this.excludeFieldsName = excludeFieldsName;
+    }
+}

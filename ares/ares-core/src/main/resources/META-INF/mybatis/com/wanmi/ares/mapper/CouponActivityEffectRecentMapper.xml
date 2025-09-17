@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wanmi.ares.marketing.coupon.dao.CouponActivityEffectRecentMapper">
+    <resultMap id="BaseResultMap" type="com.wanmi.ares.view.coupon.CouponActivityEffectView">
+        <result column="store_id" jdbcType="BIGINT" property="storeId"/>
+        <result column="activity_id" jdbcType="VARCHAR" property="activityId"/>
+        <result column="pay_money" jdbcType="DECIMAL" property="payMoney"/>
+        <result column="discount_money" jdbcType="DECIMAL" property="discountMoney"/>
+        <result column="pay_goods_count" jdbcType="BIGINT" property="payGoodsCount"/>
+        <result column="pay_trade_count" jdbcType="BIGINT" property="payTradeCount"/>
+        <result column="old_customer_count" jdbcType="BIGINT" property="oldCustomerCount"/>
+        <result column="new_customer_count" jdbcType="BIGINT" property="newCustomerCount"/>
+        <result column="pay_customer_count" jdbcType="BIGINT" property="payCustomerCount"/>
+        <result column="roi" jdbcType="DECIMAL" property="roi"/>
+        <result column="joint_rate" jdbcType="DECIMAL" property="jointRate"/>
+        <result column="use_rate" jdbcType="DECIMAL" property="useRate"/>
+        <result column="customer_price" jdbcType="DECIMAL" property="customerPrice"/>
+        <result column="activity_type" jdbcType="BIT" property="activityType"
+                typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+        <result column="acquireData" jdbcType="VARCHAR" property="acquireData"/>
+        <result column="useData" jdbcType="VARCHAR" property="useData"/>
+        <result column="activity_name" jdbcType="VARCHAR" property="activityName"/>
+        <result column="supply_price" jdbcType="DECIMAL" property="supplyPrice"/>
+    </resultMap>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        select cer.store_id ,
+        cer.activity_id ,
+        rca.activity_name ,
+        rca.activity_type ,
+        cer.pay_money ,
+        cer.discount_money ,
+        cer.pay_goods_count ,
+        cer.pay_trade_count ,
+        cer.old_customer_count ,
+        cer.new_customer_count ,
+        concat(acquire_customer_count, '/', cer.acquire_count) acquireData,
+        concat(cer.use_customer_count, '/', cer.use_count) useData,
+        cer.pay_customer_count ,
+        cer.roi ,
+        cer.joint_rate ,
+        cer.use_rate ,
+        cer.customer_price,
+        cer.supply_price
+        from coupon_activity_effect_recent cer
+        join
+        replay_coupon_activity rca on cer.activity_id = rca.activity_id
+        where cer.stat_type = #{statType}
+        <if test="storeId != null">
+            and cer.store_id=#{storeId,jdbcType=BIGINT}
+        </if>
+        <if test="id != null">
+            and cer.activity_id=#{id,jdbcType=VARCHAR}
+        </if>
+        <if test="activityType != null">
+            and rca.activity_type=#{activityType,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler}
+        </if>
+        <if test="name != null  and name!=''">
+            <bind name="pattern" value="'%' + name + '%'"/>
+            and rca.activity_name like #{pattern}
+        </if>
+        <if test="sortColumn != null">
+            order by ${sortColumn} ${sort}
+        </if>
+    </select>
+
+    <select id="getActivityNameById" resultType="java.lang.String">
+        select activity_name
+        from replay_coupon_activity
+        where activity_id = #{activityId,jdbcType=VARCHAR}
+    </select>
+</mapper>
